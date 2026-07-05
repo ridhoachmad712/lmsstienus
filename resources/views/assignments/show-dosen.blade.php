@@ -85,7 +85,7 @@
                         @foreach ($assignment->rubricCriteria as $crit)
                             <div class="list-group-item px-0 d-flex align-items-center">
                                 <span class="me-auto">{{ $crit->name }}</span>
-                                <span class="badge bg-blue-lt me-2">maks {{ rtrim(rtrim(number_format($crit->max_points, 2, '.', ''), '0'), '.') }}</span>
+                                <span class="badge bg-blue-lt me-2">maks {{ \App\Support\Grades::num($crit->max_points) }}</span>
                                 @unless ($course->isCompleted())
                                     <form method="POST" action="{{ route('rubric.destroy', $crit) }}" data-confirm="Hapus kriteria &quot;{{ $crit->name }}&quot;? Skor rubrik terkait ikut terhapus.">
                                         @csrf @method('DELETE')
@@ -96,7 +96,7 @@
                         @endforeach
                     </div>
                     <div class="small {{ (float) $critMax === (float) $assignment->max_score ? 'text-secondary' : 'text-orange' }}">
-                        Total bobot kriteria: <strong>{{ rtrim(rtrim(number_format($critMax, 2, '.', ''), '0'), '.') }}</strong> / nilai maksimal {{ $assignment->max_score }}.
+                        Total bobot kriteria: <strong>{{ \App\Support\Grades::num($critMax) }}</strong> / nilai maksimal {{ $assignment->max_score }}.
                         @if ((float) $critMax !== (float) $assignment->max_score) <i class="ti ti-alert-triangle"></i> Sebaiknya disamakan. @endif
                     </div>
                 @endif
@@ -163,7 +163,7 @@
                                     <td>{{ $sub->student->name }}<div class="small text-secondary">{{ $sub->student->nim_nip }}</div></td>
                                     <td><span class="badge bg-{{ $sub->isLate() ? 'red' : 'green' }}-lt">{{ $sub->isLate() ? 'Terlambat' : 'Tepat waktu' }}</span></td>
                                     <td class="text-secondary small">{{ $sub->submitted_at?->translatedFormat('d M H:i') }}</td>
-                                    <td>{!! $sub->isGraded() ? '<span class="fw-bold">'.rtrim(rtrim($sub->score,'0'),'.').'</span>' : '<span class="text-secondary">—</span>' !!}</td>
+                                    <td>{!! $sub->isGraded() ? '<span class="fw-bold">'.\App\Support\Grades::num($sub->score).'</span>' : '<span class="text-secondary">—</span>' !!}</td>
                                     <td class="text-end">
                                         <div class="btn-list justify-content-end">
                                             @if ($sub->file_path)
@@ -213,7 +213,7 @@
                             @php($cs = $sub->rubricScores->firstWhere('rubric_criterion_id', $crit->id))
                             <div class="d-flex align-items-center mb-2 gap-2">
                                 <div class="me-auto small">{{ $crit->name }}
-                                    <span class="text-secondary">(maks {{ rtrim(rtrim(number_format($crit->max_points, 2, '.', ''), '0'), '.') }})</span>
+                                    <span class="text-secondary">(maks {{ \App\Support\Grades::num($crit->max_points) }})</span>
                                 </div>
                                 <input type="number" step="0.01" min="0" max="{{ $crit->max_points }}"
                                        name="rubric[{{ $crit->id }}]" value="{{ $cs->points ?? '' }}"

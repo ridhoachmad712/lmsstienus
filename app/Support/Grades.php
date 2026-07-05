@@ -73,6 +73,20 @@ class Grades
         return end($scale)['letter'] ?? 'E';
     }
 
+    /**
+     * Format angka nilai untuk tampilan: buang nol di belakang koma.
+     * 100 → "100", 85.50 → "85.5", 23.10 → "23.1", null/'' → ''.
+     * Aman untuk bilangan bulat — beda dari rtrim($n,'0') yang keliru mengubah "100" → "1".
+     */
+    public static function num(int|float|string|null $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        return rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
+    }
+
     /** Warna badge Tabler berdasarkan huruf awal. */
     public static function color(string $letter): string
     {

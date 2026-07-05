@@ -14,7 +14,7 @@
                 <div>
                     <div class="text-secondary">{{ $isDosen ? 'Peserta: '.$submission->student->name : 'Hasil Anda' }}</div>
                     <div class="h1 mb-0">
-                        {{ is_null($submission->score) ? '—' : rtrim(rtrim($submission->score, '0'), '.') }}
+                        {{ is_null($submission->score) ? '—' : \App\Support\Grades::num($submission->score) }}
                         <small class="text-secondary fs-4">/ {{ $assignment->max_score }}</small>
                     </div>
                 </div>
@@ -46,7 +46,7 @@
                                     @if ($isChosen)<span class="badge bg-dark-lt ms-1">Jawaban {{ $isDosen ? 'mahasiswa' : 'Anda' }}</span>@endif
                                 </div>
                             @endforeach
-                            <div class="text-secondary small mt-1">Skor: {{ $ans ? rtrim(rtrim($ans->score, '0'), '.') : 0 }} / {{ $q->points }}</div>
+                            <div class="text-secondary small mt-1">Skor: {{ $ans ? \App\Support\Grades::num($ans->score) : 0 }} / {{ $q->points }}</div>
                         @else
                             <div class="mb-2">
                                 <div class="text-secondary small">Jawaban {{ $isDosen ? 'mahasiswa' : 'Anda' }}:</div>
@@ -61,7 +61,7 @@
                                     </div>
                                 </div>
                             @else
-                                <div class="text-secondary small">Skor: {{ is_null($ans?->score) ? 'belum dinilai' : rtrim(rtrim($ans->score, '0'), '.').' / '.$q->points }}</div>
+                                <div class="text-secondary small">Skor: {{ is_null($ans?->score) ? 'belum dinilai' : \App\Support\Grades::num($ans->score).' / '.$q->points }}</div>
                             @endif
                         @endif
                     </div>

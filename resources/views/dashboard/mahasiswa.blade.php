@@ -70,7 +70,7 @@
                                 <div class="fw-bold">{{ $sub->assignment->title }}</div>
                                 <div class="text-secondary small">{{ $sub->assignment->course->name }}</div>
                             </div>
-                            <span class="badge bg-green-lt fs-3">{{ rtrim(rtrim($sub->score, '0'), '.') }}</span>
+                            <span class="badge bg-green-lt fs-3">{{ \App\Support\Grades::num($sub->score) }}</span>
                         </div>
                     @endforeach
                 </div>

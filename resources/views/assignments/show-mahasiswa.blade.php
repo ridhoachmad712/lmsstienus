@@ -60,7 +60,7 @@
                     @endif
                     <hr>
                     <div class="mb-2"><span class="text-secondary">Nilai</span>
-                        <div class="h1 mb-0">{{ rtrim(rtrim($submission->score, '0'), '.') }} <small class="text-secondary fs-4">/ {{ $assignment->max_score }}</small></div>
+                        <div class="h1 mb-0">{{ \App\Support\Grades::num($submission->score) }} <small class="text-secondary fs-4">/ {{ $assignment->max_score }}</small></div>
                     </div>
                     @if ($submission->feedback)
                         <div class="mt-2"><span class="text-secondary">Feedback dosen</span>

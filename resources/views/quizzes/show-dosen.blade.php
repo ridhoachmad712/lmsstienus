@@ -47,7 +47,7 @@
                                             <span class="badge bg-yellow-lt">Sedang mengerjakan</span>
                                         @endif
                                     </td>
-                                    <td>{!! is_null($sub->score) ? '<span class="text-secondary">Menunggu nilai esai</span>' : '<span class="fw-bold">'.rtrim(rtrim($sub->score,'0'),'.').'</span>' !!}</td>
+                                    <td>{!! is_null($sub->score) ? '<span class="text-secondary">Menunggu nilai esai</span>' : '<span class="fw-bold">'.\App\Support\Grades::num($sub->score).'</span>' !!}</td>
                                     <td class="text-end">
                                         @if ($sub->submitted_at)
                                             <a href="{{ route('quizzes.review', $sub) }}" class="btn btn-sm">Periksa</a>

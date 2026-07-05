@@ -150,11 +150,11 @@
                                         @foreach ($components as $c)
                                             @php($val = $row['components'][$c->id])
                                             @if (in_array($c->id, $autoComponentIds ?? []) || $course->isCompleted())
-                                                <td class="text-center">{{ is_null($val) ? '—' : rtrim(rtrim($val, '0'), '.') }}</td>
+                                                <td class="text-center">{{ is_null($val) ? '—' : \App\Support\Grades::num($val) }}</td>
                                             @else
                                                 <td class="text-center" style="min-width:84px">
                                                     <input type="number" name="scores[{{ $c->id }}][{{ $row['student']->id }}]"
-                                                           value="{{ is_null($val) ? '' : rtrim(rtrim($val, '0'), '.') }}"
+                                                           value="{{ is_null($val) ? '' : \App\Support\Grades::num($val) }}"
                                                            min="0" max="100" step="0.01" class="form-control form-control-sm text-center" placeholder="—">
                                                 </td>
                                             @endif

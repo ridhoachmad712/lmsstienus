@@ -47,7 +47,7 @@
                                         <span class="text-secondary small"><i class="ti ti-users"></i> {{ $a->submissions_count }} pengumpulan</span>
                                     @else
                                         @if ($sub && $sub->isGraded())
-                                            <span class="badge bg-green-lt">Nilai: {{ rtrim(rtrim($sub->score, '0'), '.') }}</span>
+                                            <span class="badge bg-green-lt">Nilai: {{ \App\Support\Grades::num($sub->score) }}</span>
                                         @elseif ($sub)
                                             <span class="badge bg-azure-lt">Sudah dikumpulkan</span>
                                         @elseif ($a->isPastDeadline())

@@ -189,7 +189,7 @@ class SubmissionController extends Controller
             $submission->user_id,
             'grade',
             'Nilai tugas tersedia',
-            $submission->assignment->title.' telah dinilai: '.rtrim(rtrim((string) $data['score'], '0'), '.'),
+            $submission->assignment->title.' telah dinilai: '.\App\Support\Grades::num($data['score']),
             route('assignments.show', $submission->assignment),
         );
 

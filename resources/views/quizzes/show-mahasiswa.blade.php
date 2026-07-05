@@ -21,7 +21,7 @@
                 @if ($submission && $submission->submitted_at)
                     <div class="alert alert-info">Anda sudah menyelesaikan kuis ini.</div>
                     @if (! is_null($submission->score))
-                        <div class="text-center mb-3"><div class="h1">{{ rtrim(rtrim($submission->score, '0'), '.') }} <small class="text-secondary fs-4">/ {{ $assignment->max_score }}</small></div></div>
+                        <div class="text-center mb-3"><div class="h1">{{ \App\Support\Grades::num($submission->score) }} <small class="text-secondary fs-4">/ {{ $assignment->max_score }}</small></div></div>
                     @else
                         <div class="text-center text-secondary mb-3">Menunggu penilaian esai oleh dosen.</div>
                     @endif
