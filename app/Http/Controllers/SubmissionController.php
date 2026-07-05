@@ -196,6 +196,22 @@ class SubmissionController extends Controller
         return back()->with('status', 'Nilai tersimpan.');
     }
 
+    /** Sajikan berkas pengumpulan secara inline agar bisa dipreview (dosen pemilik / mahasiswa pemilik). */
+    public function preview(Request $request, Submission $submission): StreamedResponse
+    {
+        $submission->load('assignment.course');
+        $user = $request->user();
+        $isOwnerDosen = $user->isDosen() && $submission->assignment->course->user_id === $user->id;
+        $isOwnerStudent = $submission->user_id === $user->id;
+        abort_unless($isOwnerDosen || $isOwnerStudent, 403);
+
+        $disk = Storage::disk('public');
+        abort_unless($submission->file_path && $disk->exists($submission->file_path), 404);
+
+        // Disposisi "inline" → browser menampilkan (PDF/gambar), bukan mengunduh.
+        return $disk->response($submission->file_path);
+    }
+
     public function download(Request $request, Submission $submission): StreamedResponse
     {
         $submission->load('assignment.course');

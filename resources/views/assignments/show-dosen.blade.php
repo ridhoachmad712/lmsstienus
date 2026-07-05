@@ -16,6 +16,10 @@
         @if ($submissions->whereNotNull('file_path')->isNotEmpty())
             <a href="{{ route('submissions.downloadAll', $assignment) }}" class="btn btn-outline-green"><i class="ti ti-file-zip me-1"></i>Unduh semua (ZIP)</a>
         @endif
+        <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#modal-rubrik">
+            <i class="ti ti-list-check me-1"></i>Rubrik
+            @if ($assignment->rubricCriteria->isNotEmpty())<span class="badge bg-blue-lt ms-1">{{ $assignment->rubricCriteria->count() }}</span>@endif
+        </button>
         <a href="{{ route('assignments.edit', $assignment) }}" class="btn"><i class="ti ti-edit me-1"></i>Edit</a>
         <form method="POST" action="{{ route('assignments.destroy', $assignment) }}" data-confirm="Hapus tugas ini beserta seluruh pengumpulan?">
             @csrf @method('DELETE')
@@ -49,10 +53,14 @@
         </div></div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card card-sm"><div class="card-body text-center">
-            <div class="h1 m-0 text-orange">{{ $stats['pending'] }}</div>
-            <div class="text-secondary">Belum mengumpulkan</div>
-        </div></div>
+        {{-- Kartu ini bisa diklik untuk melihat daftar yang belum mengumpulkan --}}
+        <div class="card card-sm {{ $pending->isNotEmpty() ? 'card-link' : '' }}"
+             @if ($pending->isNotEmpty()) role="button" data-bs-toggle="modal" data-bs-target="#modal-pending" @endif>
+            <div class="card-body text-center">
+                <div class="h1 m-0 text-orange">{{ $stats['pending'] }}</div>
+                <div class="text-secondary">Belum mengumpulkan @if ($pending->isNotEmpty())<i class="ti ti-eye ms-1"></i>@endif</div>
+            </div>
+        </div>
     </div>
     <div class="col-12">
         <div class="progress" style="height:.5rem"><div class="progress-bar bg-primary" style="width:{{ $stats['pct'] }}%" role="progressbar" aria-valuenow="{{ $stats['pct'] }}" aria-valuemin="0" aria-valuemax="100"></div></div>
@@ -60,23 +68,94 @@
     </div>
 </div>
 
-<div class="row row-cards">
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="mb-2"><span class="text-secondary">Deadline</span><div class="fw-bold">{{ $assignment->deadline?->translatedFormat('d M Y H:i') ?? '—' }}</div></div>
-                <div class="mb-2"><span class="text-secondary">Nilai maksimal</span><div class="fw-bold">{{ $assignment->max_score }}</div></div>
-                <div class="mb-2"><span class="text-secondary">Bentuk jawaban</span><div class="fw-bold">{{ \App\Models\Assignment::SUBMISSION_MODES[$assignment->submission_mode] ?? 'Unggah berkas' }}</div></div>
-                @if ($assignment->description)
-                    <hr><div class="text-secondary" style="white-space:pre-line">{{ $assignment->description }}</div>
-                @endif
+{{-- Info tugas: strip ringkas (horizontal) --}}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <div class="text-secondary small">Deadline</div>
+                <div class="fw-bold">{{ $assignment->deadline?->translatedFormat('d M Y H:i') ?? '—' }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-secondary small">Nilai maksimal</div>
+                <div class="fw-bold">{{ $assignment->max_score }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-secondary small">Bentuk jawaban</div>
+                <div class="fw-bold">{{ \App\Models\Assignment::SUBMISSION_MODES[$assignment->submission_mode] ?? 'Unggah berkas' }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-secondary small">Penilaian</div>
+                <div class="fw-bold">{{ $assignment->rubricCriteria->isNotEmpty() ? 'Rubrik ('.$assignment->rubricCriteria->count().' kriteria)' : 'Nilai tunggal' }}</div>
             </div>
         </div>
+        @if ($assignment->description)
+            <hr class="my-3">
+            <div class="text-secondary" style="white-space:pre-line">{{ $assignment->description }}</div>
+        @endif
+    </div>
+</div>
 
-        {{-- Rubrik penilaian --}}
-        <div class="card mt-3">
-            <div class="card-header py-2"><h3 class="card-title"><i class="ti ti-list-check me-1"></i>Rubrik Penilaian</h3></div>
-            <div class="card-body">
+{{-- Pengumpulan: lebar penuh --}}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Pengumpulan ({{ $submissions->count() }})</h3>
+        @if (! $submissions->isEmpty())
+            <input type="text" class="form-control form-control-sm ms-auto" style="max-width:220px" placeholder="Cari mahasiswa…" data-table-search="#tbl-subs">
+        @endif
+    </div>
+    @if (! $submissions->isEmpty())
+        <div class="card-body py-2 border-bottom">
+            <div class="btn-group btn-group-sm" role="group" id="sub-filter">
+                <button type="button" class="btn active" data-filter="all">Semua</button>
+                <button type="button" class="btn" data-filter="ontime">Tepat waktu</button>
+                <button type="button" class="btn" data-filter="late">Terlambat</button>
+                <button type="button" class="btn" data-filter="ungraded">Belum dinilai</button>
+            </div>
+        </div>
+    @endif
+    @if ($submissions->isEmpty())
+        <div class="card-body"><x-empty-state icon="ti-inbox" title="Belum ada pengumpulan" /></div>
+    @else
+        <div class="table-responsive">
+            <table id="tbl-subs" class="table table-vcenter card-table table-sortable">
+                <thead><tr><th>Mahasiswa</th><th>Status</th><th>Waktu</th><th>Nilai</th><th class="no-sort"></th></tr></thead>
+                <tbody>
+                    @foreach ($submissions as $sub)
+                        <tr data-late="{{ $sub->isLate() ? 1 : 0 }}" data-graded="{{ $sub->isGraded() ? 1 : 0 }}">
+                            <td>{{ $sub->student->name }}<div class="small text-secondary">{{ $sub->student->nim_nip }}</div></td>
+                            <td><span class="badge bg-{{ $sub->isLate() ? 'red' : 'green' }}-lt">{{ $sub->isLate() ? 'Terlambat' : 'Tepat waktu' }}</span></td>
+                            <td class="text-secondary small">{{ $sub->submitted_at?->translatedFormat('d M H:i') }}</td>
+                            <td>{!! $sub->isGraded() ? '<span class="fw-bold">'.\App\Support\Grades::num($sub->score).'</span>' : '<span class="text-secondary">—</span>' !!}</td>
+                            <td class="text-end">
+                                <div class="btn-list justify-content-end">
+                                    @if ($sub->file_path)
+                                        <a href="{{ route('submissions.preview', $sub) }}" target="_blank" rel="noopener" class="btn btn-sm" title="Lihat berkas" data-bs-toggle="tooltip"><i class="ti ti-eye"></i></a>
+                                    @endif
+                                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#grade-{{ $sub->id }}">Nilai</button>
+                                    <form method="POST" action="{{ route('submissions.reopen', $sub) }}" data-confirm="Buka kembali pengumpulan {{ $sub->student->name }}? Berkas saat ini akan dihapus dan mahasiswa bisa mengumpulkan ulang.">
+                                        @csrf
+                                        <button class="btn btn-sm" title="Buka kembali" data-bs-toggle="tooltip"><i class="ti ti-lock-open"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+</div>
+
+{{-- ===================== MODAL RUBRIK ===================== --}}
+<div class="modal modal-blur fade" id="modal-rubrik" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ti ti-list-check me-1"></i>Rubrik Penilaian</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
                 @if ($assignment->rubricCriteria->isEmpty())
                     <p class="text-secondary small mb-2">Belum ada kriteria. Tambahkan kriteria agar penilaian memakai rubrik (nilai akhir = jumlah poin tiap kriteria). Tanpa kriteria, penilaian memakai input nilai tunggal seperti biasa.</p>
                 @else
@@ -100,28 +179,35 @@
                         @if ((float) $critMax !== (float) $assignment->max_score) <i class="ti ti-alert-triangle"></i> Sebaiknya disamakan. @endif
                     </div>
                 @endif
-
-                @unless ($course->isCompleted())
-                    <form method="POST" action="{{ route('rubric.store', $assignment) }}" class="mt-2">
-                        @csrf
-                        <div class="row g-2">
-                            <div class="col-7"><input type="text" name="name" class="form-control form-control-sm" placeholder="Nama kriteria" required aria-label="Nama kriteria"></div>
-                            <div class="col-3"><input type="number" step="0.01" min="0.5" name="max_points" class="form-control form-control-sm" placeholder="Maks" required aria-label="Poin maksimal kriteria"></div>
-                            <div class="col-2"><button class="btn btn-sm btn-primary w-100" aria-label="Tambah kriteria"><i class="ti ti-plus"></i></button></div>
-                        </div>
-                    </form>
-                @endunless
             </div>
+            @unless ($course->isCompleted())
+            <div class="modal-footer">
+                <form class="w-100" method="POST" action="{{ route('rubric.store', $assignment) }}">
+                    @csrf
+                    <div class="text-secondary small mb-2">Tambah kriteria</div>
+                    <div class="row g-2">
+                        <div class="col-7"><input type="text" name="name" class="form-control" placeholder="Nama kriteria" required aria-label="Nama kriteria"></div>
+                        <div class="col-3"><input type="number" step="0.01" min="0.5" name="max_points" class="form-control" placeholder="Maks" required aria-label="Poin maksimal kriteria"></div>
+                        <div class="col-2"><button class="btn btn-primary w-100" aria-label="Tambah kriteria"><i class="ti ti-plus"></i></button></div>
+                    </div>
+                </form>
+            </div>
+            @endunless
         </div>
+    </div>
+</div>
 
-        @if ($pending->isNotEmpty())
-            <div class="card mt-3">
-                <div class="card-header py-2">
-                    <h3 class="card-title">Belum mengumpulkan ({{ $stats['pending'] }})</h3>
-                    <button class="btn btn-sm ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#pending-list">Lihat</button>
+{{-- ===================== MODAL BELUM MENGUMPULKAN ===================== --}}
+@if ($pending->isNotEmpty())
+    <div class="modal modal-blur fade" id="modal-pending" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Belum mengumpulkan ({{ $stats['pending'] }})</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="collapse" id="pending-list">
-                    <div class="list-group list-group-flush" style="max-height:280px;overflow:auto">
+                <div class="modal-body p-0">
+                    <div class="list-group list-group-flush">
                         @foreach ($pending as $p)
                             <div class="list-group-item d-flex align-items-center py-2">
                                 <x-avatar :name="$p->name" :url="$p->avatarUrl()" class="me-2" />
@@ -131,60 +217,9 @@
                     </div>
                 </div>
             </div>
-        @endif
-    </div>
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Pengumpulan ({{ $submissions->count() }})</h3>
-                @if (! $submissions->isEmpty())
-                    <input type="text" class="form-control form-control-sm ms-auto" style="max-width:200px" placeholder="Cari mahasiswa…" data-table-search="#tbl-subs">
-                @endif
-            </div>
-            @if (! $submissions->isEmpty())
-                <div class="card-body py-2 border-bottom">
-                    <div class="btn-group btn-group-sm" role="group" id="sub-filter">
-                        <button type="button" class="btn active" data-filter="all">Semua</button>
-                        <button type="button" class="btn" data-filter="ontime">Tepat waktu</button>
-                        <button type="button" class="btn" data-filter="late">Terlambat</button>
-                        <button type="button" class="btn" data-filter="ungraded">Belum dinilai</button>
-                    </div>
-                </div>
-            @endif
-            @if ($submissions->isEmpty())
-                <div class="card-body"><x-empty-state icon="ti-inbox" title="Belum ada pengumpulan" /></div>
-            @else
-                <div class="table-responsive">
-                    <table id="tbl-subs" class="table table-vcenter card-table table-sortable">
-                        <thead><tr><th>Mahasiswa</th><th>Status</th><th>Waktu</th><th>Nilai</th><th class="no-sort"></th></tr></thead>
-                        <tbody>
-                            @foreach ($submissions as $sub)
-                                <tr data-late="{{ $sub->isLate() ? 1 : 0 }}" data-graded="{{ $sub->isGraded() ? 1 : 0 }}">
-                                    <td>{{ $sub->student->name }}<div class="small text-secondary">{{ $sub->student->nim_nip }}</div></td>
-                                    <td><span class="badge bg-{{ $sub->isLate() ? 'red' : 'green' }}-lt">{{ $sub->isLate() ? 'Terlambat' : 'Tepat waktu' }}</span></td>
-                                    <td class="text-secondary small">{{ $sub->submitted_at?->translatedFormat('d M H:i') }}</td>
-                                    <td>{!! $sub->isGraded() ? '<span class="fw-bold">'.\App\Support\Grades::num($sub->score).'</span>' : '<span class="text-secondary">—</span>' !!}</td>
-                                    <td class="text-end">
-                                        <div class="btn-list justify-content-end">
-                                            @if ($sub->file_path)
-                                                <a href="{{ route('submissions.download', $sub) }}" class="btn btn-sm" title="Unduh" data-bs-toggle="tooltip"><i class="ti ti-download"></i></a>
-                                            @endif
-                                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#grade-{{ $sub->id }}">Nilai</button>
-                                            <form method="POST" action="{{ route('submissions.reopen', $sub) }}" data-confirm="Buka kembali pengumpulan {{ $sub->student->name }}? Berkas saat ini akan dihapus dan mahasiswa bisa mengumpulkan ulang.">
-                                                @csrf
-                                                <button class="btn btn-sm" title="Buka kembali" data-bs-toggle="tooltip"><i class="ti ti-lock-open"></i></button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
         </div>
     </div>
-</div>
+@endif
 
 {{-- Modal nilai per submission --}}
 @foreach ($submissions as $sub)
@@ -205,7 +240,7 @@
                         </div>
                     @endif
                     @if ($sub->file_path)
-                        <div class="mb-3"><a href="{{ route('submissions.download', $sub) }}" class="btn btn-sm btn-outline-secondary"><i class="ti ti-download me-1"></i>Unduh berkas jawaban</a></div>
+                        <div class="mb-3"><a href="{{ route('submissions.preview', $sub) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"><i class="ti ti-eye me-1"></i>Lihat berkas jawaban</a></div>
                     @endif
                     @if ($assignment->rubricCriteria->isNotEmpty())
                         <label class="form-label">Rubrik (nilai dihitung otomatis)</label>
