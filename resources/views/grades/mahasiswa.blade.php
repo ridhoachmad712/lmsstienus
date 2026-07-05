@@ -27,7 +27,7 @@
                             @foreach ($components as $c)
                                 @php($score = $row['components'][$c->id] ?? null)
                                 <tr>
-                                    <td>{{ $c->name }}<div class="small text-secondary text-capitalize">{{ $c->type }}</div></td>
+                                    <td>{{ $c->name }}<div class="small text-secondary">{{ \App\Models\GradeComponent::TYPES[$c->type] ?? ucfirst($c->type) }}</div></td>
                                     <td class="text-center">{{ $c->weight }}%</td>
                                     <td class="text-center">{{ is_null($score) ? '—' : rtrim(rtrim($score, '0'), '.') }}</td>
                                     <td class="text-center text-secondary">{{ is_null($score) ? '—' : round($score * $c->weight / 100, 2) }}</td>

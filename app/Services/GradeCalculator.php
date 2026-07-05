@@ -24,6 +24,15 @@ class GradeCalculator
 
         $students = $course->students()->orderBy('name')->get();
 
+        // Persentase kehadiran per mahasiswa (bila ada komponen bertipe kehadiran).
+        $attendancePercents = [];
+        if ($components->contains(fn ($c) => $c->isAttendance())) {
+            $grid = (new AttendanceService())->gridForCourse($course);
+            foreach ($grid['summary'] as $uid => $s) {
+                $attendancePercents[$uid] = $s['percent']; // null bila belum ada sesi
+            }
+        }
+
         // semua submission bernilai untuk kelas ini
         $submissions = \App\Models\Submission::whereIn('assignment_id', $assignments->pluck('id'))
             ->whereNotNull('score')
@@ -37,7 +46,7 @@ class GradeCalculator
             ->groupBy('grade_component_id')
             ->map(fn ($g) => $g->keyBy('user_id'));
 
-        $rows = $students->map(function (User $student) use ($components, $assignmentsByComponent, $submissions, $manual) {
+        $rows = $students->map(function (User $student) use ($components, $assignmentsByComponent, $submissions, $manual, $attendancePercents) {
             $studentSubs = ($submissions->get($student->id) ?? collect())->keyBy('assignment_id');
             $componentScores = [];
             $final = 0.0;
@@ -45,17 +54,23 @@ class GradeCalculator
             foreach ($components as $component) {
                 $compAssignments = $assignmentsByComponent->get($component->id) ?? collect();
 
-                if ($compAssignments->isNotEmpty()) {
-                    // Otomatis dari tugas/kuis yang ditautkan
+                if ($component->isAttendance()) {
+                    // Otomatis dari persentase kehadiran; 0 bila belum ada sesi.
+                    $percent = $attendancePercents[$student->id] ?? null;
+                    $score = round((float) ($percent ?? 0), 2);
+                } elseif ($compAssignments->isNotEmpty()) {
+                    // Otomatis dari tugas/kuis yang ditautkan.
+                    // Setiap tugas dihitung: yang belum dikumpulkan atau belum
+                    // dinilai dianggap 0 (sementara), otomatis berubah setelah
+                    // mahasiswa mengumpulkan dan diberi nilai.
                     $percents = [];
                     foreach ($compAssignments as $a) {
-                        if ($sub = $studentSubs->get($a->id)) {
-                            $percents[] = $a->max_score > 0
-                                ? (float) $sub->score / $a->max_score * 100
-                                : 0;
-                        }
+                        $sub = $studentSubs->get($a->id);
+                        $percents[] = ($sub && $a->max_score > 0)
+                            ? (float) $sub->score / $a->max_score * 100
+                            : 0.0;
                     }
-                    $score = count($percents) ? round(array_sum($percents) / count($percents), 2) : null;
+                    $score = round(array_sum($percents) / count($percents), 2);
                 } else {
                     // Nilai manual (skala 0–100)
                     $entry = $manual->get($component->id)?->get($student->id);
@@ -85,8 +100,14 @@ class GradeCalculator
             'weight_total' => (int) $components->sum('weight'),
         ];
 
-        // ID komponen yang nilainya otomatis dari tugas (sisanya = input manual)
+        // ID komponen yang nilainya otomatis (dari tugas atau kehadiran); sisanya = input manual
         $autoComponentIds = $assignmentsByComponent->keys()->map(fn ($k) => (int) $k)->all();
+        foreach ($components as $c) {
+            if ($c->isAttendance()) {
+                $autoComponentIds[] = (int) $c->id;
+            }
+        }
+        $autoComponentIds = array_values(array_unique($autoComponentIds));
 
         return compact('components', 'rows', 'summary', 'autoComponentIds');
     }

@@ -39,33 +39,61 @@
             </div>
             <div class="list-group list-group-flush">
                 @forelse ($components as $c)
-                    <div class="list-group-item d-flex align-items-center">
-                        <div>
-                            <div class="fw-bold">{{ $c->name }} <span class="badge bg-blue-lt ms-1">{{ $c->weight }}%</span></div>
-                            <div class="small text-secondary text-capitalize">{{ $c->type }}{{ $c->description ? ' · '.$c->description : '' }}</div>
+                    <div class="list-group-item" x-data="{ edit: false, type: '{{ $c->type }}' }">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <div class="fw-bold">{{ $c->name }} <span class="badge bg-blue-lt ms-1">{{ $c->weight }}%</span></div>
+                                <div class="small text-secondary">{{ \App\Models\GradeComponent::TYPES[$c->type] ?? ucfirst($c->type) }}@if ($c->isAttendance()) · <span class="text-teal">otomatis dari absensi</span>@endif{{ $c->description ? ' · '.$c->description : '' }}</div>
+                            </div>
+                            @unless ($course->isCompleted())
+                            <div class="ms-auto btn-list">
+                                <button type="button" class="btn btn-sm btn-ghost-secondary" @click="edit = ! edit" title="Ubah"><i class="ti ti-pencil"></i></button>
+                                <form method="POST" action="{{ route('grade-components.destroy', $c) }}" data-confirm="Hapus komponen ini?">
+                                    @csrf @method('DELETE')
+                                    <button class="btn btn-sm btn-ghost-danger" title="Hapus"><i class="ti ti-trash"></i></button>
+                                </form>
+                            </div>
+                            @endunless
                         </div>
-                        <form method="POST" action="{{ route('grade-components.destroy', $c) }}" class="ms-auto" data-confirm="Hapus komponen ini?">
-                            @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-ghost-danger"><i class="ti ti-trash"></i></button>
+                        @unless ($course->isCompleted())
+                        <form method="POST" action="{{ route('grade-components.update', $c) }}" class="mt-2" x-show="edit" x-cloak>
+                            @csrf @method('PUT')
+                            <div class="row g-2">
+                                <div class="col-7"><label class="form-label small mb-1 required">Tipe</label>
+                                    <select name="type" class="form-select form-select-sm" x-model="type">
+                                        @foreach (\App\Models\GradeComponent::TYPES as $key => $label)
+                                            <option value="{{ $key }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select></div>
+                                <div class="col-5"><label class="form-label small mb-1 required">Bobot %</label>
+                                    <input type="number" name="weight" class="form-control form-control-sm" min="1" max="100" value="{{ $c->weight }}" required></div>
+                                <div class="col-12" x-show="type === 'lainnya'" x-cloak><label class="form-label small mb-1 required">Nama</label>
+                                    <input type="text" name="name" class="form-control form-control-sm" value="{{ $c->type === 'lainnya' ? $c->name : '' }}" placeholder="Nama komponen" :required="type === 'lainnya'"></div>
+                                <div class="col-12 text-end"><button class="btn btn-sm btn-primary"><i class="ti ti-device-floppy me-1"></i>Simpan</button></div>
+                            </div>
                         </form>
+                        @endunless
                     </div>
                 @empty
                     <div class="list-group-item text-secondary small">Belum ada komponen. Tambahkan agar nilai akhir terhitung.</div>
                 @endforelse
             </div>
             @unless ($course->isCompleted())
-            <form class="card-body border-top" method="POST" action="{{ route('grade-components.store', $course) }}">
+            <form class="card-body border-top" method="POST" action="{{ route('grade-components.store', $course) }}" x-data="{ type: 'tugas' }">
                 @csrf
-                <div class="mb-2"><label class="form-label required">Nama</label>
-                    <input type="text" name="name" class="form-control" placeholder="Tugas / UTS / UAS" required></div>
                 <div class="row">
                     <div class="col-7 mb-2"><label class="form-label required">Tipe</label>
-                        <select name="type" class="form-select">
-                            <option value="tugas">Tugas</option><option value="kuis">Kuis</option>
-                            <option value="uts">UTS</option><option value="uas">UAS</option><option value="lainnya">Lainnya</option>
+                        <select name="type" class="form-select" x-model="type">
+                            @foreach (\App\Models\GradeComponent::TYPES as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
                         </select></div>
                     <div class="col-5 mb-2"><label class="form-label required">Bobot %</label>
                         <input type="number" name="weight" class="form-control" min="1" max="100" required></div>
+                </div>
+                <div class="mb-2" x-show="type === 'lainnya'" x-cloak>
+                    <label class="form-label required">Nama</label>
+                    <input type="text" name="name" class="form-control" placeholder="Nama komponen" :required="type === 'lainnya'">
                 </div>
                 <button class="btn btn-primary w-100"><i class="ti ti-plus me-1"></i>Tambah Komponen</button>
             </form>
