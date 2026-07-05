@@ -48,9 +48,9 @@ class SemesterController extends Controller
 
         $academicYear = Setting::get('academic_year', (string) date('Y'));
         $semester = Setting::get('semester', 'Ganjil');
-        $activePeriod = ((int) $academicYear).'-'.$semester;
+        $activeKeys = Semester::activeKeys();
 
-        return view('admin.semesters.index', compact('periods', 'activePeriod', 'academicYear', 'semester'));
+        return view('admin.semesters.index', compact('periods', 'activeKeys', 'academicYear', 'semester'));
     }
 
     /** Tambah semester baru ke daftar. */
@@ -71,18 +71,27 @@ class SemesterController extends Controller
         return back()->with('status', "Semester {$data['semester']} {$data['year']} ditambahkan.");
     }
 
-    /** Tetapkan satu periode sebagai semester aktif (disimpan ke pengaturan). */
+    /** Tetapkan satu atau lebih periode sebagai semester aktif (disimpan ke pengaturan). */
     public function updateActive(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'academic_year' => ['required', 'integer', 'min:2000', 'max:2100'],
-            'semester' => ['required', 'in:Ganjil,Genap,Antara'],
+            'periods' => ['required', 'array', 'min:1'],
+            'periods.*' => ['string', 'regex:/^\d{4}-(Ganjil|Genap|Antara)$/'],
+        ], [
+            'periods.required' => 'Pilih minimal satu semester untuk diaktifkan.',
+            'periods.min' => 'Pilih minimal satu semester untuk diaktifkan.',
         ]);
 
-        Setting::put('academic_year', (string) $data['academic_year']);
-        Setting::put('semester', $data['semester']);
+        Semester::setActiveKeys($data['periods']);
 
-        return back()->with('status', "Semester aktif disetel ke {$data['semester']} {$data['academic_year']}.");
+        $labels = collect($data['periods'])
+            ->sortByDesc(fn ($k) => Semester::sortValue($k))
+            ->map(fn ($k) => Semester::keyLabel($k))
+            ->implode(', ');
+
+        Activity::log('update', "Menyetel semester aktif: {$labels}");
+
+        return back()->with('status', 'Semester aktif diperbarui: '.$labels.'.');
     }
 
     /** Hapus semester dari daftar — ditolak jika masih ada kelas di periode itu. */

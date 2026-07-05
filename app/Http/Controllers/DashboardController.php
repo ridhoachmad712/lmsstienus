@@ -43,12 +43,15 @@ class DashboardController extends Controller
             'sort' => $c->year * 10 + ($semOrder[$c->semester] ?? 0),
         ])->unique('key')->sortByDesc('sort')->values();
 
-        $activePeriod = ((int) Setting::get('academic_year', date('Y'))).'-'.Setting::get('semester', 'Ganjil');
-        $periode = (string) $request->query('periode', $activePeriod);
+        $activeKeys = \App\Models\Semester::activeKeys();
+        $periode = (string) $request->query('periode', 'active');
 
-        // Semua statistik & daftar kelas mengikuti periode terpilih
+        // Semua statistik & daftar kelas mengikuti periode terpilih.
+        // 'all' = semua; 'active' = gabungan semester aktif; selain itu = satu periode.
         $periodCourses = $courses;
-        if ($periode !== 'all' && str_contains($periode, '-')) {
+        if ($periode === 'active') {
+            $periodCourses = $courses->filter(fn ($c) => in_array($c->year.'-'.$c->semester, $activeKeys, true))->values();
+        } elseif ($periode !== 'all' && str_contains($periode, '-')) {
             [$py, $ps] = explode('-', $periode, 2);
             $periodCourses = $courses->filter(fn ($c) => (string) $c->year === $py && $c->semester === $ps)->values();
         }
@@ -95,8 +98,12 @@ class DashboardController extends Controller
                 : Assignment::whereIn('course_id', $periodIds)->count(),
         ];
 
+        $activeLabel = count($activeKeys) === 1
+            ? \App\Models\Semester::keyLabel($activeKeys[0])
+            : 'Semester aktif ('.count($activeKeys).')';
+
         return view('dashboard.dosen', compact(
-            'stats', 'activeCourses', 'periods', 'periode', 'activePeriod',
+            'stats', 'activeCourses', 'periods', 'periode', 'activeKeys', 'activeLabel',
             'needGrading', 'needAttendance', 'todayMeetings'
         ));
     }

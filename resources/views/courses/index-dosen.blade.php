@@ -15,10 +15,7 @@
 
 @section('content')
 {{-- Filter Aktif / Selesai + dropdown semester --}}
-@php($pp = explode('-', $periode))
-@php($periodeLabel = $periode === 'all' ? 'Semua semester' : (($pp[1] ?? '').' '.($pp[0] ?? '')))
-@php($ap = explode('-', $activePeriod))
-@php($activeLabel = ($ap[1] ?? '').' '.($ap[0] ?? ''))
+@php($periodeLabel = $periode === 'all' ? 'Semua semester' : ($periode === 'active' ? $activeLabel : \App\Models\Semester::keyLabel($periode)))
 <div class="mb-3 d-flex flex-wrap align-items-center gap-2">
     <ul class="nav nav-pills gap-1">
         <li class="nav-item">
@@ -38,12 +35,15 @@
             <i class="ti ti-calendar me-1"></i>{{ $periodeLabel }}
         </button>
         <div class="dropdown-menu dropdown-menu-end">
-            <a class="dropdown-item {{ $periode === $activePeriod ? 'active' : '' }}" href="{{ route('courses.index', ['status' => $filter, 'periode' => $activePeriod]) }}">
+            <a class="dropdown-item {{ $periode === 'active' ? 'active' : '' }}" href="{{ route('courses.index', ['status' => $filter, 'periode' => 'active']) }}">
                 {{ $activeLabel }} <span class="badge bg-blue-lt ms-1">aktif</span>
             </a>
+            <div class="dropdown-divider"></div>
             @foreach ($periods as $p)
-                @continue($p->key === $activePeriod)
-                <a class="dropdown-item {{ $periode === $p->key ? 'active' : '' }}" href="{{ route('courses.index', ['status' => $filter, 'periode' => $p->key]) }}">{{ $p->label }}</a>
+                <a class="dropdown-item {{ $periode === $p->key ? 'active' : '' }}" href="{{ route('courses.index', ['status' => $filter, 'periode' => $p->key]) }}">
+                    {{ $p->label }}
+                    @if (in_array($p->key, $activeKeys, true))<span class="badge bg-green-lt ms-1">aktif</span>@endif
+                </a>
             @endforeach
             <div class="dropdown-divider"></div>
             <a class="dropdown-item {{ $periode === 'all' ? 'active' : '' }}" href="{{ route('courses.index', ['status' => $filter, 'periode' => 'all']) }}">Semua semester</a>

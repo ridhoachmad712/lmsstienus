@@ -32,12 +32,28 @@ class CourseController extends Controller
                 ])
                 ->sortByDesc('sort')->values();
 
-            $activePeriod = ((int) Setting::get('academic_year', date('Y'))).'-'.Setting::get('semester', 'Ganjil');
-            $periode = (string) $request->query('periode', $activePeriod); // default: semester aktif
+            $activeKeys = \App\Models\Semester::activeKeys();
+            $periode = (string) $request->query('periode', 'active'); // default: gabungan semester aktif
 
-            // Terapkan filter periode ke sebuah query (kecuali "Semua semester")
-            $applyPeriode = function ($query) use ($periode) {
-                if ($periode !== 'all' && str_contains($periode, '-')) {
+            // Terapkan filter periode ke sebuah query.
+            // 'all' = semua semester; 'active' = gabungan semester aktif; selain itu = satu periode.
+            $applyPeriode = function ($query) use ($periode, $activeKeys) {
+                if ($periode === 'all') {
+                    return $query;
+                }
+
+                if ($periode === 'active') {
+                    $query->where(function ($q) use ($activeKeys) {
+                        foreach ($activeKeys as $k) {
+                            [$y, $s] = explode('-', $k, 2);
+                            $q->orWhere(fn ($qq) => $qq->where('year', (int) $y)->where('semester', $s));
+                        }
+                    });
+
+                    return $query;
+                }
+
+                if (str_contains($periode, '-')) {
                     [$y, $s] = explode('-', $periode, 2);
                     $query->where('year', (int) $y)->where('semester', $s);
                 }
@@ -59,9 +75,13 @@ class CourseController extends Controller
                 ->latest()
                 ->get();
 
+            $activeLabel = count($activeKeys) === 1
+                ? \App\Models\Semester::keyLabel($activeKeys[0])
+                : 'Semester aktif ('.count($activeKeys).')';
+
             return view('courses.index-dosen', compact(
                 'courses', 'filter', 'activeCount', 'completedCount',
-                'periods', 'periode', 'activePeriod'
+                'periods', 'periode', 'activeKeys', 'activeLabel'
             ));
         }
 

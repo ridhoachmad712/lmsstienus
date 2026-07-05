@@ -36,6 +36,7 @@ class DemoSeeder extends Seeder
         // Pengaturan dasar demo
         Setting::put('academic_year', (string) $year);
         Setting::put('semester', $semester);
+        Setting::put('active_periods', json_encode([$year.'-'.$semester])); // reset ke satu semester aktif
         Semester::firstOrCreate(['year' => $year, 'semester' => $semester]);
 
         // Branding demo — di-set ulang tiap reset agar tidak ikut terhapus migrate:fresh.

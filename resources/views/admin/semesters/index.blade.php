@@ -20,8 +20,14 @@
             </div>
             <div class="col">
                 <div class="text-secondary">Semester aktif saat ini</div>
-                <div class="h1 mb-0">{{ $semester }} {{ $academicYear }}</div>
-                <div class="form-hint mt-1">Dipakai sebagai nilai default saat membuat kelas baru. Ubah lewat tombol <strong>Aktifkan</strong> di daftar bawah.</div>
+                <div class="mt-1">
+                    @forelse ($activeKeys as $k)
+                        <span class="badge bg-green-lt fs-3 me-1"><i class="ti ti-circle-check-filled me-1"></i>{{ \App\Models\Semester::keyLabel($k) }}</span>
+                    @empty
+                        <span class="text-secondary">Belum ada.</span>
+                    @endforelse
+                </div>
+                <div class="form-hint mt-1">Boleh lebih dari satu — kelas dari semua semester aktif tampil bersama di Dashboard &amp; Kelas Saya. Periode terbaru dipakai sebagai default saat membuat kelas baru. Centang di daftar bawah lalu <strong>Simpan</strong>.</div>
             </div>
         </div>
     </div>
@@ -43,6 +49,7 @@
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
                 <thead><tr>
+                    <th class="w-1 text-center">Aktif</th>
                     <th>Periode</th>
                     <th class="text-center">Kelas</th>
                     <th class="text-center">Dosen</th>
@@ -51,8 +58,14 @@
                 </tr></thead>
                 <tbody>
                     @foreach ($periods as $p)
-                        @php $isActive = $p->key === $activePeriod; @endphp
+                        @php $isActive = in_array($p->key, $activeKeys, true); @endphp
                         <tr @class(['table-active' => $isActive])>
+                            <td class="text-center">
+                                {{-- Terhubung ke form Simpan via atribut form= (hindari form bersarang) --}}
+                                <input class="form-check-input m-0" type="checkbox" name="periods[]"
+                                       value="{{ $p->key }}" form="active-form" @checked($isActive)
+                                       aria-label="Aktifkan {{ $p->label }}">
+                            </td>
                             <td>
                                 <span class="fw-bold">{{ $p->label }}</span>
                                 @if ($isActive)
@@ -64,19 +77,6 @@
                             <td class="text-center">{{ $p->students_count }}</td>
                             <td>
                                 <div class="btn-list justify-content-end">
-                                    @if ($isActive)
-                                        <button class="btn btn-sm" disabled><i class="ti ti-check me-1"></i>Aktif</button>
-                                    @else
-                                        <form method="POST" action="{{ route('admin.semesters.updateActive') }}">
-                                            @csrf @method('PUT')
-                                            <input type="hidden" name="academic_year" value="{{ $p->year }}">
-                                            <input type="hidden" name="semester" value="{{ $p->semester }}">
-                                            <button class="btn btn-sm btn-outline-primary" title="Jadikan semester aktif" data-bs-toggle="tooltip">
-                                                <i class="ti ti-circle-check me-1"></i>Aktifkan
-                                            </button>
-                                        </form>
-                                    @endif
-
                                     @if ($p->id)
                                         <form method="POST" action="{{ route('admin.semesters.destroy', $p->id) }}"
                                               data-confirm="Hapus semester {{ $p->label }} dari daftar?@if ($p->courses_count > 0) (Akan ditolak karena masih ada {{ $p->courses_count }} kelas.)@endif">
@@ -94,16 +94,12 @@
             </table>
         </div>
 
-        <div class="card-footer bg-transparent">
-            <div class="alert alert-warning mb-0" role="alert">
-                <div class="d-flex">
-                    <div class="me-2"><i class="ti ti-info-circle fs-2"></i></div>
-                    <div>
-                        Semester hanya bisa dihapus jika <strong>tidak ada kelas</strong> di dalamnya. Jika masih ada kelas,
-                        pindahkan atau hapus kelasnya terlebih dahulu.
-                    </div>
-                </div>
-            </div>
+        <div class="card-footer d-flex align-items-center flex-wrap gap-2">
+            <div class="text-secondary small">Centang semester yang ingin diaktifkan (boleh lebih dari satu), lalu simpan. Semester hanya bisa dihapus bila tidak ada kelas di dalamnya.</div>
+            <form id="active-form" method="POST" action="{{ route('admin.semesters.updateActive') }}" class="ms-auto">
+                @csrf @method('PUT')
+                <button class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i>Simpan Semester Aktif</button>
+            </form>
         </div>
     @endif
 </div>

@@ -4,10 +4,7 @@
 @section('page-pretitle', $greeting . ',')
 @section('page-title', auth()->user()->name)
 
-@php($pp = explode('-', $periode))
-@php($periodeLabel = $periode === 'all' ? 'Semua semester' : (($pp[1] ?? '').' '.($pp[0] ?? '')))
-@php($ap = explode('-', $activePeriod))
-@php($activeLabel = ($ap[1] ?? '').' '.($ap[0] ?? ''))
+@php($periodeLabel = $periode === 'all' ? 'Semua semester' : ($periode === 'active' ? $activeLabel : \App\Models\Semester::keyLabel($periode)))
 
 @section('page-actions')
     <div class="btn-list">
@@ -16,12 +13,15 @@
                 <i class="ti ti-calendar me-1"></i>{{ $periodeLabel }}
             </button>
             <div class="dropdown-menu dropdown-menu-end">
-                <a class="dropdown-item {{ $periode === $activePeriod ? 'active' : '' }}" href="{{ route('dashboard.dosen', ['periode' => $activePeriod]) }}">
+                <a class="dropdown-item {{ $periode === 'active' ? 'active' : '' }}" href="{{ route('dashboard.dosen', ['periode' => 'active']) }}">
                     {{ $activeLabel }} <span class="badge bg-blue-lt ms-1">aktif</span>
                 </a>
+                <div class="dropdown-divider"></div>
                 @foreach ($periods as $p)
-                    @continue($p->key === $activePeriod)
-                    <a class="dropdown-item {{ $periode === $p->key ? 'active' : '' }}" href="{{ route('dashboard.dosen', ['periode' => $p->key]) }}">{{ $p->label }}</a>
+                    <a class="dropdown-item {{ $periode === $p->key ? 'active' : '' }}" href="{{ route('dashboard.dosen', ['periode' => $p->key]) }}">
+                        {{ $p->label }}
+                        @if (in_array($p->key, $activeKeys, true))<span class="badge bg-green-lt ms-1">aktif</span>@endif
+                    </a>
                 @endforeach
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item {{ $periode === 'all' ? 'active' : '' }}" href="{{ route('dashboard.dosen', ['periode' => 'all']) }}">Semua semester</a>
