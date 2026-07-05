@@ -114,6 +114,14 @@
                         </button>
                         <small class="form-hint d-block mt-1 text-center">Bisa diperbarui selama belum dinilai dosen.</small>
                     </form>
+
+                    @if ($submission)
+                        <form method="POST" action="{{ route('submissions.destroy', $submission) }}" class="mt-2"
+                              data-confirm="Hapus pengumpulan Anda? Jawaban dan berkas akan dihapus, dan Anda bisa mengumpulkan ulang.">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-outline-danger w-100"><i class="ti ti-trash me-1"></i>Hapus Pengumpulan</button>
+                        </form>
+                    @endif
                 @endif
             </div>
         </div>

@@ -86,6 +86,25 @@ class SubmissionController extends Controller
         return back()->with('status', 'Tugas berhasil dikumpulkan.');
     }
 
+    /** Mahasiswa menghapus/membatalkan pengumpulannya sendiri (selama belum dinilai). */
+    public function destroy(Request $request, Submission $submission): RedirectResponse
+    {
+        $submission->load('assignment.course');
+        $this->ensureCourseAccess($request, $submission->assignment->course);
+
+        $user = $request->user();
+        abort_unless($submission->user_id === $user->id, 403);
+        abort_if($submission->assignment->isQuiz(), 404);
+        abort_if($submission->isGraded(), 403, 'Tugas sudah dinilai, tidak bisa dihapus.');
+
+        if ($submission->file_path) {
+            Storage::disk('public')->delete($submission->file_path);
+        }
+        $submission->delete();
+
+        return back()->with('status', 'Pengumpulan dihapus. Anda dapat mengumpulkan ulang.');
+    }
+
     /** Dosen membuka kembali pengumpulan agar mahasiswa bisa kumpul ulang. */
     public function reopen(Request $request, Submission $submission): RedirectResponse
     {
