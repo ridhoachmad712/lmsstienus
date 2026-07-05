@@ -10,6 +10,7 @@
 @if (auth()->user()->isDosen())
     @php(array_splice($subnav, 1, 0, [['courses.students', 'ti-users', 'Mahasiswa', [$course], ['courses.students']]]))
     @php($subnav[] = ['analytics.index', 'ti-chart-histogram', 'Analitik', [$course], ['analytics.*']])
+    @php($subnav[] = ['reports.index', 'ti-report', 'Laporan', [$course], ['reports.*']])
 @endif
 
 <div class="mb-3">

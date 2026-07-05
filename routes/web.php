@@ -25,6 +25,7 @@ use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RubricController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SubmissionController;
@@ -249,6 +250,10 @@ Route::middleware('auth')->group(function () {
         // Analitik
         Route::get('/courses/{course}/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
         Route::get('/api/course/{course}/analytics', [AnalyticsController::class, 'data'])->name('analytics.data');
+
+        // Laporan perkuliahan (ringkasan + PDF)
+        Route::get('/courses/{course}/report', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/courses/{course}/report/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
 
         // Ekspor
         Route::get('/courses/{course}/export/nilai-excel', [ExportController::class, 'nilaiExcel'])->name('export.nilai.excel');
