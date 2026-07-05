@@ -6,6 +6,7 @@ use App\Exports\AbsensiExport;
 use App\Exports\NilaiExport;
 use App\Http\Controllers\Concerns\ChecksCourseAccess;
 use App\Models\Course;
+use App\Services\AttendanceService;
 use App\Services\GradeCalculator;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -28,6 +29,18 @@ class ExportController extends Controller
         $this->ensureCourseOwner($request, $course);
 
         return Excel::download(new AbsensiExport($course), 'absensi-'.Str::slug($course->name).'.xlsx');
+    }
+
+    public function absensiPdf(Request $request, Course $course)
+    {
+        $this->ensureCourseOwner($request, $course);
+
+        $pdf = Pdf::loadView('exports.absensi-pdf', [
+            'course' => $course->load('lecturer'),
+            'grid' => (new AttendanceService())->gridForCourse($course),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('absensi-'.Str::slug($course->name).'.pdf');
     }
 
     public function nilaiPdf(Request $request, Course $course)

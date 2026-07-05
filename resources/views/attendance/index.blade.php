@@ -4,7 +4,8 @@
 
 @section('hero-actions')
     @if ($isDosen)
-        <a href="{{ route('export.absensi.excel', $course) }}" class="btn btn-outline-green"><i class="ti ti-file-spreadsheet me-1"></i>Ekspor Excel</a>
+        <a href="{{ route('export.absensi.excel', $course) }}" class="btn btn-outline-green"><i class="ti ti-file-spreadsheet me-1"></i>Excel</a>
+        <a href="{{ route('export.absensi.pdf', $course) }}" class="btn btn-outline-red"><i class="ti ti-file-type-pdf me-1"></i>PDF</a>
     @endif
 @endsection
 

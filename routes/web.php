@@ -258,6 +258,7 @@ Route::middleware('auth')->group(function () {
         // Ekspor
         Route::get('/courses/{course}/export/nilai-excel', [ExportController::class, 'nilaiExcel'])->name('export.nilai.excel');
         Route::get('/courses/{course}/export/absensi-excel', [ExportController::class, 'absensiExcel'])->name('export.absensi.excel');
+        Route::get('/courses/{course}/export/absensi-pdf', [ExportController::class, 'absensiPdf'])->name('export.absensi.pdf');
         Route::get('/courses/{course}/export/nilai-pdf', [ExportController::class, 'nilaiPdf'])->name('export.nilai.pdf');
     });
 });
