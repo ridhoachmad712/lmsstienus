@@ -9,12 +9,35 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'course_id', 'meeting_id', 'grade_component_id', 'title', 'description',
-    'type', 'deadline', 'max_score', 'duration_minutes', 'published',
+    'type', 'submission_mode', 'deadline', 'max_score', 'duration_minutes', 'published',
 ])]
 class Assignment extends Model
 {
     public const TYPE_TUGAS = 'tugas';
     public const TYPE_KUIS = 'kuis';
+
+    /** Bentuk jawaban tugas. */
+    public const SUBMISSION_FILE = 'file';
+    public const SUBMISSION_TEXT = 'text';
+    public const SUBMISSION_BOTH = 'both';
+
+    public const SUBMISSION_MODES = [
+        self::SUBMISSION_FILE => 'Unggah berkas',
+        self::SUBMISSION_TEXT => 'Teks langsung',
+        self::SUBMISSION_BOTH => 'Teks + berkas',
+    ];
+
+    /** Boleh unggah berkas (mode berkas atau keduanya). */
+    public function allowsFile(): bool
+    {
+        return in_array($this->submission_mode, [self::SUBMISSION_FILE, self::SUBMISSION_BOTH], true);
+    }
+
+    /** Boleh menulis teks langsung (mode teks atau keduanya). */
+    public function allowsText(): bool
+    {
+        return in_array($this->submission_mode, [self::SUBMISSION_TEXT, self::SUBMISSION_BOTH], true);
+    }
 
     protected function casts(): array
     {

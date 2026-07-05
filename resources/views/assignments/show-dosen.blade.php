@@ -66,6 +66,7 @@
             <div class="card-body">
                 <div class="mb-2"><span class="text-secondary">Deadline</span><div class="fw-bold">{{ $assignment->deadline?->translatedFormat('d M Y H:i') ?? '—' }}</div></div>
                 <div class="mb-2"><span class="text-secondary">Nilai maksimal</span><div class="fw-bold">{{ $assignment->max_score }}</div></div>
+                <div class="mb-2"><span class="text-secondary">Bentuk jawaban</span><div class="fw-bold">{{ \App\Models\Assignment::SUBMISSION_MODES[$assignment->submission_mode] ?? 'Unggah berkas' }}</div></div>
                 @if ($assignment->description)
                     <hr><div class="text-secondary" style="white-space:pre-line">{{ $assignment->description }}</div>
                 @endif
@@ -196,6 +197,16 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    {{-- Jawaban mahasiswa: teks langsung dan/atau berkas --}}
+                    @if ($assignment->allowsText() && $sub->answer_text)
+                        <div class="mb-3">
+                            <label class="form-label">Jawaban teks mahasiswa</label>
+                            <div class="border rounded p-2" style="white-space:pre-line;max-height:240px;overflow:auto">{{ $sub->answer_text }}</div>
+                        </div>
+                    @endif
+                    @if ($sub->file_path)
+                        <div class="mb-3"><a href="{{ route('submissions.download', $sub) }}" class="btn btn-sm btn-outline-secondary"><i class="ti ti-download me-1"></i>Unduh berkas jawaban</a></div>
+                    @endif
                     @if ($assignment->rubricCriteria->isNotEmpty())
                         <label class="form-label">Rubrik (nilai dihitung otomatis)</label>
                         @foreach ($assignment->rubricCriteria as $crit)

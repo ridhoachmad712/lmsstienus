@@ -168,6 +168,17 @@ class AssignmentController extends Controller
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:600'],
         ];
 
-        return $request->validate($rules);
+        // Bentuk jawaban hanya untuk tugas (kuis punya alur soal sendiri).
+        if ($request->input('type') !== Assignment::TYPE_KUIS) {
+            $rules['submission_mode'] = ['required', Rule::in(array_keys(Assignment::SUBMISSION_MODES))];
+        }
+
+        $data = $request->validate($rules);
+
+        if (($data['type'] ?? null) === Assignment::TYPE_KUIS) {
+            $data['submission_mode'] = Assignment::SUBMISSION_FILE;
+        }
+
+        return $data;
     }
 }

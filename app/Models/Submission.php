@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'assignment_id', 'user_id', 'file_path', 'score',
+    'assignment_id', 'user_id', 'file_path', 'answer_text', 'score',
     'feedback', 'status', 'started_at', 'submitted_at',
 ])]
 class Submission extends Model

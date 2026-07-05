@@ -40,49 +40,79 @@
         <div class="card">
             <div class="card-header"><h3 class="card-title">Pengumpulan Anda</h3></div>
             <div class="card-body">
+                @php($mode = $assignment->submission_mode)
                 @if ($submission)
-                    <div class="mb-2">
+                    <div class="mb-3">
                         <span class="badge bg-{{ $submission->isLate() ? 'red' : 'green' }}-lt">{{ $submission->isLate() ? 'Terlambat' : 'Tepat waktu' }}</span>
                         <span class="text-secondary small ms-1">{{ $submission->submitted_at?->translatedFormat('d M Y H:i') }}</span>
                     </div>
+                @endif
+
+                @if ($submission && $submission->isGraded())
+                    {{-- Sudah dinilai: tampilkan jawaban terkirim (baca saja) + nilai --}}
+                    @if ($assignment->allowsText() && $submission->answer_text)
+                        <div class="mb-3"><span class="text-secondary">Jawaban teks Anda</span>
+                            <div class="border rounded p-2 mt-1" style="white-space:pre-line">{{ $submission->answer_text }}</div>
+                        </div>
+                    @endif
                     @if ($submission->file_path)
                         <a href="{{ route('submissions.download', $submission) }}" class="btn btn-sm mb-3"><i class="ti ti-download me-1"></i>Unduh berkas saya</a>
                     @endif
                     <hr>
-                    @if ($submission->isGraded())
-                        <div class="mb-2"><span class="text-secondary">Nilai</span>
-                            <div class="h1 mb-0">{{ rtrim(rtrim($submission->score, '0'), '.') }} <small class="text-secondary fs-4">/ {{ $assignment->max_score }}</small></div>
+                    <div class="mb-2"><span class="text-secondary">Nilai</span>
+                        <div class="h1 mb-0">{{ rtrim(rtrim($submission->score, '0'), '.') }} <small class="text-secondary fs-4">/ {{ $assignment->max_score }}</small></div>
+                    </div>
+                    @if ($submission->feedback)
+                        <div class="mt-2"><span class="text-secondary">Feedback dosen</span>
+                            <div class="alert alert-info mt-1" style="white-space:pre-line">{{ $submission->feedback }}</div>
                         </div>
-                        @if ($submission->feedback)
-                            <div class="mt-2"><span class="text-secondary">Feedback dosen</span>
-                                <div class="alert alert-info mt-1" style="white-space:pre-line">{{ $submission->feedback }}</div>
-                            </div>
-                        @endif
-                    @else
-                        <div class="text-secondary mb-3">Menunggu penilaian dosen.</div>
-                        {{-- Boleh ganti berkas selama belum dinilai --}}
-                        <form method="POST" action="{{ route('submissions.store', $assignment) }}" enctype="multipart/form-data">
-                            @csrf
-                            <label class="form-label">Ganti berkas</label>
-                            <div class="input-group">
-                                <input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx,.zip,.ppt,.pptx,.xls,.xlsx" required>
-                                <button class="btn btn-primary"><i class="ti ti-refresh me-1"></i>Ganti</button>
-                            </div>
-                            <small class="form-hint">Bisa diganti selama belum dinilai dosen.</small>
-                        </form>
                     @endif
                 @else
-                    @if ($assignment->isPastDeadline())
+                    {{-- Belum dinilai (baru / sudah kumpul): form sesuai bentuk jawaban --}}
+                    @if (! $submission && $assignment->isPastDeadline())
                         <div class="alert alert-warning mb-3">Deadline sudah lewat — pengumpulan akan ditandai <strong>terlambat</strong>.</div>
+                    @elseif ($submission)
+                        <div class="text-secondary mb-3">Menunggu penilaian dosen. Anda masih bisa memperbarui jawaban.</div>
                     @endif
-                    <form method="POST" action="{{ route('submissions.store', $assignment) }}" enctype="multipart/form-data">
+
+                    <form method="POST" action="{{ route('submissions.store', $assignment) }}" enctype="multipart/form-data" data-warn-unsaved>
                         @csrf
-                        <div class="mb-3">
-                            <label class="form-label required">Unggah berkas</label>
-                            <input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx,.zip,.ppt,.pptx,.xls,.xlsx" required>
-                            <small class="form-hint">PDF/Word/PPT/Excel/ZIP, maks 20 MB. Bisa diganti selama belum dinilai.</small>
-                        </div>
-                        <button class="btn btn-primary w-100"><i class="ti ti-upload me-1"></i>Kumpulkan Tugas</button>
+
+                        @if ($assignment->allowsText())
+                            <div class="mb-3">
+                                <label class="form-label @if ($mode === 'text') required @endif">Jawaban Anda</label>
+                                <textarea name="answer_text" rows="8"
+                                          class="form-control @error('answer_text') is-invalid @enderror"
+                                          placeholder="Tulis jawaban Anda di sini…"
+                                          @if ($mode === 'text') required @endif>{{ old('answer_text', $submission->answer_text ?? '') }}</textarea>
+                                @error('answer_text')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                        @endif
+
+                        @if ($assignment->allowsFile())
+                            <div class="mb-3">
+                                <label class="form-label @if ($mode === 'file' && ! $submission) required @endif">
+                                    {{ $submission && $submission->file_path ? 'Ganti berkas' : 'Unggah berkas' }}
+                                </label>
+                                @if ($submission && $submission->file_path)
+                                    <div class="mb-1"><a href="{{ route('submissions.download', $submission) }}" class="btn btn-sm btn-outline-secondary"><i class="ti ti-download me-1"></i>Berkas saat ini</a></div>
+                                @endif
+                                <input type="file" name="file" accept=".pdf,.doc,.docx,.zip,.ppt,.pptx,.xls,.xlsx"
+                                       class="form-control @error('file') is-invalid @enderror"
+                                       @if ($mode === 'file' && ! $submission) required @endif>
+                                @error('file')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                <small class="form-hint">PDF/Word/PPT/Excel/ZIP, maks 20 MB.@if ($submission) Kosongkan bila tidak ingin mengganti berkas.@endif</small>
+                            </div>
+                        @endif
+
+                        @if ($mode === 'both')
+                            <small class="form-hint mb-2 d-block">Isi jawaban teks atau unggah berkas — minimal salah satu.</small>
+                        @endif
+
+                        <button class="btn btn-primary w-100">
+                            <i class="ti ti-{{ $submission ? 'refresh' : 'upload' }} me-1"></i>{{ $submission ? 'Perbarui Jawaban' : 'Kumpulkan Tugas' }}
+                        </button>
+                        <small class="form-hint d-block mt-1 text-center">Bisa diperbarui selama belum dinilai dosen.</small>
                     </form>
                 @endif
             </div>

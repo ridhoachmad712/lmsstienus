@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SubmissionController extends Controller
@@ -27,34 +28,60 @@ class SubmissionController extends Controller
         abort_if($assignment->isQuiz(), 404);
 
         $existing = $assignment->submissionFor($user);
-        // Boleh ganti berkas selama belum dinilai. Kalau sudah dinilai, tidak boleh.
+        // Boleh ganti selama belum dinilai. Kalau sudah dinilai, tidak boleh.
         abort_if($existing && $existing->isGraded(), 403, 'Tugas sudah dinilai, tidak bisa diubah.');
 
-        $request->validate([
-            'file' => ['required', 'file', 'max:20480', 'mimes:pdf,doc,docx,zip,ppt,pptx,xls,xlsx'],
-        ], [
-            'file.mimes' => 'Berkas harus PDF, Word, PowerPoint, Excel, atau ZIP.',
-            'file.max' => 'Ukuran maksimal 20 MB.',
-        ]);
-
-        $path = $request->file('file')->store('submissions/'.$assignment->id, 'public');
-        $status = $assignment->isPastDeadline() ? 'late' : 'ontime';
-
-        if ($existing) {
-            if ($existing->file_path) {
-                Storage::disk('public')->delete($existing->file_path);
-            }
-            $existing->update(['file_path' => $path, 'status' => $status, 'submitted_at' => now()]);
-
-            return back()->with('status', 'Berkas tugas berhasil diganti.');
+        // Aturan validasi mengikuti bentuk jawaban yang diatur dosen.
+        $rules = [];
+        if ($assignment->allowsFile()) {
+            $rules['file'] = [
+                $assignment->submission_mode === Assignment::SUBMISSION_FILE ? 'required' : 'nullable',
+                'file', 'max:20480', 'mimes:pdf,doc,docx,zip,ppt,pptx,xls,xlsx',
+            ];
+        }
+        if ($assignment->allowsText()) {
+            $rules['answer_text'] = [
+                $assignment->submission_mode === Assignment::SUBMISSION_TEXT ? 'required' : 'nullable',
+                'string', 'max:20000',
+            ];
         }
 
-        $assignment->submissions()->create([
-            'user_id' => $user->id,
-            'file_path' => $path,
-            'status' => $status,
-            'submitted_at' => now(),
+        $request->validate($rules, [
+            'file.mimes' => 'Berkas harus PDF, Word, PowerPoint, Excel, atau ZIP.',
+            'file.max' => 'Ukuran maksimal 20 MB.',
+            'answer_text.required' => 'Jawaban tidak boleh kosong.',
         ]);
+
+        // Mode "keduanya": minimal salah satu (teks atau berkas) harus diisi.
+        if ($assignment->submission_mode === Assignment::SUBMISSION_BOTH
+            && ! $request->filled('answer_text') && ! $request->hasFile('file')) {
+            throw ValidationException::withMessages([
+                'answer_text' => 'Isi jawaban teks atau unggah berkas (minimal salah satu).',
+            ]);
+        }
+
+        $status = $assignment->isPastDeadline() ? 'late' : 'ontime';
+        $payload = ['status' => $status, 'submitted_at' => now()];
+
+        if ($assignment->allowsText()) {
+            $payload['answer_text'] = $request->input('answer_text');
+        }
+
+        if ($assignment->allowsFile() && $request->hasFile('file')) {
+            if ($existing && $existing->file_path) {
+                Storage::disk('public')->delete($existing->file_path);
+            }
+            $payload['file_path'] = $request->file('file')->store('submissions/'.$assignment->id, 'public');
+        }
+
+        if ($existing) {
+            $existing->update($payload);
+
+            return back()->with('status', 'Pengumpulan berhasil diperbarui.');
+        }
+
+        $payload['user_id'] = $user->id;
+        $assignment->submissions()->create($payload);
 
         return back()->with('status', 'Tugas berhasil dikumpulkan.');
     }

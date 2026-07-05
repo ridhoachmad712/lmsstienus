@@ -26,6 +26,19 @@
     <textarea name="description" class="form-control" rows="4">{{ old('description', $assignment->description ?? '') }}</textarea>
 </div>
 
+@if ($type !== 'kuis')
+    <div class="mb-3">
+        <label class="form-label required">Bentuk Jawaban</label>
+        <select name="submission_mode" class="form-select @error('submission_mode') is-invalid @enderror">
+            @foreach (\App\Models\Assignment::SUBMISSION_MODES as $key => $label)
+                <option value="{{ $key }}" @selected(old('submission_mode', $assignment->submission_mode ?? 'file') === $key)>{{ $label }}</option>
+            @endforeach
+        </select>
+        @error('submission_mode')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        <small class="form-hint">Cara mahasiswa mengumpulkan: unggah berkas, mengetik teks langsung, atau keduanya.</small>
+    </div>
+@endif
+
 <div class="row">
     <div class="col-md-6 mb-3">
         <label class="form-label">Deadline</label>
