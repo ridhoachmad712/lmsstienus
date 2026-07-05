@@ -30,9 +30,23 @@ class ReportController extends Controller
     {
         $this->ensureCourseOwner($request, $course);
 
-        $pdf = Pdf::loadView('reports.pdf', $this->buildData($course))->setPaper('a4', 'portrait');
+        $data = $this->buildData($course);
 
-        return $pdf->download('laporan-perkuliahan-'.Str::slug($course->name).'.pdf');
+        $pdf = Pdf::loadView('reports.pdf', $data)->setPaper('a4', 'landscape');
+
+        // Nomor halaman + tanggal cetak via canvas (elemen position:fixed memicu
+        // salah-paginasi di DomPDF, jadi ditulis langsung ke tiap halaman).
+        $dompdf = $pdf->getDomPDF();
+        $dompdf->render();
+        $canvas = $dompdf->getCanvas();
+        $font = $dompdf->getFontMetrics()->getFont('DejaVu Sans', 'normal');
+        $canvas->page_text($canvas->get_width() - 130, 575, 'Halaman {PAGE_NUM} / {PAGE_COUNT}', $font, 8, [0.6, 0.6, 0.6]);
+        $canvas->page_text(30, 575, 'Dicetak '.$data['generatedAt']->translatedFormat('d M Y, H:i').' WITA', $font, 8, [0.6, 0.6, 0.6]);
+
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="laporan-perkuliahan-'.Str::slug($course->name).'.pdf"',
+        ]);
     }
 
     /** Rangkum seluruh data laporan sebuah kelas (dipakai halaman & PDF). */
@@ -88,6 +102,20 @@ class ReportController extends Controller
             return true;
         })->count();
 
+        // Mahasiswa berisiko: nilai akhir < 60 atau kehadiran < 75%.
+        $risk = $grades['rows']->map(function ($r) use ($grid) {
+            $pct = $grid['summary'][$r['student']->id]['percent'] ?? null;
+
+            return [
+                'student' => $r['student'],
+                'final' => $r['final'],
+                'letter' => $r['letter'],
+                'percent' => $pct,
+                'low_grade' => $r['final'] < 60,
+                'low_att' => ! is_null($pct) && $pct < 75,
+            ];
+        })->filter(fn ($x) => $x['low_grade'] || $x['low_att'])->values();
+
         $completeness = [
             'meetings_total' => $meetings->count(),
             'meetings_held' => $meetings->filter(fn ($m) => $m->date && $m->date->lessThanOrEqualTo(now()))->count(),
@@ -115,6 +143,7 @@ class ReportController extends Controller
             'attAvg' => $attAvg,
             'attBelow75' => $attBelow75,
             'lulus' => $lulus,
+            'risk' => $risk,
             'completeness' => $completeness,
             'generatedAt' => now(),
         ];
