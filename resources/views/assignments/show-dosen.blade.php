@@ -130,7 +130,21 @@
                             <td class="text-end">
                                 <div class="btn-list justify-content-end">
                                     @if ($sub->file_path)
-                                        <a href="{{ route('submissions.preview', $sub) }}" target="_blank" rel="noopener" class="btn btn-sm" title="Lihat berkas" data-bs-toggle="tooltip"><i class="ti ti-eye"></i></a>
+                                        @php($sext = strtolower(pathinfo($sub->file_path, PATHINFO_EXTENSION)))
+                                        @php($spreview = $sext === 'pdf'
+                                            ? route('submissions.preview', $sub)
+                                            : (in_array($sext, ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'])
+                                                ? 'https://view.officeapps.live.com/op/embed.aspx?src='.urlencode(asset('storage/'.$sub->file_path))
+                                                : null))
+                                        @if ($spreview)
+                                            <button type="button" class="btn btn-sm" title="Lihat berkas"
+                                                    data-bs-toggle="modal" data-bs-target="#modal-preview"
+                                                    data-preview-url="{{ $spreview }}"
+                                                    data-download-url="{{ route('submissions.download', $sub) }}"
+                                                    data-preview-title="{{ $sub->student->name }}"><i class="ti ti-eye"></i></button>
+                                        @else
+                                            <a href="{{ route('submissions.download', $sub) }}" class="btn btn-sm" title="Unduh berkas"><i class="ti ti-download"></i></a>
+                                        @endif
                                     @endif
                                     <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#grade-{{ $sub->id }}">Nilai</button>
                                     <form method="POST" action="{{ route('submissions.reopen', $sub) }}" data-confirm="Buka kembali pengumpulan {{ $sub->student->name }}? Berkas saat ini akan dihapus dan mahasiswa bisa mengumpulkan ulang.">
@@ -221,6 +235,22 @@
     </div>
 @endif
 
+{{-- Modal preview berkas jawaban (PDF inline / Office via viewer) --}}
+<div class="modal modal-blur fade" id="modal-preview" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-truncate" id="preview-title">Preview Berkas</h5>
+                <a href="#" id="preview-download" class="btn btn-sm ms-auto"><i class="ti ti-download me-1"></i>Unduh</a>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body p-0" style="height:80vh">
+                <iframe id="preview-frame" src="" title="Preview berkas jawaban" style="width:100%;height:100%;border:0"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Modal nilai per submission --}}
 @foreach ($submissions as $sub)
     <div class="modal modal-blur fade" id="grade-{{ $sub->id }}" tabindex="-1">
@@ -240,7 +270,19 @@
                         </div>
                     @endif
                     @if ($sub->file_path)
-                        <div class="mb-3"><a href="{{ route('submissions.preview', $sub) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"><i class="ti ti-eye me-1"></i>Lihat berkas jawaban</a></div>
+                        @php($gext = strtolower(pathinfo($sub->file_path, PATHINFO_EXTENSION)))
+                        @php($gpreview = $gext === 'pdf'
+                            ? route('submissions.preview', $sub)
+                            : (in_array($gext, ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'])
+                                ? 'https://view.officeapps.live.com/op/embed.aspx?src='.urlencode(asset('storage/'.$sub->file_path))
+                                : null))
+                        <div class="mb-3">
+                            @if ($gpreview)
+                                <a href="{{ $gpreview }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"><i class="ti ti-eye me-1"></i>Lihat berkas jawaban</a>
+                            @else
+                                <a href="{{ route('submissions.download', $sub) }}" class="btn btn-sm btn-outline-secondary"><i class="ti ti-download me-1"></i>Unduh berkas jawaban</a>
+                            @endif
+                        </div>
                     @endif
                     @if ($assignment->rubricCriteria->isNotEmpty())
                         <label class="form-label">Rubrik (nilai dihitung otomatis)</label>
@@ -298,6 +340,23 @@
             });
         });
     });
+})();
+
+// Preview berkas jawaban: isi iframe modal dari tombol yang diklik.
+(function () {
+    var modal = document.getElementById('modal-preview');
+    if (!modal) return;
+    var frame = document.getElementById('preview-frame');
+    var titleEl = document.getElementById('preview-title');
+    var dl = document.getElementById('preview-download');
+    modal.addEventListener('show.bs.modal', function (e) {
+        var btn = e.relatedTarget;
+        if (!btn) return;
+        frame.src = btn.getAttribute('data-preview-url') || '';
+        titleEl.textContent = btn.getAttribute('data-preview-title') || 'Preview Berkas';
+        if (dl) dl.setAttribute('href', btn.getAttribute('data-download-url') || '#');
+    });
+    modal.addEventListener('hidden.bs.modal', function () { frame.src = ''; });
 })();
 
 // Rubrik: hitung total poin secara langsung di modal nilai.
