@@ -135,6 +135,38 @@
     </div>
 </div>
 
+{{-- ===== Rekap Kehadiran per Mahasiswa ===== --}}
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title"><i class="ti ti-user-check me-1"></i>Rekap Kehadiran per Mahasiswa</h3>
+        <div class="ms-auto text-secondary small">Rata-rata {{ is_null($attAvg) ? '—' : $attAvg.'%' }} · {{ $attBelow75 }} mhs &lt;75%</div>
+    </div>
+    @if ($grid['students']->isEmpty())
+        <div class="card-body"><x-empty-state icon="ti-users" title="Belum ada mahasiswa" /></div>
+    @else
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-sortable">
+                <thead><tr><th class="w-1">#</th><th>Mahasiswa</th><th class="text-center">Hadir</th><th class="text-center">%</th></tr></thead>
+                <tbody>
+                    @foreach ($grid['students'] as $i => $s)
+                        @php($sum = $grid['summary'][$s->id])
+                        @php($low = ! is_null($sum['percent']) && $sum['percent'] < 75)
+                        <tr>
+                            <td>{{ $i + 1 }}</td>
+                            <td>{{ $s->name }}<div class="small text-secondary">{{ $s->nim_nip }}</div></td>
+                            <td class="text-center">{{ $sum['hadir'] }}/{{ $sum['sessions'] }}</td>
+                            <td class="text-center">
+                                @if ($low)<span class="badge bg-red-lt">{{ is_null($sum['percent']) ? '—' : $sum['percent'].'%' }}</span>
+                                @else {{ is_null($sum['percent']) ? '—' : $sum['percent'].'%' }}@endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+</div>
+
 {{-- ===== Daftar Nilai Akhir (DPNA) ===== --}}
 <div class="card mt-3">
     <div class="card-header">

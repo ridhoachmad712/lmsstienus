@@ -12,6 +12,7 @@
         th, td { border: 1px solid #ccc; padding: 3px 6px; vertical-align: top; }
         th { background: #206bc4; color: #fff; }
         td.c, th.c { text-align: center; }
+        .low { color: #c00; font-weight: bold; }
         .idn td { border: none; padding: 1px 4px; }
         .idn td.k { color: #666; width: 26%; }
         .nb { border: none; }
@@ -62,6 +63,27 @@
             @endforelse
         </tbody>
     </table>
+
+    <h2>Rekap Kehadiran per Mahasiswa</h2>
+    <table>
+        <thead><tr><th class="c" style="width:5%">No</th><th style="width:16%">NIM</th><th>Nama</th><th class="c" style="width:12%">Hadir</th><th class="c" style="width:10%">%</th></tr></thead>
+        <tbody>
+            @forelse ($grid['students'] as $i => $s)
+                @php($sum = $grid['summary'][$s->id])
+                @php($low = ! is_null($sum['percent']) && $sum['percent'] < 75)
+                <tr>
+                    <td class="c">{{ $i + 1 }}</td>
+                    <td>{{ $s->nim_nip }}</td>
+                    <td>{{ $s->name }}</td>
+                    <td class="c">{{ $sum['hadir'] }}/{{ $sum['sessions'] }}</td>
+                    <td class="c {{ $low ? 'low' : '' }}">{{ is_null($sum['percent']) ? '-' : $sum['percent'].'%' }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="5" class="c muted">Belum ada mahasiswa.</td></tr>
+            @endforelse
+        </tbody>
+    </table>
+    <div class="muted" style="margin-top:4px">Rata-rata kehadiran {{ is_null($attAvg) ? '—' : $attAvg.'%' }} · {{ $attBelow75 }} mahasiswa &lt; 75%. Rincian H/I/S/A per pertemuan tersedia pada Rekap Kehadiran (PDF terpisah).</div>
 
     <h2>Distribusi Nilai</h2>
     <table>
