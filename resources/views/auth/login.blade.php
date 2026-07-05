@@ -76,6 +76,9 @@
                 </button>
             </div>
         </div>
+        <div class="card-footer text-center text-secondary">
+            Mahasiswa baru punya kode kelas? <a href="{{ route('register') }}">Daftar di sini</a>
+        </div>
     </form>
 @endif
 @endsection
