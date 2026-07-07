@@ -46,7 +46,7 @@ Route::middleware('guest')->group(function () {
 
     // Akses 1-klik mode demo (controller menolak dengan 404 jika DEMO_MODE non-aktif)
     Route::post('/demo/{role}', [LoginController::class, 'demo'])
-        ->whereIn('role', ['admin', 'dosen', 'mahasiswa'])
+        ->whereIn('role', ['admin', 'kaprodi', 'dosen', 'mahasiswa'])
         ->middleware('throttle:30,1')
         ->name('demo.login');
 });
@@ -231,9 +231,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/courses/{course}/export/nilai-pdf', [ExportController::class, 'nilaiPdf'])->name('export.nilai.pdf');
     });
 
-    // --- Beranda admin (admin & kaprodi) ---
+    // --- Beranda & mahasiswa (admin & kaprodi; kaprodi ter-scope prodi di controller) ---
     Route::middleware('role:admin,kaprodi')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
+        Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
+        Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
+        Route::post('/students/import', [AdminStudentController::class, 'import'])->name('students.import');
+        Route::post('/students/bulk/reset-password', [AdminStudentController::class, 'bulkResetPassword'])->name('students.bulkReset');
+        Route::post('/students/bulk/destroy', [AdminStudentController::class, 'bulkDestroy'])->name('students.bulkDestroy');
+        Route::get('/students/{student}/edit', [AdminStudentController::class, 'edit'])->name('students.edit');
+        Route::put('/students/{student}', [AdminStudentController::class, 'update'])->name('students.update');
+        Route::post('/students/{student}/reset-password', [AdminStudentController::class, 'resetPassword'])->name('students.resetPassword');
+        Route::delete('/students/{student}', [AdminStudentController::class, 'destroy'])->name('students.destroy');
     });
 
     // --- Pengelolaan kampus (admin saja) ---
@@ -249,17 +260,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/semesters', [SemesterController::class, 'store'])->name('semesters.store');
         Route::put('/semesters/active', [SemesterController::class, 'updateActive'])->name('semesters.updateActive');
         Route::delete('/semesters/{semester}', [SemesterController::class, 'destroy'])->name('semesters.destroy');
-
-        Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
-        Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
-        Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
-        Route::post('/students/import', [AdminStudentController::class, 'import'])->name('students.import');
-        Route::post('/students/bulk/reset-password', [AdminStudentController::class, 'bulkResetPassword'])->name('students.bulkReset');
-        Route::post('/students/bulk/destroy', [AdminStudentController::class, 'bulkDestroy'])->name('students.bulkDestroy');
-        Route::get('/students/{student}/edit', [AdminStudentController::class, 'edit'])->name('students.edit');
-        Route::put('/students/{student}', [AdminStudentController::class, 'update'])->name('students.update');
-        Route::post('/students/{student}/reset-password', [AdminStudentController::class, 'resetPassword'])->name('students.resetPassword');
-        Route::delete('/students/{student}', [AdminStudentController::class, 'destroy'])->name('students.destroy');
 
         Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
         Route::post('/backups', [BackupController::class, 'run'])->name('backups.run');

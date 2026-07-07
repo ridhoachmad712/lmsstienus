@@ -12,6 +12,7 @@ return [
 
     // Email akun demo yang dipakai untuk akses 1-klik.
     'admin_email' => env('DEMO_ADMIN_EMAIL', 'admin@demo.test'),
+    'kaprodi_email' => env('DEMO_KAPRODI_EMAIL', 'kaprodi@demo.test'),
     'dosen_email' => env('DEMO_DOSEN_EMAIL', 'dosen@demo.test'),
     'mahasiswa_email' => env('DEMO_MAHASISWA_EMAIL', 'mahasiswa@demo.test'),
 

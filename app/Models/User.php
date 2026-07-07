@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'nim_nip', 'phone', 'avatar', 'email_notifications'])]
+#[Fillable(['name', 'email', 'password', 'role', 'prodi_id', 'nim_nip', 'phone', 'avatar', 'email_notifications'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -34,6 +34,11 @@ class User extends Authenticatable
             'password' => 'hashed',
             'email_notifications' => 'boolean',
         ];
+    }
+
+    public function prodi(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Prodi::class);
     }
 
     // --- Role helpers ---

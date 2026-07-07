@@ -30,19 +30,23 @@
     </div>
 </div>
 
-@unless (auth()->user()->isAdmin())
-    <div class="alert alert-info">Fitur pengelolaan lingkup program studi akan aktif pada tahap berikutnya.</div>
-@else
+@php($isAdmin = auth()->user()->isAdmin())
+@unless ($isAdmin)
+    <div class="alert alert-info">Anda login sebagai <strong>Kaprodi{{ $prodi ? ' '.$prodi->name : '' }}</strong>. Pengelolaan terbatas pada lingkup program studi Anda.</div>
+@endunless
+
 <div class="row row-cards">
-    @php($menu = [
-        ['admin.students.index', 'ti-users', 'Mahasiswa', 'Kelola & impor akun mahasiswa'],
-        ['admin.semesters.index', 'ti-calendar-stats', 'Kelola Semester', 'Atur semester aktif'],
-        ['admin.settings.edit', 'ti-palette', 'Tampilan', 'Branding & tema aplikasi'],
-        ['admin.gradeScale.edit', 'ti-award', 'Skala Nilai', 'Ambang konversi huruf'],
-        ['admin.ai.edit', 'ti-sparkles', 'Integrasi AI', 'Kunci & model AI'],
-        ['admin.activity.index', 'ti-history', 'Riwayat Aktivitas', 'Log tindakan pengguna'],
-        ['admin.backups.index', 'ti-database', 'Backup', 'Cadangan basis data'],
-    ])
+    @php($menu = [['admin.students.index', 'ti-users', 'Mahasiswa', 'Kelola & impor akun mahasiswa']])
+    @if ($isAdmin)
+        @php($menu = array_merge($menu, [
+            ['admin.semesters.index', 'ti-calendar-stats', 'Kelola Semester', 'Atur semester aktif'],
+            ['admin.settings.edit', 'ti-palette', 'Tampilan', 'Branding & tema aplikasi'],
+            ['admin.gradeScale.edit', 'ti-award', 'Skala Nilai', 'Ambang konversi huruf'],
+            ['admin.ai.edit', 'ti-sparkles', 'Integrasi AI', 'Kunci & model AI'],
+            ['admin.activity.index', 'ti-history', 'Riwayat Aktivitas', 'Log tindakan pengguna'],
+            ['admin.backups.index', 'ti-database', 'Backup', 'Cadangan basis data'],
+        ]))
+    @endif
     @foreach ($menu as [$route, $icon, $title, $desc])
         <div class="col-md-6 col-lg-4">
             <a href="{{ route($route) }}" class="card card-link card-sm">
@@ -57,5 +61,4 @@
         </div>
     @endforeach
 </div>
-@endunless
 @endsection

@@ -16,6 +16,10 @@ class DatabaseSeeder extends Seeder
     {
         $faker = \Faker\Factory::create('id_ID');
 
+        // --- Program Studi ---
+        $prodiAk = \App\Models\Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $prodiMn = \App\Models\Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+
         // --- Admin kampus ---
         User::create([
             'name' => 'Administrator',
@@ -25,17 +29,36 @@ class DatabaseSeeder extends Seeder
             'nim_nip' => '000000000000000000',
         ]);
 
+        // --- Ketua Prodi (per prodi) ---
+        User::create([
+            'name' => 'Kaprodi Akuntansi',
+            'email' => 'kaprodi.ak@test.com',
+            'password' => Hash::make('password'),
+            'role' => User::ROLE_KAPRODI,
+            'prodi_id' => $prodiAk->id,
+            'nim_nip' => '100000000000000001',
+        ]);
+        User::create([
+            'name' => 'Kaprodi Manajemen',
+            'email' => 'kaprodi.mn@test.com',
+            'password' => Hash::make('password'),
+            'role' => User::ROLE_KAPRODI,
+            'prodi_id' => $prodiMn->id,
+            'nim_nip' => '100000000000000002',
+        ]);
+
         // --- Dosen ---
         $dosen = User::create([
             'name' => 'Dr. Andi Wijaya, S.E., M.M.',
             'email' => 'dosen@test.com',
             'password' => Hash::make('password'),
             'role' => User::ROLE_DOSEN,
+            'prodi_id' => $prodiMn->id,
             'nim_nip' => '198501012010011001',
             'phone' => '081234567890',
         ]);
 
-        // --- 30 Mahasiswa ---
+        // --- 30 Mahasiswa (dibagi rata ke 2 prodi) ---
         $students = collect();
         for ($i = 1; $i <= 30; $i++) {
             $nim = '210901' . str_pad((string) $i, 3, '0', STR_PAD_LEFT);
@@ -44,6 +67,7 @@ class DatabaseSeeder extends Seeder
                 'email' => sprintf('mhs%03d@test.com', $i),
                 'password' => Hash::make('password'),
                 'role' => User::ROLE_MAHASISWA,
+                'prodi_id' => $i % 2 === 0 ? $prodiMn->id : $prodiAk->id,
                 'nim_nip' => $nim,
                 'phone' => $faker->phoneNumber(),
             ]));
@@ -58,6 +82,7 @@ class DatabaseSeeder extends Seeder
         foreach ($courseData as $idx => $cd) {
             $course = Course::create([
                 'user_id' => $dosen->id,
+                'prodi_id' => $prodiMn->id,
                 'name' => $cd['name'],
                 'code' => $cd['code'],
                 'join_code' => Course::generateJoinCode(),

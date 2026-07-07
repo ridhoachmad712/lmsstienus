@@ -32,6 +32,16 @@
                         <input type="text" name="phone" class="form-control" value="{{ old('phone', $student->phone) }}">
                     </div>
                 </div>
+                @if (auth()->user()->isAdmin())
+                    <div class="mb-3"><label class="form-label">Program Studi</label>
+                        <select name="prodi_id" class="form-select">
+                            <option value="">— Tidak ditentukan —</option>
+                            @foreach ($prodis as $p)
+                                <option value="{{ $p->id }}" @selected(old('prodi_id', $student->prodi_id) == $p->id)>{{ $p->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
                 <div class="text-secondary small">Untuk mengubah kata sandi, gunakan tombol <i class="ti ti-key"></i> Reset di daftar mahasiswa.</div>
             </div>
             <div class="card-footer text-end">

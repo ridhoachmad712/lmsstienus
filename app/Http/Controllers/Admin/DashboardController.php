@@ -6,22 +6,33 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Semester;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    /** Beranda admin: ringkasan kampus + pintasan pengelolaan. */
-    public function index(): View
+    /** Beranda admin/kaprodi: ringkasan kampus (kaprodi → lingkup prodinya). */
+    public function index(Request $request): View
     {
+        $user = $request->user();
+        $prodiId = $user->isKaprodi() ? $user->prodi_id : null;
+
+        $countUsers = fn (string $role) => User::where('role', $role)
+            ->when($prodiId, fn ($q) => $q->where('prodi_id', $prodiId))
+            ->count();
+
+        $courseQuery = fn () => Course::query()->when($prodiId, fn ($q) => $q->where('prodi_id', $prodiId));
+
         $stats = [
-            'dosen' => User::where('role', User::ROLE_DOSEN)->count(),
-            'mahasiswa' => User::where('role', User::ROLE_MAHASISWA)->count(),
-            'courses' => Course::count(),
-            'active_courses' => Course::where('status', Course::STATUS_ACTIVE)->count(),
+            'dosen' => $countUsers(User::ROLE_DOSEN),
+            'mahasiswa' => $countUsers(User::ROLE_MAHASISWA),
+            'courses' => $courseQuery()->count(),
+            'active_courses' => $courseQuery()->where('status', Course::STATUS_ACTIVE)->count(),
         ];
 
         $activeKeys = Semester::activeKeys();
+        $prodi = $user->prodi;
 
-        return view('admin.dashboard', compact('stats', 'activeKeys'));
+        return view('admin.dashboard', compact('stats', 'activeKeys', 'prodi'));
     }
 }

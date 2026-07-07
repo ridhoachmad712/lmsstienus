@@ -44,6 +44,7 @@ class LoginController extends Controller
 
         $email = match ($role) {
             User::ROLE_ADMIN => config('demo.admin_email'),
+            User::ROLE_KAPRODI => config('demo.kaprodi_email'),
             User::ROLE_DOSEN => config('demo.dosen_email'),
             default => config('demo.mahasiswa_email'),
         };
@@ -54,6 +55,7 @@ class LoginController extends Controller
             [
                 'name' => match ($role) {
                     User::ROLE_ADMIN => 'Administrator Demo',
+                    User::ROLE_KAPRODI => 'Kaprodi Demo',
                     User::ROLE_DOSEN => 'Dosen Demo',
                     default => 'Mahasiswa Demo',
                 },

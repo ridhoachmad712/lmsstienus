@@ -16,7 +16,15 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title">Total: {{ $students->total() }} mahasiswa</h3>
-        <form method="GET" action="{{ route('admin.students.index') }}" class="ms-auto d-flex gap-2">
+        <form method="GET" action="{{ route('admin.students.index') }}" class="ms-auto d-flex gap-2 flex-wrap">
+            @if (auth()->user()->isAdmin())
+                <select name="prodi" class="form-select" onchange="this.form.submit()" style="min-width:150px">
+                    <option value="">Semua prodi</option>
+                    @foreach ($prodis as $p)
+                        <option value="{{ $p->id }}" @selected($prodiId === $p->id)>{{ $p->name }}</option>
+                    @endforeach
+                </select>
+            @endif
             <select name="course" class="form-select" onchange="this.form.submit()" style="min-width:160px">
                 <option value="">Semua kelas</option>
                 @foreach ($courses as $c)
@@ -47,7 +55,7 @@
             <table class="table table-vcenter card-table">
                 <thead><tr>
                     <th class="w-1"><input type="checkbox" id="sel-all" class="form-check-input m-0"></th>
-                    <th>Nama</th><th>NIM</th><th>Email</th><th class="text-center">Kelas</th><th></th>
+                    <th>Nama</th><th>NIM</th><th>Email</th><th>Prodi</th><th class="text-center">Kelas</th><th></th>
                 </tr></thead>
                 <tbody>
                     @foreach ($students as $s)
@@ -61,6 +69,7 @@
                             </td>
                             <td>{{ $s->nim_nip ?? '—' }}</td>
                             <td class="text-secondary">{{ $s->email }}</td>
+                            <td>{{ $s->prodi?->name ?? '—' }}</td>
                             <td class="text-center">{{ $s->enrolled_courses_count }}</td>
                             <td class="text-end">
                                 <div class="btn-list justify-content-end">

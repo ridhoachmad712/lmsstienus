@@ -53,6 +53,10 @@ class DemoSeeder extends Seeder
             Setting::put('logo_path', $logo); // file fisik tetap di storage (tak terhapus)
         }
 
+        // --- Program Studi ---
+        $prodiAk = \App\Models\Prodi::firstOrCreate(['code' => 'AK'], ['name' => 'Akuntansi']);
+        $prodiMn = \App\Models\Prodi::firstOrCreate(['code' => 'MN'], ['name' => 'Manajemen']);
+
         // --- Admin demo (akun 1-klik) ---
         User::create([
             'name' => 'Administrator Demo',
@@ -63,12 +67,24 @@ class DemoSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
+        // --- Kaprodi demo (akun 1-klik, lingkup Manajemen) ---
+        User::create([
+            'name' => 'Kaprodi Demo (Manajemen)',
+            'email' => config('demo.kaprodi_email'),
+            'password' => Hash::make('demo'),
+            'role' => User::ROLE_KAPRODI,
+            'prodi_id' => $prodiMn->id,
+            'nim_nip' => '100000000000000000',
+            'email_verified_at' => now(),
+        ]);
+
         // --- Dosen demo ---
         $dosen = User::create([
             'name' => 'Dr. Andi Wijaya, S.E., M.M.',
             'email' => config('demo.dosen_email'),
             'password' => Hash::make('demo'),
             'role' => User::ROLE_DOSEN,
+            'prodi_id' => $prodiMn->id,
             'nim_nip' => '198501012010011001',
             'phone' => '081234567890',
             'email_verified_at' => now(),
@@ -80,12 +96,13 @@ class DemoSeeder extends Seeder
             'email' => config('demo.mahasiswa_email'),
             'password' => Hash::make('demo'),
             'role' => User::ROLE_MAHASISWA,
+            'prodi_id' => $prodiMn->id,
             'nim_nip' => '2100000000',
             'phone' => '081200000001',
             'email_verified_at' => now(),
         ]);
 
-        // --- 24 mahasiswa lain ---
+        // --- 24 mahasiswa lain (dibagi ke 2 prodi) ---
         $others = collect();
         for ($i = 1; $i <= 24; $i++) {
             $others->push(User::create([
@@ -93,6 +110,7 @@ class DemoSeeder extends Seeder
                 'email' => sprintf('demo-mhs%03d@demo.test', $i),
                 'password' => Hash::make('demo'),
                 'role' => User::ROLE_MAHASISWA,
+                'prodi_id' => $i % 2 === 0 ? $prodiMn->id : $prodiAk->id,
                 'nim_nip' => '2100'.str_pad((string) $i, 6, '0', STR_PAD_LEFT),
                 'phone' => '0812'.str_pad((string) $i, 7, '0', STR_PAD_LEFT),
                 'email_verified_at' => now(),
@@ -107,6 +125,7 @@ class DemoSeeder extends Seeder
         foreach ($courseData as $cd) {
             $course = Course::create([
                 'user_id' => $dosen->id,
+                'prodi_id' => $prodiMn->id,
                 'name' => $cd['name'],
                 'code' => $cd['code'],
                 'join_code' => Course::generateJoinCode(),
