@@ -42,6 +42,7 @@
     ])
     @if ($isAdmin)
         @php($menu = array_merge($menu, [
+            ['admin.staff.index', 'ti-user-star', 'Dosen & Kaprodi', 'Kelola akun staf + prodi'],
             ['admin.semesters.index', 'ti-calendar-stats', 'Kelola Semester', 'Atur semester aktif'],
             ['admin.settings.edit', 'ti-palette', 'Tampilan', 'Branding & tema aplikasi'],
             ['admin.gradeScale.edit', 'ti-award', 'Skala Nilai', 'Ambang konversi huruf'],

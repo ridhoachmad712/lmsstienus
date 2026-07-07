@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\MataKuliahController;
+use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
@@ -258,6 +259,15 @@ Route::middleware('auth')->group(function () {
 
     // --- Pengelolaan kampus (admin saja) ---
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        // Kelola akun dosen & kaprodi
+        Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
+        Route::get('/staff/create', [StaffController::class, 'create'])->name('staff.create');
+        Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');
+        Route::get('/staff/{staff}/edit', [StaffController::class, 'edit'])->name('staff.edit');
+        Route::put('/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
+        Route::post('/staff/{staff}/reset-password', [StaffController::class, 'resetPassword'])->name('staff.resetPassword');
+        Route::delete('/staff/{staff}', [StaffController::class, 'destroy'])->name('staff.destroy');
+
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
         Route::get('/grade-scale', [SettingController::class, 'editGradeScale'])->name('gradeScale.edit');

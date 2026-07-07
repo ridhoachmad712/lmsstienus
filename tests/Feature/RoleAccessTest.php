@@ -126,6 +126,35 @@ class RoleAccessTest extends TestCase
         $this->actingAs($kaprodiAk)->get(route('admin.matakuliah.edit', $mkMn))->assertForbidden();
     }
 
+    public function test_kelola_staf_hanya_admin(): void
+    {
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $admin = $this->user(User::ROLE_ADMIN);
+        $kaprodi = User::factory()->create(['role' => User::ROLE_KAPRODI, 'prodi_id' => $ak->id]);
+        $dosen = $this->user(User::ROLE_DOSEN);
+
+        $this->actingAs($admin)->get(route('admin.staff.index'))->assertOk();
+        $this->actingAs($kaprodi)->get(route('admin.staff.index'))->assertForbidden();
+        $this->actingAs($dosen)->get(route('admin.staff.index'))->assertForbidden();
+    }
+
+    public function test_admin_bisa_buat_dosen(): void
+    {
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $admin = $this->user(User::ROLE_ADMIN);
+
+        $this->actingAs($admin)->post(route('admin.staff.store'), [
+            'name' => 'Dosen Baru', 'email' => 'dosenbaru@x.test',
+            'role' => 'dosen', 'prodi_id' => $mn->id, 'password' => 'rahasia123',
+        ])->assertRedirect(route('admin.staff.index'));
+
+        $u = User::where('email', 'dosenbaru@x.test')->first();
+        $this->assertNotNull($u);
+        $this->assertSame('dosen', $u->role);
+        $this->assertSame($mn->id, $u->prodi_id);
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('rahasia123', $u->password));
+    }
+
     public function test_dosen_tidak_bisa_akses_kelas_dosen_lain(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);
