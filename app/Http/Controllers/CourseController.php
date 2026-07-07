@@ -336,24 +336,14 @@ class CourseController extends Controller
         ]);
     }
 
-    /** Dosen pemilik boleh akses; mahasiswa harus terdaftar. */
+    /** Dosen pemilik/mahasiswa terdaftar/admin boleh akses. */
     private function authorizeView(Request $request, Course $course): void
     {
-        $user = $request->user();
-
-        if ($user->isDosen() && $course->user_id === $user->id) {
-            return;
-        }
-
-        if ($user->isMahasiswa() && $course->students()->whereKey($user->id)->exists()) {
-            return;
-        }
-
-        abort(403, 'Anda tidak memiliki akses ke kelas ini.');
+        abort_unless($request->user()->can('view', $course), 403, 'Anda tidak memiliki akses ke kelas ini.');
     }
 
     private function authorizeOwner(Request $request, Course $course): void
     {
-        abort_unless($course->user_id === $request->user()->id, 403);
+        abort_unless($request->user()->can('manage', $course), 403);
     }
 }

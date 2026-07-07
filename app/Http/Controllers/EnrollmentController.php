@@ -171,7 +171,7 @@ class EnrollmentController extends Controller
 
     private function authorizeOwner(Request $request, Course $course): void
     {
-        abort_unless($course->user_id === $request->user()->id, 403);
+        abort_unless($request->user()->can('manage', $course), 403);
 
         if (! $request->isMethodSafe() && $course->isCompleted()) {
             abort(403, 'Kelas ini sudah selesai (read-only). Buka kembali untuk mengubah.');

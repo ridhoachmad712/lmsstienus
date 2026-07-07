@@ -67,6 +67,16 @@ class RoleAccessTest extends TestCase
         $this->actingAs($kaprodi)->get(route('admin.settings.edit'))->assertForbidden();
     }
 
+    public function test_admin_bisa_lihat_kelas_dosen_mana_pun(): void
+    {
+        $dosen = $this->user(User::ROLE_DOSEN);
+        $admin = $this->user(User::ROLE_ADMIN);
+        $course = $this->course($dosen);
+
+        // Gate::before memberi admin akses ke kelas milik dosen mana pun.
+        $this->actingAs($admin)->get(route('courses.show', $course))->assertOk();
+    }
+
     public function test_dosen_tidak_bisa_akses_kelas_dosen_lain(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);

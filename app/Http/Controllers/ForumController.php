@@ -113,7 +113,7 @@ class ForumController extends Controller
     private function authorizeAuthorOrOwner(Request $request, Course $course, int $authorId): void
     {
         $user = $request->user();
-        $isOwner = $user->isDosen() && $course->user_id === $user->id;
-        abort_unless($authorId === $user->id || $isOwner, 403);
+        // Penulis konten, dosen pemilik, atau admin (via Gate::before).
+        abort_unless($authorId === $user->id || $user->can('manage', $course), 403);
     }
 }

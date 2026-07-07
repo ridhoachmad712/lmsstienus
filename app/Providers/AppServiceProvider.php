@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -24,6 +25,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+
+        // Admin kampus melewati semua pemeriksaan otorisasi.
+        Gate::before(fn (\App\Models\User $user) => $user->isAdmin() ? true : null);
+        Gate::policy(\App\Models\Course::class, \App\Policies\CoursePolicy::class);
 
         // Di balik SSL hosting, PHP kadang mengira request http → URL (iframe/aset) jadi http
         // dan diblokir browser sebagai mixed content. Paksa https bila APP_URL https.

@@ -115,27 +115,16 @@ class MaterialController extends Controller
 
     private function authorizeOwner(Request $request, Meeting $meeting): void
     {
-        abort_unless($meeting->course->user_id === $request->user()->id, 403);
+        abort_unless($request->user()->can('manage', $meeting->course), 403);
 
         if (! $request->isMethodSafe() && $meeting->course->isCompleted()) {
             abort(403, 'Kelas ini sudah selesai (read-only). Buka kembali untuk mengubah.');
         }
     }
 
-    /** Dosen pemilik atau mahasiswa terdaftar boleh mengakses. */
+    /** Dosen pemilik/mahasiswa terdaftar/admin boleh mengakses. */
     private function authorizeAccess(Request $request, Material $material): void
     {
-        $user = $request->user();
-        $course = $material->meeting->course;
-
-        if ($user->isDosen() && $course->user_id === $user->id) {
-            return;
-        }
-
-        if ($user->isMahasiswa() && $course->students()->whereKey($user->id)->exists()) {
-            return;
-        }
-
-        abort(403);
+        abort_unless($request->user()->can('view', $material->meeting->course), 403);
     }
 }
