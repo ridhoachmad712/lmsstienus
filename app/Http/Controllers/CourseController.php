@@ -94,15 +94,25 @@ class CourseController extends Controller
         return view('courses.index-mahasiswa', compact('courses'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('courses.create');
+        return view('courses.create', ['mataKuliahs' => $this->mataKuliahOptions($request)]);
+    }
+
+    /** Pilihan mata kuliah untuk form kelas: MK prodi dosen + MK lintas prodi. */
+    private function mataKuliahOptions(Request $request)
+    {
+        return \App\Models\MataKuliah::where(fn ($q) => $q
+            ->where('prodi_id', $request->user()->prodi_id)
+            ->orWhereNull('prodi_id'))
+            ->orderBy('code')->get();
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validateData($request);
         $data['user_id'] = $request->user()->id;
+        $data['prodi_id'] = $request->user()->prodi_id; // kelas mengikuti prodi dosen
         $data['status'] = Course::STATUS_ACTIVE;
         $data['join_code'] = Course::generateJoinCode();
 
@@ -222,7 +232,7 @@ class CourseController extends Controller
                 ->with('error', 'Kelas sudah selesai (read-only). Buka kembali untuk mengubah.');
         }
 
-        return view('courses.edit', compact('course'));
+        return view('courses.edit', ['course' => $course, 'mataKuliahs' => $this->mataKuliahOptions($request)]);
     }
 
     public function update(Request $request, Course $course): RedirectResponse
@@ -329,6 +339,7 @@ class CourseController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50'],
             'class_name' => ['nullable', 'string', 'max:100'],
+            'mata_kuliah_id' => ['nullable', 'integer', 'exists:mata_kuliah,id'],
             'semester' => ['required', 'in:Ganjil,Genap,Antara'],
             'year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'default_meeting_type' => ['required', 'in:tatap_muka,mandiri'],

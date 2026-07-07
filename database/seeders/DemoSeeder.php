@@ -123,9 +123,15 @@ class DemoSeeder extends Seeder
         ];
 
         foreach ($courseData as $cd) {
+            $mk = \App\Models\MataKuliah::firstOrCreate(
+                ['code' => $cd['code']],
+                ['prodi_id' => $prodiMn->id, 'name' => $cd['name'], 'sks' => 3],
+            );
+
             $course = Course::create([
                 'user_id' => $dosen->id,
                 'prodi_id' => $prodiMn->id,
+                'mata_kuliah_id' => $mk->id,
                 'name' => $cd['name'],
                 'code' => $cd['code'],
                 'join_code' => Course::generateJoinCode(),

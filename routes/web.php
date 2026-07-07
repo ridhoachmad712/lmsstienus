@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\MataKuliahController;
 use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
@@ -245,6 +246,14 @@ Route::middleware('auth')->group(function () {
         Route::put('/students/{student}', [AdminStudentController::class, 'update'])->name('students.update');
         Route::post('/students/{student}/reset-password', [AdminStudentController::class, 'resetPassword'])->name('students.resetPassword');
         Route::delete('/students/{student}', [AdminStudentController::class, 'destroy'])->name('students.destroy');
+
+        // Katalog mata kuliah (kaprodi ter-scope prodi di controller)
+        Route::get('/matakuliah', [MataKuliahController::class, 'index'])->name('matakuliah.index');
+        Route::get('/matakuliah/create', [MataKuliahController::class, 'create'])->name('matakuliah.create');
+        Route::post('/matakuliah', [MataKuliahController::class, 'store'])->name('matakuliah.store');
+        Route::get('/matakuliah/{matakuliah}/edit', [MataKuliahController::class, 'edit'])->name('matakuliah.edit');
+        Route::put('/matakuliah/{matakuliah}', [MataKuliahController::class, 'update'])->name('matakuliah.update');
+        Route::delete('/matakuliah/{matakuliah}', [MataKuliahController::class, 'destroy'])->name('matakuliah.destroy');
     });
 
     // --- Pengelolaan kampus (admin saja) ---

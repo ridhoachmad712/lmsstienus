@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['user_id', 'prodi_id', 'name', 'code', 'class_name', 'join_code', 'semester', 'year', 'description', 'status', 'default_meeting_type'])]
+#[Fillable(['user_id', 'prodi_id', 'mata_kuliah_id', 'name', 'code', 'class_name', 'join_code', 'semester', 'year', 'description', 'status', 'default_meeting_type'])]
 class Course extends Model
 {
     /** @use HasFactory<\Database\Factories\CourseFactory> */
@@ -48,6 +48,11 @@ class Course extends Model
     public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class);
+    }
+
+    public function mataKuliah(): BelongsTo
+    {
+        return $this->belongsTo(MataKuliah::class);
     }
 
     /** Mahasiswa yang terdaftar. */

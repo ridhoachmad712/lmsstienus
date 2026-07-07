@@ -80,9 +80,17 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($courseData as $idx => $cd) {
+            $mk = \App\Models\MataKuliah::create([
+                'prodi_id' => $prodiMn->id,
+                'code' => $cd['code'],
+                'name' => $cd['name'],
+                'sks' => 3,
+            ]);
+
             $course = Course::create([
                 'user_id' => $dosen->id,
                 'prodi_id' => $prodiMn->id,
+                'mata_kuliah_id' => $mk->id,
                 'name' => $cd['name'],
                 'code' => $cd['code'],
                 'join_code' => Course::generateJoinCode(),

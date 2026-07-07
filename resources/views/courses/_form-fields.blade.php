@@ -1,4 +1,17 @@
 <div class="row">
+    @if (! empty($mataKuliahs) && $mataKuliahs->isNotEmpty())
+        <div class="col-12 mb-3">
+            <label class="form-label">Mata Kuliah (katalog)</label>
+            <select name="mata_kuliah_id" class="form-select @error('mata_kuliah_id') is-invalid @enderror">
+                <option value="">— Tidak ditautkan —</option>
+                @foreach ($mataKuliahs as $mk)
+                    <option value="{{ $mk->id }}" @selected(old('mata_kuliah_id', $course->mata_kuliah_id ?? '') == $mk->id)>{{ $mk->code }} — {{ $mk->name }} ({{ $mk->sks }} SKS)</option>
+                @endforeach
+            </select>
+            <small class="form-hint">Opsional — tautkan ke katalog agar kelas ini terhitung sebagai kelas paralel dari mata kuliah tersebut.</small>
+            @error('mata_kuliah_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        </div>
+    @endif
     <div class="col-md-8 mb-3">
         <label class="form-label required">Nama Mata Kuliah</label>
         <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"

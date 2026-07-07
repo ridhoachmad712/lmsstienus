@@ -36,7 +36,10 @@
 @endunless
 
 <div class="row row-cards">
-    @php($menu = [['admin.students.index', 'ti-users', 'Mahasiswa', 'Kelola & impor akun mahasiswa']])
+    @php($menu = [
+        ['admin.students.index', 'ti-users', 'Mahasiswa', 'Kelola & impor akun mahasiswa'],
+        ['admin.matakuliah.index', 'ti-book', 'Mata Kuliah', 'Katalog MK & kelas paralel'],
+    ])
     @if ($isAdmin)
         @php($menu = array_merge($menu, [
             ['admin.semesters.index', 'ti-calendar-stats', 'Kelola Semester', 'Atur semester aktif'],
