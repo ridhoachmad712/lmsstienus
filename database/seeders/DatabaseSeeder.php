@@ -16,6 +16,15 @@ class DatabaseSeeder extends Seeder
     {
         $faker = \Faker\Factory::create('id_ID');
 
+        // --- Admin kampus ---
+        User::create([
+            'name' => 'Administrator',
+            'email' => 'admin@test.com',
+            'password' => Hash::make('password'),
+            'role' => User::ROLE_ADMIN,
+            'nim_nip' => '000000000000000000',
+        ]);
+
         // --- Dosen ---
         $dosen = User::create([
             'name' => 'Dr. Andi Wijaya, S.E., M.M.',

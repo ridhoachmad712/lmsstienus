@@ -42,18 +42,24 @@ class LoginController extends Controller
     {
         abort_unless(config('demo.enabled'), 404);
 
-        $email = $role === User::ROLE_DOSEN
-            ? config('demo.dosen_email')
-            : config('demo.mahasiswa_email');
+        $email = match ($role) {
+            User::ROLE_ADMIN => config('demo.admin_email'),
+            User::ROLE_DOSEN => config('demo.dosen_email'),
+            default => config('demo.mahasiswa_email'),
+        };
 
         // Pastikan akun demo ada (seeder bisa memperkaya datanya kemudian).
         $user = User::firstOrCreate(
             ['email' => $email],
             [
-                'name' => $role === User::ROLE_DOSEN ? 'Dosen Demo' : 'Mahasiswa Demo',
+                'name' => match ($role) {
+                    User::ROLE_ADMIN => 'Administrator Demo',
+                    User::ROLE_DOSEN => 'Dosen Demo',
+                    default => 'Mahasiswa Demo',
+                },
                 'password' => Hash::make(Str::random(40)),
                 'role' => $role,
-                'nim_nip' => $role === User::ROLE_DOSEN ? '0000000000' : '2000000000',
+                'nim_nip' => $role === User::ROLE_MAHASISWA ? '2000000000' : '0000000000',
                 'email_verified_at' => now(),
             ]
         );

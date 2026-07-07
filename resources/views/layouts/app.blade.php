@@ -179,7 +179,8 @@
                                 <span class="nav-link-title">Dashboard</span>
                             </a>
                         </li>
-                        <li class="nav-item {{ request()->routeIs('courses.*', 'assignments.*', 'quizzes.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*', 'analytics.*') ? 'active' : '' }}">
+                        @unless ($user->isStaff())
+                        <li class="nav-item {{ request()->routeIs('courses.*', 'assignments.*', 'quizzes.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*', 'analytics.*', 'reports.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('courses.index') }}">
                                 <span class="nav-link-icon"><i class="ti ti-school"></i></span>
                                 <span class="nav-link-title">Kelas Saya</span>
@@ -191,7 +192,8 @@
                                 <span class="nav-link-title">Kalender</span>
                             </a>
                         </li>
-                        @if ($user->isDosen())
+                        @endunless
+                        @if ($user->isAdmin())
                             <li class="nav-item dropdown {{ request()->routeIs('admin.*') ? 'active' : '' }}">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                     <span class="nav-link-icon"><i class="ti ti-settings"></i></span>

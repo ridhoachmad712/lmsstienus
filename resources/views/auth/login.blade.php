@@ -17,6 +17,14 @@
             <div class="hr-text">Masuk sebagai</div>
 
             <div class="row g-2">
+                <div class="col-12">
+                    <form method="POST" action="{{ route('demo.login', 'admin') }}">
+                        @csrf
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="ti ti-settings me-2"></i>Login Admin
+                        </button>
+                    </form>
+                </div>
                 <div class="col-12 col-sm-6">
                     <form method="POST" action="{{ route('demo.login', 'dosen') }}">
                         @csrf

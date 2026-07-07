@@ -19,6 +19,8 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_KAPRODI = 'kaprodi';
     public const ROLE_DOSEN = 'dosen';
     public const ROLE_MAHASISWA = 'mahasiswa';
 
@@ -35,6 +37,22 @@ class User extends Authenticatable
     }
 
     // --- Role helpers ---
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isKaprodi(): bool
+    {
+        return $this->role === self::ROLE_KAPRODI;
+    }
+
+    /** Admin atau kaprodi (staf pengelola, bukan dosen/mahasiswa). */
+    public function isStaff(): bool
+    {
+        return $this->isAdmin() || $this->isKaprodi();
+    }
 
     public function isDosen(): bool
     {

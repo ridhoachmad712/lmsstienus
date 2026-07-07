@@ -18,9 +18,13 @@ class DashboardController extends Controller
     /** Arahkan ke dashboard sesuai role. */
     public function index(Request $request): RedirectResponse
     {
-        return redirect()->route(
-            $request->user()->isDosen() ? 'dashboard.dosen' : 'dashboard.mahasiswa'
-        );
+        $user = $request->user();
+
+        if ($user->isStaff()) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        return redirect()->route($user->isMahasiswa() ? 'dashboard.mahasiswa' : 'dashboard.dosen');
     }
 
     public function dosen(Request $request): View

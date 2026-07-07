@@ -53,7 +53,17 @@ class DemoSeeder extends Seeder
             Setting::put('logo_path', $logo); // file fisik tetap di storage (tak terhapus)
         }
 
-        // --- Dosen demo (merangkap admin) ---
+        // --- Admin demo (akun 1-klik) ---
+        User::create([
+            'name' => 'Administrator Demo',
+            'email' => config('demo.admin_email'),
+            'password' => Hash::make('demo'),
+            'role' => User::ROLE_ADMIN,
+            'nim_nip' => '000000000000000000',
+            'email_verified_at' => now(),
+        ]);
+
+        // --- Dosen demo ---
         $dosen = User::create([
             'name' => 'Dr. Andi Wijaya, S.E., M.M.',
             'email' => config('demo.dosen_email'),

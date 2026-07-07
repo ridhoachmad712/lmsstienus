@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
 use App\Http\Controllers\Admin\BackupController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
@@ -45,7 +46,7 @@ Route::middleware('guest')->group(function () {
 
     // Akses 1-klik mode demo (controller menolak dengan 404 jika DEMO_MODE non-aktif)
     Route::post('/demo/{role}', [LoginController::class, 'demo'])
-        ->whereIn('role', ['dosen', 'mahasiswa'])
+        ->whereIn('role', ['admin', 'dosen', 'mahasiswa'])
         ->middleware('throttle:30,1')
         ->name('demo.login');
 });
@@ -200,38 +201,6 @@ Route::middleware('auth')->group(function () {
         // Forum — pin
         Route::patch('/forum/{thread}/pin', [ForumController::class, 'pin'])->name('forum.pin');
 
-        // ===== Admin (dosen merangkap admin) =====
-        Route::prefix('admin')->name('admin.')->group(function () {
-            Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
-            Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
-            Route::get('/grade-scale', [SettingController::class, 'editGradeScale'])->name('gradeScale.edit');
-            Route::put('/grade-scale', [SettingController::class, 'updateGradeScale'])->name('gradeScale.update');
-            Route::get('/ai', [SettingController::class, 'editAi'])->name('ai.edit');
-            Route::put('/ai', [SettingController::class, 'updateAi'])->name('ai.update');
-
-            Route::get('/semesters', [SemesterController::class, 'index'])->name('semesters.index');
-            Route::post('/semesters', [SemesterController::class, 'store'])->name('semesters.store');
-            Route::put('/semesters/active', [SemesterController::class, 'updateActive'])->name('semesters.updateActive');
-            Route::delete('/semesters/{semester}', [SemesterController::class, 'destroy'])->name('semesters.destroy');
-
-            Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
-            Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
-            Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
-            Route::post('/students/import', [AdminStudentController::class, 'import'])->name('students.import');
-            Route::post('/students/bulk/reset-password', [AdminStudentController::class, 'bulkResetPassword'])->name('students.bulkReset');
-            Route::post('/students/bulk/destroy', [AdminStudentController::class, 'bulkDestroy'])->name('students.bulkDestroy');
-            Route::get('/students/{student}/edit', [AdminStudentController::class, 'edit'])->name('students.edit');
-            Route::put('/students/{student}', [AdminStudentController::class, 'update'])->name('students.update');
-            Route::post('/students/{student}/reset-password', [AdminStudentController::class, 'resetPassword'])->name('students.resetPassword');
-            Route::delete('/students/{student}', [AdminStudentController::class, 'destroy'])->name('students.destroy');
-
-            Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
-            Route::post('/backups', [BackupController::class, 'run'])->name('backups.run');
-            Route::get('/backups/{name}/download', [BackupController::class, 'download'])->name('backups.download');
-
-            Route::get('/activity', [AdminActivityController::class, 'index'])->name('activity.index');
-        });
-
         // Absensi — sesi & edit manual
         Route::get('/meetings/{meeting}/attendance', [AttendanceController::class, 'session'])->name('attendance.session');
         Route::post('/meetings/{meeting}/attendance/start', [AttendanceController::class, 'start'])->name('attendance.start');
@@ -260,5 +229,42 @@ Route::middleware('auth')->group(function () {
         Route::get('/courses/{course}/export/absensi-excel', [ExportController::class, 'absensiExcel'])->name('export.absensi.excel');
         Route::get('/courses/{course}/export/absensi-pdf', [ExportController::class, 'absensiPdf'])->name('export.absensi.pdf');
         Route::get('/courses/{course}/export/nilai-pdf', [ExportController::class, 'nilaiPdf'])->name('export.nilai.pdf');
+    });
+
+    // --- Beranda admin (admin & kaprodi) ---
+    Route::middleware('role:admin,kaprodi')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+    });
+
+    // --- Pengelolaan kampus (admin saja) ---
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
+        Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+        Route::get('/grade-scale', [SettingController::class, 'editGradeScale'])->name('gradeScale.edit');
+        Route::put('/grade-scale', [SettingController::class, 'updateGradeScale'])->name('gradeScale.update');
+        Route::get('/ai', [SettingController::class, 'editAi'])->name('ai.edit');
+        Route::put('/ai', [SettingController::class, 'updateAi'])->name('ai.update');
+
+        Route::get('/semesters', [SemesterController::class, 'index'])->name('semesters.index');
+        Route::post('/semesters', [SemesterController::class, 'store'])->name('semesters.store');
+        Route::put('/semesters/active', [SemesterController::class, 'updateActive'])->name('semesters.updateActive');
+        Route::delete('/semesters/{semester}', [SemesterController::class, 'destroy'])->name('semesters.destroy');
+
+        Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
+        Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
+        Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
+        Route::post('/students/import', [AdminStudentController::class, 'import'])->name('students.import');
+        Route::post('/students/bulk/reset-password', [AdminStudentController::class, 'bulkResetPassword'])->name('students.bulkReset');
+        Route::post('/students/bulk/destroy', [AdminStudentController::class, 'bulkDestroy'])->name('students.bulkDestroy');
+        Route::get('/students/{student}/edit', [AdminStudentController::class, 'edit'])->name('students.edit');
+        Route::put('/students/{student}', [AdminStudentController::class, 'update'])->name('students.update');
+        Route::post('/students/{student}/reset-password', [AdminStudentController::class, 'resetPassword'])->name('students.resetPassword');
+        Route::delete('/students/{student}', [AdminStudentController::class, 'destroy'])->name('students.destroy');
+
+        Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
+        Route::post('/backups', [BackupController::class, 'run'])->name('backups.run');
+        Route::get('/backups/{name}/download', [BackupController::class, 'download'])->name('backups.download');
+
+        Route::get('/activity', [AdminActivityController::class, 'index'])->name('activity.index');
     });
 });
