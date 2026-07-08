@@ -30,6 +30,7 @@ use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\RubricController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SubmissionController;
@@ -79,6 +80,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/transkrip', [TranscriptController::class, 'mine'])->name('transkrip.mine');
         Route::get('/transkrip/pdf', [TranscriptController::class, 'minePdf'])->name('transkrip.mine.pdf');
     });
+
+    // Jadwal mingguan pribadi (kuliah/mengajar)
+    Route::get('/jadwal', [ScheduleController::class, 'index'])->middleware('role:dosen,mahasiswa')->name('schedule.index');
+    // Jadwal per kelas (lihat kedua role; kelola di grup dosen)
+    Route::get('/courses/{course}/schedule', [ScheduleController::class, 'course'])->name('schedule.course');
 
     // Gabung kelas via kode (mahasiswa)
     Route::get('/join', [EnrollmentController::class, 'showJoin'])->name('enrollments.join.show');
@@ -169,6 +175,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/meetings/{meeting}/materials', [MaterialController::class, 'store'])->name('materials.store');
         Route::put('/materials/{material}', [MaterialController::class, 'update'])->name('materials.update');
         Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->name('materials.destroy');
+
+        // Jadwal kuliah (slot) — dosen pemilik
+        Route::post('/courses/{course}/schedule', [ScheduleController::class, 'store'])->name('schedule.store');
+        Route::delete('/schedule/{schedule}', [ScheduleController::class, 'destroy'])->name('schedule.destroy');
 
         // Tugas & Kuis — CRUD
         Route::get('/courses/{course}/assignments/create', [AssignmentController::class, 'create'])->name('assignments.create');

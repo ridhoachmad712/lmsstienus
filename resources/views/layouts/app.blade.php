@@ -192,6 +192,12 @@
                                 <span class="nav-link-title">Kalender</span>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('schedule.index') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('schedule.index') }}">
+                                <span class="nav-link-icon"><i class="ti ti-calendar-time"></i></span>
+                                <span class="nav-link-title">Jadwal</span>
+                            </a>
+                        </li>
                         @if ($user->isMahasiswa())
                             <li class="nav-item {{ request()->routeIs('transkrip.*') ? 'active' : '' }}">
                                 <a class="nav-link" href="{{ route('transkrip.mine') }}">

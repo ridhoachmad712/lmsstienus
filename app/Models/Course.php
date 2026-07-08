@@ -73,6 +73,11 @@ class Course extends Model
         return $this->hasMany(Meeting::class)->orderBy('number');
     }
 
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(ClassSchedule::class)->orderBy('day')->orderBy('start_time');
+    }
+
     public function gradeComponents(): HasMany
     {
         return $this->hasMany(GradeComponent::class);

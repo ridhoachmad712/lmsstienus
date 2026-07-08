@@ -5,6 +5,7 @@
     ['forum.index', 'ti-messages', 'Forum', [$course], ['forum.*']],
     ['announcements.index', 'ti-speakerphone', 'Pengumuman', [$course], ['announcements.*']],
     ['syllabus.show', 'ti-file-text', 'RPS', [$course], ['syllabus.*']],
+    ['schedule.course', 'ti-calendar-time', 'Jadwal', [$course], ['schedule.course']],
 ])
 
 @if (auth()->user()->isDosen())

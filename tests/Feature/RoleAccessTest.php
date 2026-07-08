@@ -284,6 +284,35 @@ class RoleAccessTest extends TestCase
         $this->actingAs($kaprodiAk)->get(route('admin.students.transkrip', $mhsMn))->assertForbidden();
     }
 
+    public function test_dosen_atur_jadwal_kelas(): void
+    {
+        $dosen = $this->user(User::ROLE_DOSEN);
+        $course = $this->course($dosen);
+
+        $this->actingAs($dosen)->post(route('schedule.store', $course), [
+            'day' => 1, 'start_time' => '08:00', 'end_time' => '10:00', 'room' => 'R201',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('class_schedules', ['course_id' => $course->id, 'day' => 1, 'room' => 'R201']);
+    }
+
+    public function test_jadwal_pribadi_bisa_diakses(): void
+    {
+        $this->actingAs($this->user(User::ROLE_MAHASISWA))->get(route('schedule.index'))->assertOk();
+        $this->actingAs($this->user(User::ROLE_DOSEN))->get(route('schedule.index'))->assertOk();
+    }
+
+    public function test_dosen_lain_tak_bisa_atur_jadwal(): void
+    {
+        $owner = $this->user(User::ROLE_DOSEN);
+        $other = $this->user(User::ROLE_DOSEN);
+        $course = $this->course($owner);
+
+        $this->actingAs($other)->post(route('schedule.store', $course), [
+            'day' => 1, 'start_time' => '08:00', 'end_time' => '10:00',
+        ])->assertForbidden();
+    }
+
     public function test_dosen_tidak_bisa_akses_kelas_dosen_lain(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);
