@@ -33,23 +33,8 @@ class BackupDatabase extends Command
         }
 
         if ($connection === 'mysql') {
-            $c = config('database.connections.mysql');
             $dest = $dir.DIRECTORY_SEPARATOR."backup_{$stamp}.sql";
-            $cmd = sprintf(
-                'mysqldump --host=%s --port=%s --user=%s --password=%s %s > %s',
-                escapeshellarg($c['host']),
-                escapeshellarg((string) $c['port']),
-                escapeshellarg($c['username']),
-                escapeshellarg($c['password']),
-                escapeshellarg($c['database']),
-                escapeshellarg($dest),
-            );
-            exec($cmd, $out, $code);
-            if ($code !== 0) {
-                $this->error('mysqldump gagal (kode '.$code.'). Pastikan mysqldump tersedia di PATH.');
-
-                return self::FAILURE;
-            }
+            $this->dumpMysql($dest);
             $this->info('Backup MySQL dibuat: '.$dest);
 
             return self::SUCCESS;
@@ -58,5 +43,42 @@ class BackupDatabase extends Command
         $this->error('Koneksi database tidak didukung untuk backup: '.$connection);
 
         return self::FAILURE;
+    }
+
+    /**
+     * Dump MySQL murni-PHP (tanpa mysqldump/exec — cocok untuk shared hosting
+     * yang memblokir exec). Cukup untuk basis data kecil (skala kampus).
+     */
+    private function dumpMysql(string $dest): void
+    {
+        $pdo = \Illuminate\Support\Facades\DB::connection('mysql')->getPdo();
+        $handle = fopen($dest, 'w');
+
+        fwrite($handle, "-- Pegboard LMS — backup ".now()->toDateTimeString()."\n");
+        fwrite($handle, "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n");
+
+        $tables = $pdo->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN);
+        foreach ($tables as $table) {
+            $create = $pdo->query("SHOW CREATE TABLE `$table`")->fetch(\PDO::FETCH_ASSOC);
+            $ddl = $create['Create Table'] ?? $create['Create View'] ?? null;
+            if (! $ddl) {
+                continue;
+            }
+
+            fwrite($handle, "\nDROP TABLE IF EXISTS `$table`;\n".$ddl.";\n");
+
+            $rows = $pdo->query("SELECT * FROM `$table`");
+            while ($row = $rows->fetch(\PDO::FETCH_ASSOC)) {
+                $cols = implode(', ', array_map(fn ($c) => "`$c`", array_keys($row)));
+                $vals = implode(', ', array_map(
+                    fn ($v) => is_null($v) ? 'NULL' : $pdo->quote((string) $v),
+                    array_values($row),
+                ));
+                fwrite($handle, "INSERT INTO `$table` ($cols) VALUES ($vals);\n");
+            }
+        }
+
+        fwrite($handle, "\nSET FOREIGN_KEY_CHECKS=1;\n");
+        fclose($handle);
     }
 }

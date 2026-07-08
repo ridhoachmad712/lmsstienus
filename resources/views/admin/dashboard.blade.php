@@ -37,6 +37,7 @@
 
 <div class="row row-cards">
     @php($menu = [
+        ['admin.courses.index', 'ti-school', 'Pengawasan Kelas', 'Pantau kelas & progresnya'],
         ['admin.students.index', 'ti-users', 'Mahasiswa', 'Kelola & impor akun mahasiswa'],
         ['admin.matakuliah.index', 'ti-book', 'Mata Kuliah', 'Katalog MK & kelas paralel'],
     ])

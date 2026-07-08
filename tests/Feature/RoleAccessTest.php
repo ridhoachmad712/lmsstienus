@@ -155,6 +155,33 @@ class RoleAccessTest extends TestCase
         $this->assertTrue(\Illuminate\Support\Facades\Hash::check('rahasia123', $u->password));
     }
 
+    public function test_registrasi_mandiri_dihapus(): void
+    {
+        $this->get('/register')->assertNotFound();
+    }
+
+    public function test_pengawasan_kelas_scope_kaprodi(): void
+    {
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $kaprodiAk = User::factory()->create(['role' => User::ROLE_KAPRODI, 'prodi_id' => $ak->id]);
+        $dosenAk = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $ak->id]);
+        $dosenMn = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
+        Course::create(['user_id' => $dosenAk->id, 'prodi_id' => $ak->id, 'name' => 'Akuntansi Biaya', 'code' => 'AKB1', 'semester' => 'Ganjil', 'year' => 2026, 'status' => Course::STATUS_ACTIVE, 'join_code' => Course::generateJoinCode()]);
+        Course::create(['user_id' => $dosenMn->id, 'prodi_id' => $mn->id, 'name' => 'Riset Pemasaran', 'code' => 'MNR1', 'semester' => 'Ganjil', 'year' => 2026, 'status' => Course::STATUS_ACTIVE, 'join_code' => Course::generateJoinCode()]);
+
+        $res = $this->actingAs($kaprodiAk)->get(route('admin.courses.index'));
+        $res->assertOk();
+        $res->assertSee('Akuntansi Biaya');
+        $res->assertDontSee('Riset Pemasaran');
+    }
+
+    public function test_pengawasan_kelas_bukan_untuk_dosen_mahasiswa(): void
+    {
+        $this->actingAs($this->user(User::ROLE_DOSEN))->get(route('admin.courses.index'))->assertForbidden();
+        $this->actingAs($this->user(User::ROLE_MAHASISWA))->get(route('admin.courses.index'))->assertForbidden();
+    }
+
     public function test_dosen_tidak_bisa_akses_kelas_dosen_lain(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);
