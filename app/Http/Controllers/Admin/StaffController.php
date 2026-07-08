@@ -116,6 +116,12 @@ class StaffController extends Controller
             'role' => ['required', Rule::in(self::ROLES)],
             'prodi_id' => ['required', 'integer', 'exists:prodi,id'],
             'nim_nip' => ['nullable', 'string', 'max:50', Rule::unique('users', 'nim_nip')->ignore($staff?->id)],
+            'nidn' => ['nullable', 'string', 'max:30'],
+            'jabatan' => ['nullable', 'string', 'max:100'],
+            'gender' => ['nullable', 'in:L,P'],
+            'birth_place' => ['nullable', 'string', 'max:100'],
+            'birth_date' => ['nullable', 'date'],
+            'address' => ['nullable', 'string', 'max:500'],
         ];
 
         if (! $staff) {

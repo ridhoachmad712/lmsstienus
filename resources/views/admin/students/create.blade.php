@@ -46,6 +46,7 @@
                     <input type="text" name="password" class="form-control" placeholder="Kosongkan = pakai NIM (atau 'password')">
                     <small class="form-hint">Mahasiswa bisa menggantinya nanti di profil.</small>
                 </div>
+                @include('admin.students._biodata', ['u' => null])
             </div>
             <div class="card-footer text-end">
                 <a href="{{ route('admin.students.index') }}" class="btn btn-link">Batal</a>

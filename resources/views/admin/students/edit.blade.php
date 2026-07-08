@@ -42,6 +42,7 @@
                         </select>
                     </div>
                 @endif
+                @include('admin.students._biodata', ['u' => $student])
                 <div class="text-secondary small">Untuk mengubah kata sandi, gunakan tombol <i class="ti ti-key"></i> Reset di daftar mahasiswa.</div>
             </div>
             <div class="card-footer text-end">

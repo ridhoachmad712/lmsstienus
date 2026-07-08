@@ -74,26 +74,37 @@ class StudentController extends Controller
         return view('admin.students.create', ['prodis' => Prodi::orderBy('name')->get()]);
     }
 
+    /** Aturan validasi biodata mahasiswa (dipakai store & update). */
+    private function biodataRules(): array
+    {
+        return [
+            'gender' => ['nullable', 'in:L,P'],
+            'birth_place' => ['nullable', 'string', 'max:100'],
+            'birth_date' => ['nullable', 'date'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'entry_year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
+            'student_status' => ['nullable', 'in:'.implode(',', User::STUDENT_STATUSES)],
+        ];
+    }
+
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'nim_nip' => ['nullable', 'string', 'max:50', 'unique:users,nim_nip'],
             'phone' => ['nullable', 'string', 'max:30'],
             'password' => ['nullable', 'string', 'min:6'],
             'prodi_id' => ['nullable', 'integer', 'exists:prodi,id'],
-        ]);
+        ], $this->biodataRules()));
 
-        User::create([
-            'name' => $data['name'],
-            'email' => strtolower($data['email']),
-            'nim_nip' => $data['nim_nip'] ?? null,
-            'phone' => $data['phone'] ?? null,
-            'role' => User::ROLE_MAHASISWA,
-            'prodi_id' => $this->targetProdiId($request),
-            'password' => Hash::make(($data['password'] ?? null) ?: ($data['nim_nip'] ?? null ?: 'password')),
-        ]);
+        $data['email'] = strtolower($data['email']);
+        $data['role'] = User::ROLE_MAHASISWA;
+        $data['prodi_id'] = $this->targetProdiId($request);
+        // Sandi (plain) di-hash otomatis oleh cast; default = NIM (atau 'password').
+        $data['password'] = ($data['password'] ?? null) ?: ($data['nim_nip'] ?? null ?: 'password');
+
+        User::create($data);
 
         return redirect()->route('admin.students.index')->with('status', 'Akun mahasiswa dibuat.');
     }
@@ -109,13 +120,13 @@ class StudentController extends Controller
     {
         $this->authorizeStudent($request, $student);
 
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($student->id)],
             'nim_nip' => ['nullable', 'string', 'max:50', Rule::unique('users', 'nim_nip')->ignore($student->id)],
             'phone' => ['nullable', 'string', 'max:30'],
             'prodi_id' => ['nullable', 'integer', 'exists:prodi,id'],
-        ]);
+        ], $this->biodataRules()));
 
         // Kaprodi tidak boleh memindah mahasiswa keluar prodinya.
         if ($request->user()->isKaprodi()) {

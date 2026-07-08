@@ -59,6 +59,35 @@
                         </div>
                     @endunless
                 </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3"><label class="form-label">NIDN</label>
+                        <input type="text" name="nidn" class="form-control" value="{{ old('nidn', $user->nidn) }}">
+                    </div>
+                    <div class="col-md-6 mb-3"><label class="form-label">Jabatan Akademik</label>
+                        <input type="text" name="jabatan" class="form-control" value="{{ old('jabatan', $user->jabatan) }}" placeholder="mis. Lektor / Asisten Ahli">
+                    </div>
+                </div>
+
+                <hr class="my-3"><div class="text-secondary small mb-2">Biodata</div>
+                <div class="row">
+                    <div class="col-md-4 mb-3"><label class="form-label">Jenis Kelamin</label>
+                        <select name="gender" class="form-select">
+                            <option value="">—</option>
+                            <option value="L" @selected(old('gender', $user->gender) === 'L')>Laki-laki</option>
+                            <option value="P" @selected(old('gender', $user->gender) === 'P')>Perempuan</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3"><label class="form-label">Tempat Lahir</label>
+                        <input type="text" name="birth_place" class="form-control" value="{{ old('birth_place', $user->birth_place) }}">
+                    </div>
+                    <div class="col-md-4 mb-3"><label class="form-label">Tanggal Lahir</label>
+                        <input type="date" name="birth_date" class="form-control" value="{{ old('birth_date', $user->birth_date?->format('Y-m-d')) }}">
+                    </div>
+                    <div class="col-12 mb-3"><label class="form-label">Alamat</label>
+                        <textarea name="address" class="form-control" rows="2">{{ old('address', $user->address) }}</textarea>
+                    </div>
+                </div>
+
                 @if ($isEdit)
                     <div class="text-secondary small">Untuk mengubah kata sandi, gunakan tombol <i class="ti ti-key"></i> Reset di daftar.</div>
                 @endif

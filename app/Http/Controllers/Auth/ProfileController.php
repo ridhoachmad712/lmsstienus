@@ -27,6 +27,10 @@ class ProfileController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'phone' => ['nullable', 'string', 'max:30'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'gender' => ['nullable', 'in:L,P'],
+            'birth_place' => ['nullable', 'string', 'max:100'],
+            'birth_date' => ['nullable', 'date'],
+            'address' => ['nullable', 'string', 'max:500'],
         ]);
 
         $data['email_notifications'] = $request->boolean('email_notifications');

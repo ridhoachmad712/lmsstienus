@@ -12,7 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'prodi_id', 'nim_nip', 'phone', 'avatar', 'email_notifications'])]
+#[Fillable(['name', 'email', 'password', 'role', 'prodi_id', 'nim_nip', 'phone', 'avatar', 'email_notifications',
+    'gender', 'birth_place', 'birth_date', 'address', 'entry_year', 'student_status', 'nidn', 'jabatan'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -33,7 +34,20 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'email_notifications' => 'boolean',
+            'birth_date' => 'date',
         ];
+    }
+
+    /** Status akademik mahasiswa. */
+    public const STUDENT_STATUSES = ['aktif', 'cuti', 'lulus', 'keluar'];
+
+    public function genderLabel(): string
+    {
+        return match ($this->gender) {
+            'L' => 'Laki-laki',
+            'P' => 'Perempuan',
+            default => '—',
+        };
     }
 
     public function prodi(): \Illuminate\Database\Eloquent\Relations\BelongsTo

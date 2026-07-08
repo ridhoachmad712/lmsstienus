@@ -182,6 +182,25 @@ class RoleAccessTest extends TestCase
         $this->actingAs($this->user(User::ROLE_MAHASISWA))->get(route('admin.courses.index'))->assertForbidden();
     }
 
+    public function test_admin_buat_mahasiswa_dengan_biodata(): void
+    {
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $admin = $this->user(User::ROLE_ADMIN);
+
+        $this->actingAs($admin)->post(route('admin.students.store'), [
+            'name' => 'Mhs Biodata', 'email' => 'mhsbio@x.test', 'nim_nip' => '2350001', 'prodi_id' => $mn->id,
+            'gender' => 'L', 'entry_year' => 2023, 'student_status' => 'aktif',
+            'birth_place' => 'Makassar', 'address' => 'Jl. Test',
+        ])->assertRedirect(route('admin.students.index'));
+
+        $u = User::where('email', 'mhsbio@x.test')->first();
+        $this->assertSame(User::ROLE_MAHASISWA, $u->role);
+        $this->assertSame($mn->id, $u->prodi_id);
+        $this->assertSame(2023, $u->entry_year);
+        $this->assertSame('aktif', $u->student_status);
+        $this->assertSame('L', $u->gender);
+    }
+
     public function test_dosen_tidak_bisa_akses_kelas_dosen_lain(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);
