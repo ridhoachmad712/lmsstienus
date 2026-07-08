@@ -44,6 +44,79 @@ class RoleAccessTest extends TestCase
         $this->actingAs($admin)->get(route('admin.settings.edit'))->assertOk();
     }
 
+    // ===================== Backup / Restore =====================
+
+    public function test_backup_area_hanya_admin(): void
+    {
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $kaprodi = User::factory()->create(['role' => User::ROLE_KAPRODI, 'prodi_id' => $ak->id]);
+
+        $this->actingAs($this->user(User::ROLE_ADMIN))->get(route('admin.backups.index'))
+            ->assertOk()->assertSee('Unggah Berkas Backup');
+        $this->actingAs($kaprodi)->get(route('admin.backups.index'))->assertForbidden();
+        $this->actingAs($this->user(User::ROLE_DOSEN))->get(route('admin.backups.index'))->assertForbidden();
+        $this->actingAs($this->user(User::ROLE_MAHASISWA))->post(route('admin.backups.upload'))->assertForbidden();
+    }
+
+    public function test_upload_backup_tolak_ekstensi_salah(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+
+        $this->actingAs($admin)->post(route('admin.backups.upload'), [
+            'file' => \Illuminate\Http\UploadedFile::fake()->create('dump.txt', 4),
+        ])->assertRedirect()->assertSessionHas('error');
+    }
+
+    public function test_upload_backup_diterima_masuk_daftar(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+        $dir = storage_path('app/backups');
+        \Illuminate\Support\Facades\File::ensureDirectoryExists($dir);
+        $before = glob($dir.'/upload_*.sql') ?: [];
+
+        $this->actingAs($admin)->post(route('admin.backups.upload'), [
+            'file' => \Illuminate\Http\UploadedFile::fake()->create('dump.sql', 4),
+        ])->assertRedirect()->assertSessionHas('status');
+
+        $after = glob($dir.'/upload_*.sql') ?: [];
+        $this->assertGreaterThan(count($before), count($after));
+
+        foreach (array_diff($after, $before) as $f) {
+            @unlink($f);
+        }
+    }
+
+    public function test_restore_lintas_tipe_ditolak(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+        $dir = storage_path('app/backups');
+        \Illuminate\Support\Facades\File::ensureDirectoryExists($dir);
+        // Koneksi test = sqlite; backup .sql (MySQL) harus ditolak, DB tak tersentuh.
+        $name = 'test_dummy_'.uniqid().'.sql';
+        file_put_contents($dir.'/'.$name, "-- dummy\nSELECT 1;\n");
+
+        $this->actingAs($admin)->post(route('admin.backups.restore', $name))
+            ->assertRedirect()->assertSessionHas('error');
+
+        @unlink($dir.'/'.$name);
+        // Data lama masih utuh (admin masih ada).
+        $this->assertDatabaseHas('users', ['id' => $admin->id]);
+    }
+
+    public function test_split_statements_hormati_kutip_dan_komentar(): void
+    {
+        $sql = "-- header komentar\n".
+            "SET NAMES utf8mb4;\n".
+            "INSERT INTO `t` (`a`) VALUES ('ada;titik-koma\ndan newline');\n".
+            "INSERT INTO `t` (`a`) VALUES ('x');\n";
+
+        $stmts = \App\Http\Controllers\Admin\BackupController::splitStatements($sql);
+
+        $this->assertCount(3, $stmts); // komentar diabaikan; SET + 2 INSERT
+        $this->assertStringContainsString('ada;titik-koma', $stmts[1]);
+        $this->assertStringStartsWith('SET NAMES', $stmts[0]);
+    }
+
     public function test_navbar_admin_active_state_benar(): void
     {
         $admin = $this->user(User::ROLE_ADMIN);
