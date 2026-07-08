@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Models\Enrollment;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,11 +36,9 @@ class EnrollmentController extends Controller
             throw ValidationException::withMessages(['join_code' => 'Kode kelas tidak valid atau kelas tidak aktif.']);
         }
 
-        if ($course->students()->whereKey($request->user()->id)->exists()) {
+        if (! $this->enrollApproved($course, $request->user()->id)) {
             return redirect()->route('courses.show', $course)->with('status', 'Anda sudah terdaftar di kelas ini.');
         }
-
-        $course->students()->attach($request->user()->id, ['enrolled_at' => now()]);
 
         return redirect()->route('courses.show', $course)->with('status', 'Berhasil gabung ke '.$course->name.'.');
     }
@@ -80,16 +79,10 @@ class EnrollmentController extends Controller
         // Hanya mahasiswa yang boleh di-enroll
         $mahasiswaIds = User::whereIn('id', $validated['user_ids'])
             ->where('role', User::ROLE_MAHASISWA)
-            ->pluck('id')
-            ->all();
+            ->pluck('id');
 
-        $payload = collect($mahasiswaIds)
-            ->mapWithKeys(fn ($id) => [$id => ['enrolled_at' => now()]])
-            ->all();
-
-        $changes = $course->students()->syncWithoutDetaching($payload);
-
-        $added = count($changes['attached']);
+        // Penambahan langsung oleh dosen = enrollment aktif (disetujui), lewati alur KRS.
+        $added = $mahasiswaIds->filter(fn ($id) => $this->enrollApproved($course, $id))->count();
 
         return back()->with('status', "$added mahasiswa berhasil ditambahkan ke kelas.");
     }
@@ -148,8 +141,7 @@ class EnrollmentController extends Controller
                 continue;
             }
 
-            if (! $course->students()->whereKey($user->id)->exists()) {
-                $course->students()->attach($user->id, ['enrolled_at' => now()]);
+            if ($this->enrollApproved($course, $user->id)) {
                 $enrolled++;
             }
         }
@@ -164,9 +156,26 @@ class EnrollmentController extends Controller
     {
         $this->authorizeOwner($request, $course);
 
-        $course->students()->detach($user->id);
+        Enrollment::where('course_id', $course->id)->where('user_id', $user->id)->delete();
 
         return back()->with('status', 'Mahasiswa dikeluarkan dari kelas.');
+    }
+
+    /**
+     * Jadikan enrollment mahasiswa AKTIF (disetujui) — buat baru atau promosikan draft/diajukan.
+     * Mengembalikan true bila status berubah menjadi aktif (baru terdaftar), false bila sudah aktif.
+     */
+    private function enrollApproved(Course $course, int $userId): bool
+    {
+        $enrollment = Enrollment::firstOrNew(['course_id' => $course->id, 'user_id' => $userId]);
+        $alreadyActive = $enrollment->exists && $enrollment->status === Enrollment::STATUS_APPROVED;
+
+        $enrollment->status = Enrollment::STATUS_APPROVED;
+        $enrollment->enrolled_at = $enrollment->enrolled_at ?? now();
+        $enrollment->approved_at = now();
+        $enrollment->save();
+
+        return ! $alreadyActive;
     }
 
     private function authorizeOwner(Request $request, Course $course): void

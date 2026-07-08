@@ -25,6 +25,7 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ForumController;
 use App\Http\Controllers\GradeComponentController;
 use App\Http\Controllers\GradeController;
+use App\Http\Controllers\KrsController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\NotificationController;
@@ -80,6 +81,12 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:mahasiswa')->group(function () {
         Route::get('/transkrip', [TranscriptController::class, 'mine'])->name('transkrip.mine');
         Route::get('/transkrip/pdf', [TranscriptController::class, 'minePdf'])->name('transkrip.mine.pdf');
+
+        // KRS — Kartu Rencana Studi
+        Route::get('/krs', [KrsController::class, 'index'])->name('krs.index');
+        Route::post('/krs/courses/{course}', [KrsController::class, 'add'])->name('krs.add');
+        Route::delete('/krs/{enrollment}', [KrsController::class, 'remove'])->name('krs.remove');
+        Route::post('/krs/submit', [KrsController::class, 'submit'])->name('krs.submit');
     });
 
     // Jadwal mingguan pribadi (kuliah/mengajar)
@@ -185,6 +192,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/perwalian', [PerwalianController::class, 'index'])->name('perwalian.index');
         Route::get('/perwalian/{student}/transkrip', [PerwalianController::class, 'transkrip'])->name('perwalian.transkrip');
         Route::get('/perwalian/{student}/transkrip/pdf', [PerwalianController::class, 'transkripPdf'])->name('perwalian.transkrip.pdf');
+        Route::get('/perwalian/{student}/krs', [PerwalianController::class, 'krs'])->name('perwalian.krs');
+        Route::post('/perwalian/{student}/krs/approve', [PerwalianController::class, 'approveKrs'])->name('perwalian.krs.approve');
+        Route::post('/perwalian/{student}/krs/reject', [PerwalianController::class, 'rejectKrs'])->name('perwalian.krs.reject');
 
         // Tugas & Kuis — CRUD
         Route::get('/courses/{course}/assignments/create', [AssignmentController::class, 'create'])->name('assignments.create');
@@ -311,6 +321,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/semesters', [SemesterController::class, 'index'])->name('semesters.index');
         Route::post('/semesters', [SemesterController::class, 'store'])->name('semesters.store');
         Route::put('/semesters/active', [SemesterController::class, 'updateActive'])->name('semesters.updateActive');
+        Route::put('/semesters/krs', [SemesterController::class, 'updateKrs'])->name('semesters.krs');
         Route::delete('/semesters/{semester}', [SemesterController::class, 'destroy'])->name('semesters.destroy');
 
         Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');

@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['user_id', 'prodi_id', 'mata_kuliah_id', 'name', 'code', 'class_name', 'join_code', 'semester', 'year', 'description', 'status', 'default_meeting_type'])]
+#[Fillable(['user_id', 'prodi_id', 'mata_kuliah_id', 'name', 'code', 'class_name', 'join_code', 'semester', 'year', 'quota', 'description', 'status', 'default_meeting_type'])]
 class Course extends Model
 {
     /** @use HasFactory<\Database\Factories\CourseFactory> */
@@ -55,17 +55,37 @@ class Course extends Model
         return $this->belongsTo(MataKuliah::class);
     }
 
-    /** Mahasiswa yang terdaftar. */
+    /** Mahasiswa terdaftar (enrollment DISETUJUI saja — draft/diajukan tak dihitung). */
     public function students(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'enrollments', 'course_id', 'user_id')
             ->withTimestamps()
-            ->withPivot('enrolled_at');
+            ->withPivot('status', 'enrolled_at')
+            ->wherePivot('status', Enrollment::STATUS_APPROVED);
     }
 
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
+    }
+
+    /** Jumlah kursi terpakai (disetujui + diajukan) — untuk cek kuota. */
+    public function seatsTaken(): int
+    {
+        return $this->enrollments()
+            ->whereIn('status', [Enrollment::STATUS_APPROVED, Enrollment::STATUS_SUBMITTED])
+            ->count();
+    }
+
+    /** Sisa kuota, atau null bila kelas tanpa batas. */
+    public function remainingQuota(): ?int
+    {
+        return $this->quota === null ? null : max(0, $this->quota - $this->seatsTaken());
+    }
+
+    public function isFull(): bool
+    {
+        return $this->remainingQuota() === 0;
     }
 
     public function meetings(): HasMany

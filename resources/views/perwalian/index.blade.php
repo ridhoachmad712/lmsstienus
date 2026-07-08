@@ -12,7 +12,7 @@
     @else
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
-                <thead><tr><th>Nama</th><th>NIM</th><th>Prodi</th><th class="text-center">Angkatan</th><th class="text-center">Status</th><th></th></tr></thead>
+                <thead><tr><th>Nama</th><th>NIM</th><th>Prodi</th><th class="text-center">Angkatan</th><th class="text-center">Status</th><th class="text-center">KRS {{ $periodLabel }}</th><th></th></tr></thead>
                 <tbody>
                     @foreach ($advisees as $m)
                         <tr>
@@ -25,7 +25,15 @@
                             <td>{{ $m->prodi?->name ?? '—' }}</td>
                             <td class="text-center">{{ $m->entry_year ?? '—' }}</td>
                             <td class="text-center"><span class="badge bg-{{ $m->student_status === 'aktif' ? 'green' : 'secondary' }}-lt text-capitalize">{{ $m->student_status }}</span></td>
+                            <td class="text-center">
+                                @if ($m->krs_pending_count > 0)
+                                    <span class="badge bg-yellow-lt">{{ $m->krs_pending_count }} perlu persetujuan</span>
+                                @else
+                                    <span class="text-secondary small">—</span>
+                                @endif
+                            </td>
                             <td class="text-end">
+                                <a href="{{ route('perwalian.krs', $m) }}" class="btn btn-sm @if ($m->krs_pending_count > 0) btn-primary @endif"><i class="ti ti-clipboard-check me-1"></i>KRS</a>
                                 <a href="{{ route('perwalian.transkrip', $m) }}" class="btn btn-sm"><i class="ti ti-certificate me-1"></i>Transkrip</a>
                             </td>
                         </tr>

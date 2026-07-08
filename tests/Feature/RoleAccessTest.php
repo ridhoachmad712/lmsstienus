@@ -338,4 +338,133 @@ class RoleAccessTest extends TestCase
         $this->actingAs($owner)->get(route('courses.show', $course))->assertOk();
         $this->actingAs($other)->get(route('courses.show', $course))->assertForbidden();
     }
+
+    // ===================== KRS (S4) =====================
+
+    /** Siapkan periode aktif + kelas ber-SKS untuk skenario KRS. */
+    private function krsCourse(int $sks = 3, ?User $dosen = null): Course
+    {
+        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        $prodi = Prodi::firstOrCreate(['code' => 'MN'], ['name' => 'Manajemen']);
+        $mk = \App\Models\MataKuliah::create(['prodi_id' => $prodi->id, 'code' => 'MN'.rand(100, 999), 'name' => 'MK Uji', 'sks' => $sks]);
+        $dosen ??= User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $prodi->id]);
+
+        return Course::create([
+            'user_id' => $dosen->id, 'prodi_id' => $prodi->id, 'mata_kuliah_id' => $mk->id,
+            'name' => 'Kelas KRS', 'code' => 'KRS'.$mk->id, 'semester' => 'Ganjil', 'year' => 2026,
+            'status' => Course::STATUS_ACTIVE, 'join_code' => Course::generateJoinCode(),
+        ]);
+    }
+
+    public function test_admin_buka_tutup_krs(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+
+        // Panel kontrol KRS ter-render
+        $this->actingAs($admin)->get(route('admin.semesters.index'))->assertOk()->assertSee('Pengisian KRS');
+
+        $this->actingAs($admin)->put(route('admin.semesters.krs'), ['krs_open' => '1', 'krs_max_sks' => 22])
+            ->assertRedirect();
+
+        $this->assertTrue(\App\Http\Controllers\KrsController::krsOpen());
+        $this->assertSame(22, \App\Http\Controllers\KrsController::maxSks());
+    }
+
+    public function test_mahasiswa_susun_dan_ajukan_krs(): void
+    {
+        $course = $this->krsCourse();
+        \App\Models\Setting::put('krs_open', '1');
+        $wali = $this->user(User::ROLE_DOSEN);
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'advisor_id' => $wali->id]);
+
+        // Halaman KRS ter-render
+        $this->actingAs($mhs)->get(route('krs.index'))->assertOk()->assertSee('Kelas KRS');
+
+        // Tambah ke KRS (draft)
+        $this->actingAs($mhs)->post(route('krs.add', $course))->assertRedirect();
+        $this->assertDatabaseHas('enrollments', [
+            'course_id' => $course->id, 'user_id' => $mhs->id, 'status' => \App\Models\Enrollment::STATUS_DRAFT,
+        ]);
+
+        // Belum disetujui → tak boleh masuk kelas
+        $this->actingAs($mhs)->get(route('courses.show', $course))->assertForbidden();
+
+        // Ajukan ke wali
+        $this->actingAs($mhs)->post(route('krs.submit'))->assertRedirect();
+        $this->assertDatabaseHas('enrollments', [
+            'course_id' => $course->id, 'user_id' => $mhs->id, 'status' => \App\Models\Enrollment::STATUS_SUBMITTED,
+        ]);
+    }
+
+    public function test_krs_tutup_tak_bisa_tambah(): void
+    {
+        $course = $this->krsCourse();
+        \App\Models\Setting::put('krs_open', '0');
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+
+        $this->actingAs($mhs)->post(route('krs.add', $course))->assertForbidden();
+        $this->assertDatabaseMissing('enrollments', ['course_id' => $course->id, 'user_id' => $mhs->id]);
+    }
+
+    public function test_krs_batas_sks(): void
+    {
+        $course = $this->krsCourse(sks: 3);
+        \App\Models\Setting::put('krs_open', '1');
+        \App\Models\Setting::put('krs_max_sks', '2'); // batas < sks kelas
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+
+        $this->actingAs($mhs)->post(route('krs.add', $course))->assertRedirect();
+        // Melebihi batas → tidak tersimpan
+        $this->assertDatabaseMissing('enrollments', ['course_id' => $course->id, 'user_id' => $mhs->id]);
+    }
+
+    public function test_wali_setujui_krs_beri_akses_kelas(): void
+    {
+        $wali = $this->user(User::ROLE_DOSEN);
+        $course = $this->krsCourse();
+        \App\Models\Setting::put('krs_open', '1');
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'advisor_id' => $wali->id]);
+
+        $this->actingAs($mhs)->post(route('krs.add', $course));
+        $this->actingAs($mhs)->post(route('krs.submit'));
+
+        // Halaman tinjau KRS wali ter-render + daftar bimbingan
+        $this->actingAs($wali)->get(route('perwalian.index'))->assertOk();
+        $this->actingAs($wali)->get(route('perwalian.krs', $mhs))->assertOk()->assertSee('Kelas KRS');
+
+        // Wali menyetujui
+        $this->actingAs($wali)->post(route('perwalian.krs.approve', $mhs))->assertRedirect();
+        $this->assertDatabaseHas('enrollments', [
+            'course_id' => $course->id, 'user_id' => $mhs->id,
+            'status' => \App\Models\Enrollment::STATUS_APPROVED, 'approved_by' => $wali->id,
+        ]);
+
+        // Sekarang mahasiswa dapat mengakses kelas
+        $this->actingAs($mhs)->get(route('courses.show', $course))->assertOk();
+    }
+
+    public function test_krs_deteksi_bentrok_jadwal(): void
+    {
+        \App\Models\Setting::put('krs_open', '1');
+        $c1 = $this->krsCourse();
+        $c2 = $this->krsCourse();
+        // Jadwal beririsan: keduanya Senin 08:00–10:00
+        $c1->schedules()->create(['day' => 1, 'start_time' => '08:00', 'end_time' => '10:00', 'room' => 'R1']);
+        $c2->schedules()->create(['day' => 1, 'start_time' => '09:00', 'end_time' => '11:00', 'room' => 'R2']);
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+
+        $this->actingAs($mhs)->post(route('krs.add', $c1));
+        $this->actingAs($mhs)->post(route('krs.add', $c2));
+
+        $this->actingAs($mhs)->get(route('krs.index'))->assertOk()->assertSee('Jadwal bentrok');
+    }
+
+    public function test_wali_lain_tak_bisa_setujui_krs(): void
+    {
+        $wali = $this->user(User::ROLE_DOSEN);
+        $lain = $this->user(User::ROLE_DOSEN);
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'advisor_id' => $wali->id]);
+
+        $this->actingAs($lain)->post(route('perwalian.krs.approve', $mhs))->assertForbidden();
+    }
 }

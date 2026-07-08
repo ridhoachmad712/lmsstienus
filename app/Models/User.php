@@ -119,12 +119,13 @@ class User extends Authenticatable
         return $this->hasMany(Course::class);
     }
 
-    /** Kelas yang diikuti (sebagai mahasiswa). */
+    /** Kelas yang diikuti (enrollment DISETUJUI saja — dasar akses LMS). */
     public function enrolledCourses(): BelongsToMany
     {
         return $this->belongsToMany(Course::class, 'enrollments')
             ->withTimestamps()
-            ->withPivot('enrolled_at');
+            ->withPivot('status', 'enrolled_at')
+            ->wherePivot('status', Enrollment::STATUS_APPROVED);
     }
 
     public function enrollments(): HasMany

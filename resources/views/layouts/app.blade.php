@@ -207,6 +207,12 @@
                             </li>
                         @endif
                         @if ($user->isMahasiswa())
+                            <li class="nav-item {{ request()->routeIs('krs.*') ? 'active' : '' }}">
+                                <a class="nav-link" href="{{ route('krs.index') }}">
+                                    <span class="nav-link-icon"><i class="ti ti-clipboard-list"></i></span>
+                                    <span class="nav-link-title">KRS</span>
+                                </a>
+                            </li>
                             <li class="nav-item {{ request()->routeIs('transkrip.*') ? 'active' : '' }}">
                                 <a class="nav-link" href="{{ route('transkrip.mine') }}">
                                     <span class="nav-link-icon"><i class="ti ti-certificate"></i></span>

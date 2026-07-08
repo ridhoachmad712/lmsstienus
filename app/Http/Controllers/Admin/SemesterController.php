@@ -49,8 +49,28 @@ class SemesterController extends Controller
         $academicYear = Setting::get('academic_year', (string) date('Y'));
         $semester = Setting::get('semester', 'Ganjil');
         $activeKeys = Semester::activeKeys();
+        $krsOpen = \App\Http\Controllers\KrsController::krsOpen();
+        $krsMaxSks = \App\Http\Controllers\KrsController::maxSks();
+        $krsPeriodLabel = Semester::keyLabel(Semester::primaryKey());
 
-        return view('admin.semesters.index', compact('periods', 'activeKeys', 'academicYear', 'semester'));
+        return view('admin.semesters.index', compact('periods', 'activeKeys', 'academicYear', 'semester', 'krsOpen', 'krsMaxSks', 'krsPeriodLabel'));
+    }
+
+    /** Buka/tutup periode pengisian KRS + batas SKS. */
+    public function updateKrs(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'krs_open' => ['nullable', 'boolean'],
+            'krs_max_sks' => ['required', 'integer', 'min:1', 'max:30'],
+        ]);
+
+        $open = (bool) ($data['krs_open'] ?? false);
+        Setting::put('krs_open', $open ? '1' : '0');
+        Setting::put('krs_max_sks', (string) $data['krs_max_sks']);
+
+        Activity::log('update', 'Mengubah pengaturan KRS: '.($open ? 'BUKA' : 'TUTUP').", maks {$data['krs_max_sks']} SKS");
+
+        return back()->with('status', 'Pengaturan KRS diperbarui — pengisian '.($open ? 'DIBUKA' : 'DITUTUP').'.');
     }
 
     /** Tambah semester baru ke daftar. */

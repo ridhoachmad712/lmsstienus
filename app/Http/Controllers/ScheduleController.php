@@ -18,7 +18,7 @@ class ScheduleController extends Controller
     {
         $user = $request->user();
         $courses = ($user->isDosen() ? $user->teachingCourses() : $user->enrolledCourses())
-            ->where('status', Course::STATUS_ACTIVE)
+            ->where('courses.status', Course::STATUS_ACTIVE)
             ->with('schedules')
             ->get();
 

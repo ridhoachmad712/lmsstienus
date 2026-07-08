@@ -117,7 +117,7 @@ class DashboardController extends Controller
         $user = $request->user();
 
         $courses = $user->enrolledCourses()
-            ->where('status', Course::STATUS_ACTIVE)
+            ->where('courses.status', Course::STATUS_ACTIVE)
             ->with('lecturer')
             ->withCount('meetings')
             ->get();
@@ -169,8 +169,10 @@ class DashboardController extends Controller
             'unread' => $user->notifications()->unread()->count(),
         ];
 
+        $krsOpen = \App\Http\Controllers\KrsController::krsOpen();
+
         return view('dashboard.mahasiswa', compact(
-            'courses', 'pending', 'recentGrades', 'upcomingMeetings', 'lowAttendance', 'stats'
+            'courses', 'pending', 'recentGrades', 'upcomingMeetings', 'lowAttendance', 'stats', 'krsOpen'
         ));
     }
 }

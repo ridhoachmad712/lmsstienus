@@ -33,6 +33,43 @@
     </div>
 </div>
 
+{{-- ===================== PENGISIAN KRS ===================== --}}
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="POST" action="{{ route('admin.semesters.krs') }}">
+            @csrf @method('PUT')
+            <div class="row align-items-center g-3">
+                <div class="col-auto">
+                    <span class="avatar avatar-lg rounded bg-{{ $krsOpen ? 'green' : 'secondary' }}-lt"><i class="ti ti-clipboard-list icon-lg"></i></span>
+                </div>
+                <div class="col-md">
+                    <div class="text-secondary">Pengisian KRS mahasiswa</div>
+                    <div class="mt-1">
+                        <span class="badge bg-{{ $krsOpen ? 'green' : 'red' }}-lt fs-3">
+                            <i class="ti ti-{{ $krsOpen ? 'lock-open' : 'lock' }} me-1"></i>{{ $krsOpen ? 'DIBUKA' : 'DITUTUP' }}
+                        </span>
+                        <span class="text-secondary ms-2">Periode: <strong>{{ $krsPeriodLabel }}</strong></span>
+                    </div>
+                    <div class="form-hint mt-1">Saat dibuka, mahasiswa dapat menyusun &amp; mengajukan KRS untuk periode aktif utama. Dosen wali menyetujui pengajuan di menu Perwalian.</div>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">Batas SKS</label>
+                    <input type="number" name="krs_max_sks" class="form-control" style="width:6rem" value="{{ old('krs_max_sks', $krsMaxSks) }}" min="1" max="30" required>
+                </div>
+                <div class="col-auto">
+                    <label class="form-check form-switch mt-4">
+                        <input class="form-check-input" type="checkbox" name="krs_open" value="1" @checked($krsOpen)>
+                        <span class="form-check-label">Buka KRS</span>
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary mt-3"><i class="ti ti-device-floppy me-1"></i>Simpan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 {{-- ===================== DAFTAR PERIODE ===================== --}}
 <div class="card">
     <div class="card-header">

@@ -7,6 +7,15 @@
 @section('content')
 @include('partials.welcome-banner')
 
+{{-- Alert KRS dibuka --}}
+@if (! empty($krsOpen))
+    <div class="alert alert-info d-flex align-items-center" role="alert">
+        <i class="ti ti-clipboard-list me-2"></i>
+        <div class="flex-fill">Pengisian <strong>KRS</strong> sedang dibuka. Susun rencana studi Anda dan ajukan ke dosen wali.</div>
+        <a href="{{ route('krs.index') }}" class="btn btn-sm btn-info">Buka KRS</a>
+    </div>
+@endif
+
 {{-- Alert kehadiran rendah --}}
 @foreach ($lowAttendance as $low)
     <div class="alert alert-warning" role="alert">
