@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\KrsController;
 use App\Models\Course;
+use App\Models\Enrollment;
 use App\Models\Semester;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -33,6 +35,22 @@ class DashboardController extends Controller
         $activeKeys = Semester::activeKeys();
         $prodi = $user->prodi;
 
-        return view('admin.dashboard', compact('stats', 'activeKeys', 'prodi'));
+        // Status KRS periode aktif utama + jumlah mahasiswa yang KRS-nya menunggu persetujuan wali.
+        [$year, $semester] = explode('-', Semester::primaryKey(), 2);
+        $krsPending = User::where('role', User::ROLE_MAHASISWA)
+            ->when($prodiId, fn ($q) => $q->where('prodi_id', $prodiId))
+            ->whereHas('enrollments', fn ($q) => $q
+                ->where('status', Enrollment::STATUS_SUBMITTED)
+                ->whereHas('course', fn ($c) => $c->where('year', $year)->where('semester', $semester)))
+            ->count();
+
+        $krs = [
+            'open' => KrsController::krsOpen(),
+            'max_sks' => KrsController::maxSks(),
+            'pending' => $krsPending,
+            'period' => Semester::keyLabel($year.'-'.$semester),
+        ];
+
+        return view('admin.dashboard', compact('stats', 'activeKeys', 'prodi', 'krs'));
     }
 }

@@ -360,7 +360,8 @@ class RoleAccessTest extends TestCase
     {
         $admin = $this->user(User::ROLE_ADMIN);
 
-        // Panel kontrol KRS ter-render
+        // Panel KRS tampil di dashboard admin + halaman Kelola Semester
+        $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()->assertSee('Pengisian KRS')->assertSee('Akademik');
         $this->actingAs($admin)->get(route('admin.semesters.index'))->assertOk()->assertSee('Pengisian KRS');
 
         $this->actingAs($admin)->put(route('admin.semesters.krs'), ['krs_open' => '1', 'krs_max_sks' => 22])
