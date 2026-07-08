@@ -192,6 +192,14 @@
                                 <span class="nav-link-title">Kalender</span>
                             </a>
                         </li>
+                        @if ($user->isMahasiswa())
+                            <li class="nav-item {{ request()->routeIs('transkrip.*') ? 'active' : '' }}">
+                                <a class="nav-link" href="{{ route('transkrip.mine') }}">
+                                    <span class="nav-link-icon"><i class="ti ti-certificate"></i></span>
+                                    <span class="nav-link-title">Transkrip</span>
+                                </a>
+                            </li>
+                        @endif
                         @endunless
                         @if ($user->isAdmin())
                             <li class="nav-item dropdown {{ request()->routeIs('admin.*') ? 'active' : '' }}">

@@ -34,6 +34,7 @@ use App\Http\Controllers\RubricController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\SyllabusController;
+use App\Http\Controllers\TranscriptController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
@@ -72,6 +73,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
+    // Transkrip mahasiswa (milik sendiri)
+    Route::middleware('role:mahasiswa')->group(function () {
+        Route::get('/transkrip', [TranscriptController::class, 'mine'])->name('transkrip.mine');
+        Route::get('/transkrip/pdf', [TranscriptController::class, 'minePdf'])->name('transkrip.mine.pdf');
+    });
 
     // Gabung kelas via kode (mahasiswa)
     Route::get('/join', [EnrollmentController::class, 'showJoin'])->name('enrollments.join.show');
@@ -244,6 +251,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/students/{student}', [AdminStudentController::class, 'update'])->name('students.update');
         Route::post('/students/{student}/reset-password', [AdminStudentController::class, 'resetPassword'])->name('students.resetPassword');
         Route::delete('/students/{student}', [AdminStudentController::class, 'destroy'])->name('students.destroy');
+        Route::get('/students/{student}/transkrip', [TranscriptController::class, 'show'])->name('students.transkrip');
+        Route::get('/students/{student}/transkrip/pdf', [TranscriptController::class, 'showPdf'])->name('students.transkrip.pdf');
 
         // Pengawasan kelas (kaprodi ter-scope prodi di controller)
         Route::get('/courses', [AdminCourseController::class, 'index'])->name('courses.index');

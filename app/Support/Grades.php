@@ -87,6 +87,22 @@ class Grades
         return rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
     }
 
+    /** Bobot/angka mutu untuk sebuah huruf (skala 4). */
+    public static function point(string $letter): float
+    {
+        return match (strtoupper(trim($letter))) {
+            'A' => 4.0,
+            'A-' => 3.75,
+            'B+' => 3.5,
+            'B' => 3.0,
+            'B-' => 2.75,
+            'C+' => 2.5,
+            'C' => 2.0,
+            'D' => 1.0,
+            default => 0.0, // E / lainnya
+        };
+    }
+
     /** Warna badge Tabler berdasarkan huruf awal. */
     public static function color(string $letter): string
     {
