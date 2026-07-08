@@ -44,6 +44,21 @@ class RoleAccessTest extends TestCase
         $this->actingAs($admin)->get(route('admin.settings.edit'))->assertOk();
     }
 
+    public function test_navbar_admin_active_state_benar(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+
+        // Di beranda: item Dashboard aktif, tak ada dropdown yang aktif.
+        $this->actingAs($admin)->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertDontSee('nav-item dropdown active', false);
+
+        // Di halaman Mahasiswa: dropdown Akademik aktif.
+        $this->actingAs($admin)->get(route('admin.students.index'))
+            ->assertOk()
+            ->assertSee('nav-item dropdown active', false);
+    }
+
     public function test_dosen_tidak_bisa_akses_area_admin(): void
     {
         $dosen = $this->user(User::ROLE_DOSEN);
