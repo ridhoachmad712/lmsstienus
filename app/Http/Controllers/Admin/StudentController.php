@@ -71,7 +71,10 @@ class StudentController extends Controller
 
     public function create(): View
     {
-        return view('admin.students.create', ['prodis' => Prodi::orderBy('name')->get()]);
+        return view('admin.students.create', [
+            'prodis' => Prodi::orderBy('name')->get(),
+            'kurikulums' => \App\Models\Kurikulum::orderByDesc('year')->get(),
+        ]);
     }
 
     /** Aturan validasi biodata mahasiswa (dipakai store & update). */
@@ -84,6 +87,7 @@ class StudentController extends Controller
             'address' => ['nullable', 'string', 'max:500'],
             'entry_year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'student_status' => ['nullable', 'in:'.implode(',', User::STUDENT_STATUSES)],
+            'kurikulum_id' => ['nullable', 'integer', 'exists:kurikulum,id'],
         ];
     }
 
@@ -113,7 +117,11 @@ class StudentController extends Controller
     {
         $this->authorizeStudent($request, $student);
 
-        return view('admin.students.edit', ['student' => $student, 'prodis' => Prodi::orderBy('name')->get()]);
+        return view('admin.students.edit', [
+            'student' => $student,
+            'prodis' => Prodi::orderBy('name')->get(),
+            'kurikulums' => \App\Models\Kurikulum::orderByDesc('year')->get(),
+        ]);
     }
 
     public function update(Request $request, User $student): RedirectResponse

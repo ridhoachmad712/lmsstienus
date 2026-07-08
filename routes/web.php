@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\KurikulumController;
 use App\Http\Controllers\Admin\MataKuliahController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\SemesterController;
@@ -246,6 +247,14 @@ Route::middleware('auth')->group(function () {
 
         // Pengawasan kelas (kaprodi ter-scope prodi di controller)
         Route::get('/courses', [AdminCourseController::class, 'index'])->name('courses.index');
+
+        // Kurikulum (kaprodi ter-scope prodi di controller)
+        Route::get('/kurikulum', [KurikulumController::class, 'index'])->name('kurikulum.index');
+        Route::get('/kurikulum/create', [KurikulumController::class, 'create'])->name('kurikulum.create');
+        Route::post('/kurikulum', [KurikulumController::class, 'store'])->name('kurikulum.store');
+        Route::get('/kurikulum/{kurikulum}/edit', [KurikulumController::class, 'edit'])->name('kurikulum.edit');
+        Route::put('/kurikulum/{kurikulum}', [KurikulumController::class, 'update'])->name('kurikulum.update');
+        Route::delete('/kurikulum/{kurikulum}', [KurikulumController::class, 'destroy'])->name('kurikulum.destroy');
 
         // Katalog mata kuliah (kaprodi ter-scope prodi di controller)
         Route::get('/matakuliah', [MataKuliahController::class, 'index'])->name('matakuliah.index');

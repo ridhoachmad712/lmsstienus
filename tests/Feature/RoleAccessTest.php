@@ -201,6 +201,52 @@ class RoleAccessTest extends TestCase
         $this->assertSame('L', $u->gender);
     }
 
+    public function test_kaprodi_kurikulum_scope(): void
+    {
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $kaprodiAk = User::factory()->create(['role' => User::ROLE_KAPRODI, 'prodi_id' => $ak->id]);
+        \App\Models\Kurikulum::create(['prodi_id' => $ak->id, 'name' => 'Kurikulum Akun', 'year' => 2021, 'is_active' => true]);
+        \App\Models\Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'Kurikulum Manaj', 'year' => 2021, 'is_active' => true]);
+
+        $res = $this->actingAs($kaprodiAk)->get(route('admin.kurikulum.index'));
+        $res->assertOk();
+        $res->assertSee('Kurikulum Akun');
+        $res->assertDontSee('Kurikulum Manaj');
+    }
+
+    public function test_admin_buat_mk_dengan_kurikulum_dan_prasyarat(): void
+    {
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $kur = \App\Models\Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'K2021', 'year' => 2021, 'is_active' => true]);
+        $prereq = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN101', 'name' => 'Dasar', 'sks' => 3]);
+        $admin = $this->user(User::ROLE_ADMIN);
+
+        $this->actingAs($admin)->post(route('admin.matakuliah.store'), [
+            'code' => 'MN201', 'name' => 'Lanjut', 'sks' => 3, 'prodi_id' => $mn->id, 'kurikulum_id' => $kur->id,
+            'semester_no' => 3, 'jenis' => 'wajib', 'prasyarat' => [$prereq->id],
+        ])->assertRedirect(route('admin.matakuliah.index'));
+
+        $mk = \App\Models\MataKuliah::where('code', 'MN201')->first();
+        $this->assertSame($kur->id, $mk->kurikulum_id);
+        $this->assertSame(3, $mk->semester_no);
+        $this->assertSame('wajib', $mk->jenis);
+        $this->assertTrue($mk->prasyarat->pluck('id')->contains($prereq->id));
+    }
+
+    public function test_kurikulum_aktif_tunggal_per_prodi(): void
+    {
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $admin = $this->user(User::ROLE_ADMIN);
+        $k1 = \App\Models\Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'K2018', 'year' => 2018, 'is_active' => true]);
+
+        $this->actingAs($admin)->post(route('admin.kurikulum.store'), [
+            'name' => 'K2023', 'year' => 2023, 'prodi_id' => $mn->id, 'is_active' => '1',
+        ])->assertRedirect(route('admin.kurikulum.index'));
+
+        $this->assertFalse($k1->fresh()->is_active);
+    }
+
     public function test_dosen_tidak_bisa_akses_kelas_dosen_lain(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);

@@ -10,25 +10,37 @@
 
 @section('content')
 <div class="card">
-    <div class="card-header"><h3 class="card-title">Total: {{ $items->total() }} mata kuliah</h3></div>
+    <div class="card-header">
+        <h3 class="card-title">Total: {{ $items->total() }} mata kuliah</h3>
+        <form method="GET" action="{{ route('admin.matakuliah.index') }}" class="ms-auto">
+            <select name="kurikulum" class="form-select" onchange="this.form.submit()" style="min-width:220px">
+                <option value="">Semua kurikulum</option>
+                @foreach ($kurikulums as $kur)
+                    <option value="{{ $kur->id }}" @selected($kurikulumId === $kur->id)>{{ $kur->name }} ({{ $kur->year }})</option>
+                @endforeach
+            </select>
+        </form>
+    </div>
     @if ($items->isEmpty())
-        <div class="card-body"><x-empty-state icon="ti-book" title="Belum ada mata kuliah" description="Tambahkan mata kuliah ke katalog. Satu mata kuliah bisa punya beberapa kelas paralel (beda dosen)." /></div>
+        <div class="card-body"><x-empty-state icon="ti-book" title="Belum ada mata kuliah" description="Tambahkan MK; atur semester, jenis, prasyarat, dan tautkan ke kurikulum." /></div>
     @else
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
-                <thead><tr><th>Kode</th><th>Nama</th><th>Prodi</th><th class="text-center">SKS</th><th class="text-center">Kelas paralel</th><th></th></tr></thead>
+                <thead><tr><th>Kode</th><th>Nama</th><th class="text-center">SKS</th><th class="text-center">Smt</th><th class="text-center">Jenis</th><th>Kurikulum</th><th class="text-center">Kelas</th><th></th></tr></thead>
                 <tbody>
                     @foreach ($items as $mk)
                         <tr>
                             <td class="fw-bold">{{ $mk->code }}</td>
-                            <td>{{ $mk->name }}</td>
-                            <td>{{ $mk->prodi?->name ?? '—' }}</td>
+                            <td>{{ $mk->name }}<div class="small text-secondary">{{ $mk->prodi?->name ?? '—' }}</div></td>
                             <td class="text-center">{{ $mk->sks }}</td>
+                            <td class="text-center">{{ $mk->semester_no ?? '—' }}</td>
+                            <td class="text-center"><span class="badge bg-{{ $mk->jenis === 'pilihan' ? 'azure' : 'blue' }}-lt text-capitalize">{{ $mk->jenis }}</span></td>
+                            <td class="text-secondary small">{{ $mk->kurikulum?->name ?? '—' }}</td>
                             <td class="text-center">{{ $mk->courses_count }}</td>
                             <td class="text-end">
                                 <div class="btn-list justify-content-end">
                                     <a href="{{ route('admin.matakuliah.edit', $mk) }}" class="btn btn-sm" title="Edit" data-bs-toggle="tooltip"><i class="ti ti-edit"></i></a>
-                                    <form method="POST" action="{{ route('admin.matakuliah.destroy', $mk) }}" data-confirm="Hapus mata kuliah {{ $mk->code }}?@if ($mk->courses_count > 0) (Akan ditolak karena masih ada {{ $mk->courses_count }} kelas.)@endif">
+                                    <form method="POST" action="{{ route('admin.matakuliah.destroy', $mk) }}" data-confirm="Hapus mata kuliah {{ $mk->code }}?@if ($mk->courses_count > 0) (Akan ditolak — masih ada {{ $mk->courses_count }} kelas.)@endif">
                                         @csrf @method('DELETE')
                                         <button class="btn btn-sm btn-ghost-danger" title="Hapus" data-bs-toggle="tooltip"><i class="ti ti-trash"></i></button>
                                     </form>

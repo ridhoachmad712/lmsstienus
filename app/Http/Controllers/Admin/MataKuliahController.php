@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Kurikulum;
 use App\Models\MataKuliah;
 use App\Models\Prodi;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +21,6 @@ class MataKuliahController extends Controller
         }
     }
 
-    /** Prodi tujuan: kaprodi → prodinya; admin → pilihan form. */
     private function targetProdiId(Request $request): ?int
     {
         return $request->user()->isKaprodi()
@@ -35,27 +35,55 @@ class MataKuliahController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'sks' => ['required', 'integer', 'min:1', 'max:10'],
             'prodi_id' => ['nullable', 'integer', 'exists:prodi,id'],
+            'kurikulum_id' => ['nullable', 'integer', 'exists:kurikulum,id'],
+            'semester_no' => ['nullable', 'integer', 'min:1', 'max:14'],
+            'jenis' => ['nullable', 'in:wajib,pilihan'],
+            'prasyarat' => ['nullable', 'array'],
+            'prasyarat.*' => ['integer', 'exists:mata_kuliah,id'],
+        ];
+    }
+
+    /** MK yang boleh dipakai (untuk pilihan prasyarat) sesuai lingkup aktor. */
+    private function options(Request $request, ?MataKuliah $mk = null)
+    {
+        return [
+            'kurikulums' => Kurikulum::query()
+                ->when($request->user()->isKaprodi(), fn ($q) => $q->where('prodi_id', $request->user()->prodi_id))
+                ->orderByDesc('year')->get(),
+            'allMk' => MataKuliah::query()
+                ->when($request->user()->isKaprodi(), fn ($q) => $q->where('prodi_id', $request->user()->prodi_id))
+                ->when($mk, fn ($q) => $q->where('id', '!=', $mk->id))
+                ->orderBy('code')->get(),
+            'prodis' => Prodi::orderBy('name')->get(),
         ];
     }
 
     public function index(Request $request): View
     {
+        $kurikulumId = $request->integer('kurikulum') ?: null;
+
         $items = MataKuliah::query()
             ->when($request->user()->isKaprodi(), fn ($q) => $q->where('prodi_id', $request->user()->prodi_id))
-            ->with('prodi')
+            ->when($kurikulumId, fn ($q) => $q->where('kurikulum_id', $kurikulumId))
+            ->with(['prodi', 'kurikulum'])
             ->withCount('courses')
+            ->orderBy('semester_no')
             ->orderBy('code')
-            ->paginate(20);
+            ->paginate(30);
 
-        return view('admin.matakuliah.index', ['items' => $items]);
+        $kurikulums = Kurikulum::query()
+            ->when($request->user()->isKaprodi(), fn ($q) => $q->where('prodi_id', $request->user()->prodi_id))
+            ->orderByDesc('year')->get();
+
+        return view('admin.matakuliah.index', ['items' => $items, 'kurikulums' => $kurikulums, 'kurikulumId' => $kurikulumId]);
     }
 
     public function create(Request $request): View
     {
-        return view('admin.matakuliah.form', [
-            'mk' => new MataKuliah(),
-            'prodis' => Prodi::orderBy('name')->get(),
-        ]);
+        return view('admin.matakuliah.form', array_merge(
+            ['mk' => new MataKuliah(['jenis' => 'wajib']), 'selectedPrasyarat' => []],
+            $this->options($request),
+        ));
     }
 
     public function store(Request $request): RedirectResponse
@@ -63,7 +91,8 @@ class MataKuliahController extends Controller
         $data = $request->validate($this->rules($request));
         $data['prodi_id'] = $this->targetProdiId($request);
 
-        MataKuliah::create($data);
+        $mk = MataKuliah::create($data);
+        $mk->prasyarat()->sync($request->input('prasyarat', []));
 
         return redirect()->route('admin.matakuliah.index')->with('status', 'Mata kuliah ditambahkan.');
     }
@@ -72,10 +101,10 @@ class MataKuliahController extends Controller
     {
         $this->authorize($request, $matakuliah);
 
-        return view('admin.matakuliah.form', [
-            'mk' => $matakuliah,
-            'prodis' => Prodi::orderBy('name')->get(),
-        ]);
+        return view('admin.matakuliah.form', array_merge(
+            ['mk' => $matakuliah, 'selectedPrasyarat' => $matakuliah->prasyarat()->pluck('mata_kuliah.id')->all()],
+            $this->options($request, $matakuliah),
+        ));
     }
 
     public function update(Request $request, MataKuliah $matakuliah): RedirectResponse
@@ -88,6 +117,7 @@ class MataKuliahController extends Controller
         }
 
         $matakuliah->update($data);
+        $matakuliah->prasyarat()->sync($request->input('prasyarat', []));
 
         return redirect()->route('admin.matakuliah.index')->with('status', 'Mata kuliah diperbarui.');
     }

@@ -25,6 +25,16 @@
     <div class="col-md-6 mb-3"><label class="form-label">Tanggal Lahir</label>
         <input type="date" name="birth_date" class="form-control" value="{{ old('birth_date', isset($u) && $u?->birth_date ? $u->birth_date->format('Y-m-d') : '') }}">
     </div>
+    @isset($kurikulums)
+        <div class="col-md-6 mb-3"><label class="form-label">Kurikulum</label>
+            <select name="kurikulum_id" class="form-select">
+                <option value="">— Tidak ditentukan —</option>
+                @foreach ($kurikulums as $kur)
+                    <option value="{{ $kur->id }}" @selected(old('kurikulum_id', $u->kurikulum_id ?? '') == $kur->id)>{{ $kur->name }} ({{ $kur->year }})</option>
+                @endforeach
+            </select>
+        </div>
+    @endisset
     <div class="col-12 mb-3"><label class="form-label">Alamat</label>
         <textarea name="address" class="form-control" rows="2">{{ old('address', $u->address ?? '') }}</textarea>
     </div>
