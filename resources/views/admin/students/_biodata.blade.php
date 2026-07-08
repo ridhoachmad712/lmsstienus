@@ -35,6 +35,16 @@
             </select>
         </div>
     @endisset
+    @isset($advisors)
+        <div class="col-md-6 mb-3"><label class="form-label">Dosen Pembimbing Akademik</label>
+            <select name="advisor_id" class="form-select">
+                <option value="">— Tidak ditentukan —</option>
+                @foreach ($advisors as $adv)
+                    <option value="{{ $adv->id }}" @selected(old('advisor_id', $u->advisor_id ?? '') == $adv->id)>{{ $adv->name }}</option>
+                @endforeach
+            </select>
+        </div>
+    @endisset
     <div class="col-12 mb-3"><label class="form-label">Alamat</label>
         <textarea name="address" class="form-control" rows="2">{{ old('address', $u->address ?? '') }}</textarea>
     </div>

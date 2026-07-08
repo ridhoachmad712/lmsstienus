@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'prodi_id', 'kurikulum_id', 'nim_nip', 'phone', 'avatar', 'email_notifications',
+#[Fillable(['name', 'email', 'password', 'role', 'prodi_id', 'kurikulum_id', 'advisor_id', 'nim_nip', 'phone', 'avatar', 'email_notifications',
     'gender', 'birth_place', 'birth_date', 'address', 'entry_year', 'student_status', 'nidn', 'jabatan'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -58,6 +58,18 @@ class User extends Authenticatable
     public function kurikulum(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Kurikulum::class);
+    }
+
+    /** Dosen pembimbing akademik (wali) mahasiswa ini. */
+    public function advisor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'advisor_id');
+    }
+
+    /** Mahasiswa bimbingan (bila user ini dosen wali). */
+    public function advisees(): HasMany
+    {
+        return $this->hasMany(User::class, 'advisor_id');
     }
 
     // --- Role helpers ---

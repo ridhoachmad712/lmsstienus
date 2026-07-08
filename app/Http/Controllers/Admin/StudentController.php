@@ -69,11 +69,12 @@ class StudentController extends Controller
         return view('admin.students.index', compact('students', 'q', 'courses', 'courseId', 'prodis', 'prodiId'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         return view('admin.students.create', [
             'prodis' => Prodi::orderBy('name')->get(),
             'kurikulums' => \App\Models\Kurikulum::orderByDesc('year')->get(),
+            'advisors' => $this->advisorOptions($request),
         ]);
     }
 
@@ -88,7 +89,16 @@ class StudentController extends Controller
             'entry_year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'student_status' => ['nullable', 'in:'.implode(',', User::STUDENT_STATUSES)],
             'kurikulum_id' => ['nullable', 'integer', 'exists:kurikulum,id'],
+            'advisor_id' => ['nullable', 'integer', 'exists:users,id'],
         ];
+    }
+
+    /** Pilihan dosen wali (kaprodi → dosen prodinya). */
+    private function advisorOptions(Request $request)
+    {
+        return User::where('role', User::ROLE_DOSEN)
+            ->when($request->user()->isKaprodi(), fn ($q) => $q->where('prodi_id', $request->user()->prodi_id))
+            ->orderBy('name')->get();
     }
 
     public function store(Request $request): RedirectResponse
@@ -121,6 +131,7 @@ class StudentController extends Controller
             'student' => $student,
             'prodis' => Prodi::orderBy('name')->get(),
             'kurikulums' => \App\Models\Kurikulum::orderByDesc('year')->get(),
+            'advisors' => $this->advisorOptions($request),
         ]);
     }
 

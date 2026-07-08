@@ -198,6 +198,14 @@
                                 <span class="nav-link-title">Jadwal</span>
                             </a>
                         </li>
+                        @if ($user->isDosen())
+                            <li class="nav-item {{ request()->routeIs('perwalian.*') ? 'active' : '' }}">
+                                <a class="nav-link" href="{{ route('perwalian.index') }}">
+                                    <span class="nav-link-icon"><i class="ti ti-users-group"></i></span>
+                                    <span class="nav-link-title">Perwalian</span>
+                                </a>
+                            </li>
+                        @endif
                         @if ($user->isMahasiswa())
                             <li class="nav-item {{ request()->routeIs('transkrip.*') ? 'active' : '' }}">
                                 <a class="nav-link" href="{{ route('transkrip.mine') }}">

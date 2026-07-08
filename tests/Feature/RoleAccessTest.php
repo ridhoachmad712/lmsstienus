@@ -313,6 +313,22 @@ class RoleAccessTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_perwalian_dosen_lihat_bimbingan_dan_transkrip(): void
+    {
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $wali = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id, 'advisor_id' => $wali->id, 'name' => 'Anak Wali']);
+        $lain = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id, 'name' => 'Bukan Bimbingan']);
+
+        $res = $this->actingAs($wali)->get(route('perwalian.index'));
+        $res->assertOk();
+        $res->assertSee('Anak Wali');
+        $res->assertDontSee('Bukan Bimbingan');
+
+        $this->actingAs($wali)->get(route('perwalian.transkrip', $mhs))->assertOk();
+        $this->actingAs($wali)->get(route('perwalian.transkrip', $lain))->assertForbidden();
+    }
+
     public function test_dosen_tidak_bisa_akses_kelas_dosen_lain(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);

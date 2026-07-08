@@ -5,7 +5,7 @@
 @section('page-title', $self ? 'Transkrip Nilai' : 'Transkrip — '.$student->name)
 
 @section('page-actions')
-    <a href="{{ $self ? route('transkrip.mine.pdf') : route('admin.students.transkrip.pdf', $student) }}" class="btn btn-outline-red"><i class="ti ti-file-type-pdf me-1"></i>Unduh PDF</a>
+    <a href="{{ $pdfUrl }}" class="btn btn-outline-red"><i class="ti ti-file-type-pdf me-1"></i>Unduh PDF</a>
 @endsection
 
 @section('content')

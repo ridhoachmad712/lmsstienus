@@ -28,6 +28,7 @@ use App\Http\Controllers\GradeController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PerwalianController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ScheduleController;
@@ -179,6 +180,11 @@ Route::middleware('auth')->group(function () {
         // Jadwal kuliah (slot) — dosen pemilik
         Route::post('/courses/{course}/schedule', [ScheduleController::class, 'store'])->name('schedule.store');
         Route::delete('/schedule/{schedule}', [ScheduleController::class, 'destroy'])->name('schedule.destroy');
+
+        // Perwalian (dosen wali)
+        Route::get('/perwalian', [PerwalianController::class, 'index'])->name('perwalian.index');
+        Route::get('/perwalian/{student}/transkrip', [PerwalianController::class, 'transkrip'])->name('perwalian.transkrip');
+        Route::get('/perwalian/{student}/transkrip/pdf', [PerwalianController::class, 'transkripPdf'])->name('perwalian.transkrip.pdf');
 
         // Tugas & Kuis — CRUD
         Route::get('/courses/{course}/assignments/create', [AssignmentController::class, 'create'])->name('assignments.create');

@@ -18,7 +18,7 @@ class TranscriptController extends Controller
 
         return view('transcripts.show', array_merge(
             (new Transcript())->forStudent($student),
-            ['student' => $student, 'self' => true],
+            ['student' => $student, 'self' => true, 'pdfUrl' => route('transkrip.mine.pdf')],
         ));
     }
 
@@ -34,7 +34,7 @@ class TranscriptController extends Controller
 
         return view('transcripts.show', array_merge(
             (new Transcript())->forStudent($student),
-            ['student' => $student, 'self' => false],
+            ['student' => $student, 'self' => false, 'pdfUrl' => route('admin.students.transkrip.pdf', $student)],
         ));
     }
 
