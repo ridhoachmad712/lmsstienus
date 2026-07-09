@@ -27,6 +27,7 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ForumController;
 use App\Http\Controllers\GradeComponentController;
 use App\Http\Controllers\GradeController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\KrsController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MeetingController;
@@ -59,6 +60,9 @@ Route::middleware('guest')->group(function () {
 // --- Authenticated ---
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
+    // Akhiri mode samaran (dapat diakses oleh sesi yang sedang disamar)
+    Route::post('/stop-impersonating', [ImpersonationController::class, 'stop'])->name('impersonate.stop');
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -351,5 +355,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('/backups/{name}', [BackupController::class, 'destroy'])->name('backups.destroy');
 
         Route::get('/activity', [AdminActivityController::class, 'index'])->name('activity.index');
+
+        // Mode samaran (spy) — admin masuk sebagai dosen/mahasiswa
+        Route::post('/impersonate/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
     });
 });

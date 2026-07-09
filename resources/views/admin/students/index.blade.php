@@ -74,6 +74,12 @@
                             <td class="text-end">
                                 <div class="btn-list justify-content-end">
                                     <a href="{{ route('admin.students.transkrip', $s) }}" class="btn btn-sm" title="Transkrip" data-bs-toggle="tooltip"><i class="ti ti-certificate"></i></a>
+                                    @if (auth()->user()->isAdmin())
+                                        <form method="POST" action="{{ route('admin.impersonate.start', $s) }}" data-confirm="Masuk sebagai {{ $s->name }}? Anda akan melihat aplikasi sebagai mahasiswa ini.">
+                                            @csrf
+                                            <button class="btn btn-sm" title="Masuk sebagai (spy)" data-bs-toggle="tooltip"><i class="ti ti-eye"></i></button>
+                                        </form>
+                                    @endif
                                     <a href="{{ route('admin.students.edit', $s) }}" class="btn btn-sm" title="Edit" data-bs-toggle="tooltip"><i class="ti ti-edit"></i></a>
                                     <form method="POST" action="{{ route('admin.students.resetPassword', $s) }}" data-confirm="Reset kata sandi {{ $s->name }} menjadi NIM-nya?">
                                         @csrf

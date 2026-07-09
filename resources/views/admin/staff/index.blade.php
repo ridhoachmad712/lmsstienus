@@ -51,6 +51,10 @@
                             <td class="text-center">{{ $s->teaching_courses_count }}</td>
                             <td class="text-end">
                                 <div class="btn-list justify-content-end">
+                                    <form method="POST" action="{{ route('admin.impersonate.start', $s) }}" data-confirm="Masuk sebagai {{ $s->name }}? Anda akan melihat aplikasi sebagai pengguna ini.">
+                                        @csrf
+                                        <button class="btn btn-sm" title="Masuk sebagai (spy)" data-bs-toggle="tooltip"><i class="ti ti-eye"></i></button>
+                                    </form>
                                     <a href="{{ route('admin.staff.edit', $s) }}" class="btn btn-sm" title="Edit" data-bs-toggle="tooltip"><i class="ti ti-edit"></i></a>
                                     <form method="POST" action="{{ route('admin.staff.resetPassword', $s) }}" data-confirm="Reset kata sandi {{ $s->name }} menjadi NIP-nya (atau 'password')?">
                                         @csrf

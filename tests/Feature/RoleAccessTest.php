@@ -555,6 +555,49 @@ class RoleAccessTest extends TestCase
         $this->actingAs($wali)->get(route('perwalian.index'))->assertOk()->assertSee('IPK')->assertSee('Anak Wali');
     }
 
+    // ===================== Mode Samaran (spy) =====================
+
+    public function test_admin_masuk_sebagai_mahasiswa(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+
+        $this->actingAs($admin)->post(route('admin.impersonate.start', $mhs))
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('impersonator_id', $admin->id);
+
+        $this->assertAuthenticatedAs($mhs->fresh());
+    }
+
+    public function test_samaran_bisa_diakhiri_kembali_ke_admin(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+
+        $this->actingAs($mhs)->withSession(['impersonator_id' => $admin->id])
+            ->post(route('impersonate.stop'))
+            ->assertRedirect(route('admin.dashboard'))
+            ->assertSessionMissing('impersonator_id');
+
+        $this->assertAuthenticatedAs($admin->fresh());
+    }
+
+    public function test_admin_tak_bisa_menyamar_admin_lain(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+        $other = $this->user(User::ROLE_ADMIN);
+
+        $this->actingAs($admin)->post(route('admin.impersonate.start', $other))->assertForbidden();
+    }
+
+    public function test_non_admin_tak_bisa_menyamar(): void
+    {
+        $dosen = $this->user(User::ROLE_DOSEN);
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+
+        $this->actingAs($dosen)->post(route('admin.impersonate.start', $mhs))->assertForbidden();
+    }
+
     public function test_dosen_tidak_bisa_akses_kelas_dosen_lain(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);

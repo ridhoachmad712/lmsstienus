@@ -63,6 +63,17 @@
 <div class="page">
     @php($user = auth()->user())
 
+    @if (session()->has('impersonator_id'))
+        <div class="bg-red text-white text-center py-1 px-2 small d-print-none d-flex align-items-center justify-content-center gap-2">
+            <i class="ti ti-eye"></i>
+            <span>Mode Samaran — Anda masuk sebagai <strong>{{ $user->name }}</strong> ({{ $user->role }}).</span>
+            <form method="POST" action="{{ route('impersonate.stop') }}" class="d-inline">
+                @csrf
+                <button class="btn btn-sm btn-white py-0"><i class="ti ti-arrow-back-up me-1"></i>Kembali ke admin</button>
+            </form>
+        </div>
+    @endif
+
     @if (config('demo.enabled'))
         <div class="bg-yellow-lt border-bottom text-center py-1 px-2 small d-print-none">
             <i class="ti ti-flask me-1"></i><strong>Mode Demo</strong> — Anda menjelajah aplikasi contoh. Perubahan bersifat sementara &amp; data direset berkala.
