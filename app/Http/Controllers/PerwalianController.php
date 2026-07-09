@@ -48,8 +48,28 @@ class PerwalianController extends Controller
 
         return view('transcripts.show', array_merge(
             (new Transcript())->forStudent($student),
-            ['student' => $student, 'self' => false, 'pdfUrl' => route('perwalian.transkrip.pdf', $student)],
+            ['student' => $student, 'self' => false, 'pdfUrl' => route('perwalian.transkrip.pdf', $student),
+                'khsUrl' => fn ($key) => route('perwalian.khs.pdf', [$student, 'period' => $key])],
         ));
+    }
+
+    /** KHS satu semester milik mahasiswa bimbingan (PDF). */
+    public function khsPdf(Request $request, User $student)
+    {
+        $this->ensureAdvisee($request, $student);
+
+        $data = (new Transcript())->forStudent($student);
+        $key = (string) $request->query('period');
+        $period = $data['periods'][$key] ?? abort(404, 'Periode tidak ditemukan.');
+
+        $pdf = Pdf::loadView('transcripts.khs', [
+            'student' => $student->loadMissing(['prodi', 'advisor']),
+            'period' => $period,
+            'ipk' => $data['ipk'],
+            'total_sks' => $data['total_sks'],
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('khs-'.Str::slug($student->name).'-'.Str::slug($key).'.pdf');
     }
 
     public function transkripPdf(Request $request, User $student)

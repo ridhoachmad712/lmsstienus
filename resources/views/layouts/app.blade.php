@@ -190,6 +190,7 @@
                                     <a class="dropdown-item {{ request()->routeIs('krs.*') ? 'active' : '' }}" href="{{ route('krs.index') }}"><i class="ti ti-clipboard-list me-2"></i>KRS</a>
                                     <a class="dropdown-item {{ request()->routeIs('transkrip.*') ? 'active' : '' }}" href="{{ route('transkrip.mine') }}"><i class="ti ti-certificate me-2"></i>Transkrip &amp; KHS</a>
                                     <a class="dropdown-item {{ request()->routeIs('schedule.index') ? 'active' : '' }}" href="{{ route('schedule.index') }}"><i class="ti ti-calendar-time me-2"></i>Jadwal Kuliah</a>
+                                    <a class="dropdown-item {{ request()->routeIs('academic.calendar') ? 'active' : '' }}" href="{{ route('academic.calendar') }}"><i class="ti ti-calendar-event me-2"></i>Kalender Akademik</a>
                                     <a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="ti ti-id-badge-2 me-2"></i>Biodata</a>
                                 </div>
                             </li>
@@ -216,6 +217,7 @@
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item {{ request()->routeIs('perwalian.*') ? 'active' : '' }}" href="{{ route('perwalian.index') }}"><i class="ti ti-users-group me-2"></i>Perwalian</a>
                                     <a class="dropdown-item {{ request()->routeIs('schedule.index') ? 'active' : '' }}" href="{{ route('schedule.index') }}"><i class="ti ti-calendar-time me-2"></i>Jadwal Mengajar</a>
+                                    <a class="dropdown-item {{ request()->routeIs('academic.calendar') ? 'active' : '' }}" href="{{ route('academic.calendar') }}"><i class="ti ti-calendar-event me-2"></i>Kalender Akademik</a>
                                 </div>
                             </li>
                             {{-- Perkuliahan (e-Learning) --}}
@@ -234,7 +236,7 @@
                         @endif
                         @if ($user->isStaff())
                             {{-- Akademik (admin & kaprodi; kaprodi ter-scope prodi di controller) --}}
-                            <li class="nav-item dropdown {{ request()->routeIs('admin.courses.*', 'admin.students.*', 'admin.kurikulum.*', 'admin.matakuliah.*', 'admin.academic.*') ? 'active' : '' }}">
+                            <li class="nav-item dropdown {{ request()->routeIs('admin.courses.*', 'admin.students.*', 'admin.kurikulum.*', 'admin.matakuliah.*', 'admin.academic.*', 'academic.calendar') ? 'active' : '' }}">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                     <span class="nav-link-icon"><i class="ti ti-books"></i></span>
                                     <span class="nav-link-title">Akademik</span>
@@ -245,6 +247,7 @@
                                     <a class="dropdown-item {{ request()->routeIs('admin.students.*') ? 'active' : '' }}" href="{{ route('admin.students.index') }}"><i class="ti ti-users me-2"></i>Mahasiswa</a>
                                     <a class="dropdown-item {{ request()->routeIs('admin.kurikulum.*') ? 'active' : '' }}" href="{{ route('admin.kurikulum.index') }}"><i class="ti ti-notebook me-2"></i>Kurikulum</a>
                                     <a class="dropdown-item {{ request()->routeIs('admin.matakuliah.*') ? 'active' : '' }}" href="{{ route('admin.matakuliah.index') }}"><i class="ti ti-book me-2"></i>Mata Kuliah</a>
+                                    <a class="dropdown-item {{ request()->routeIs('academic.calendar') ? 'active' : '' }}" href="{{ route('academic.calendar') }}"><i class="ti ti-calendar-event me-2"></i>Kalender Akademik</a>
                                 </div>
                             </li>
                         @endif

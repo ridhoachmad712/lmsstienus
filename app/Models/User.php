@@ -13,7 +13,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable(['name', 'email', 'password', 'role', 'prodi_id', 'kurikulum_id', 'advisor_id', 'nim_nip', 'phone', 'avatar', 'email_notifications',
-    'gender', 'birth_place', 'birth_date', 'address', 'entry_year', 'student_status', 'nidn', 'jabatan'])]
+    'gender', 'birth_place', 'birth_date', 'address', 'entry_year', 'student_status', 'nidn', 'jabatan',
+    'ipk_cache', 'sks_cache', 'ips_cache'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -35,6 +36,9 @@ class User extends Authenticatable
             'password' => 'hashed',
             'email_notifications' => 'boolean',
             'birth_date' => 'date',
+            'ipk_cache' => 'float',
+            'ips_cache' => 'float',
+            'sks_cache' => 'integer',
         ];
     }
 
@@ -142,5 +146,27 @@ class User extends Authenticatable
     public function notifications(): HasMany
     {
         return $this->hasMany(Notification::class)->latest();
+    }
+
+    /**
+     * Hitung ulang & simpan cache akademik (IPK, SKS kumulatif, IPS terakhir).
+     * Dipanggil lazy saat dibutuhkan & saat sebuah kelas diselesaikan/dibuka.
+     */
+    public function refreshAcademicCache(): void
+    {
+        $t = (new \App\Services\Transcript())->forStudent($this);
+
+        $ips = null;
+        foreach ($t['periods'] as $p) {
+            if (! is_null($p['ips'] ?? null)) {
+                $ips = $p['ips'];
+            }
+        }
+
+        $this->forceFill([
+            'ipk_cache' => $t['ipk'],
+            'sks_cache' => $t['total_sks'],
+            'ips_cache' => $ips,
+        ])->saveQuietly();
     }
 }

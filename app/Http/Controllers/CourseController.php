@@ -322,6 +322,7 @@ class CourseController extends Controller
         // Membuka kembali kelas selesai → selalu boleh
         if ($course->isCompleted()) {
             $course->update(['status' => Course::STATUS_ACTIVE]);
+            $this->refreshStudentsAcademicCache($course); // nilai kelas ini tak lagi dihitung
 
             return back()->with('status', 'Kelas dibuka kembali — sekarang bisa diubah.');
         }
@@ -345,8 +346,15 @@ class CourseController extends Controller
         }
 
         $course->update(['status' => Course::STATUS_COMPLETED]);
+        $this->refreshStudentsAcademicCache($course); // nilai final kini masuk hitungan IPK
 
         return back()->with('status', 'Kelas ditandai selesai. Sekarang hanya bisa dilihat (read-only).');
+    }
+
+    /** Segarkan cache akademik (IPK/SKS/IPS) mahasiswa kelas ini. */
+    private function refreshStudentsAcademicCache(Course $course): void
+    {
+        $course->students()->get()->each->refreshAcademicCache();
     }
 
     // --- Helpers ---

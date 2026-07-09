@@ -31,29 +31,38 @@ class AcademicController extends Controller
             ->orderBy('name')
             ->get();
 
-        $summary = new AcademicSummary();
-        $rows = $students->map(function ($s) use ($summary) {
-            $a = $summary->forStudent($s);
+        $rows = $students->map(function ($s) {
+            // Cache akademik: isi sekali bila belum ada (lazy), lalu dipakai apa adanya.
+            if ($s->ipk_cache === null) {
+                $s->refreshAcademicCache();
+            }
+
+            $ipk = (float) ($s->ipk_cache ?? 0);
+            $sks = (int) ($s->sks_cache ?? 0);
 
             return [
                 'student' => $s,
-                'a' => $a,
-                'bermasalah' => $a['sks_kumulatif'] > 0 && $a['ipk'] < self::IPK_MIN,
+                'ipk' => $ipk,
+                'sks' => $sks,
+                'ips' => $s->ips_cache,
+                'semester_ke' => AcademicSummary::semesterKeFor($s->entry_year),
+                'status_color' => AcademicSummary::colorForStatus($s->student_status ?? 'aktif'),
+                'bermasalah' => $sks > 0 && $ipk < self::IPK_MIN,
             ];
         });
 
-        // Statistik ringkas (dihitung atas seluruh mahasiswa dalam lingkup).
-        $withGrades = $rows->filter(fn ($r) => $r['a']['sks_kumulatif'] > 0);
+        // Statistik ringkas (atas seluruh mahasiswa dalam lingkup).
+        $withGrades = $rows->filter(fn ($r) => $r['sks'] > 0);
         $stats = [
             'total' => $rows->count(),
-            'avg_ipk' => $withGrades->count() ? round($withGrades->avg(fn ($r) => $r['a']['ipk']), 2) : null,
+            'avg_ipk' => $withGrades->count() ? round($withGrades->avg(fn ($r) => $r['ipk']), 2) : null,
             'bermasalah' => $rows->where('bermasalah', true)->count(),
         ];
 
         // Urut: bermasalah dulu, lalu IPK terendah.
         $rows = $rows->sortBy([
             fn ($a, $b) => ($b['bermasalah'] <=> $a['bermasalah']),
-            fn ($a, $b) => ($a['a']['ipk'] <=> $b['a']['ipk']),
+            fn ($a, $b) => ($a['ipk'] <=> $b['ipk']),
         ])->values();
 
         if ($onlyBermasalah) {

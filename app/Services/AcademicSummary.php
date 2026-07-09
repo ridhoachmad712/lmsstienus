@@ -57,13 +57,28 @@ class AcademicSummary
     /** Semester ke- berdasarkan angkatan & periode aktif (Ganjil=+1, Genap/Antara=+2). */
     private function semesterKe(User $student, string $year, string $semester): ?int
     {
-        if (! $student->entry_year) {
+        return self::semesterKeFor($student->entry_year, $year, $semester);
+    }
+
+    /** Versi statik: semester ke- dari angkatan & periode aktif utama. */
+    public static function semesterKeFor(?int $entryYear, ?string $year = null, ?string $semester = null): ?int
+    {
+        if (! $entryYear) {
             return null;
+        }
+
+        if ($year === null) {
+            [$year, $semester] = explode('-', Semester::primaryKey(), 2);
         }
 
         $offset = $semester === 'Ganjil' ? 1 : 2;
 
-        return max(1, ((int) $year - (int) $student->entry_year) * 2 + $offset);
+        return max(1, ((int) $year - (int) $entryYear) * 2 + $offset);
+    }
+
+    public static function colorForStatus(string $status): string
+    {
+        return (new self())->statusColor($status);
     }
 
     private function statusColor(string $status): string

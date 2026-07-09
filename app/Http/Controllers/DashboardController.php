@@ -112,6 +112,24 @@ class DashboardController extends Controller
         ));
     }
 
+    /** Agenda akademik yang akan datang / berlangsung pada periode aktif (maks 4). */
+    private function upcomingAcademicEvents()
+    {
+        $activeKeys = \App\Models\Semester::activeKeys();
+
+        return \App\Models\AcademicEvent::where(function ($q) use ($activeKeys) {
+            foreach ($activeKeys as $k) {
+                [$y, $s] = explode('-', $k, 2);
+                $q->orWhere(fn ($qq) => $qq->where('year', (int) $y)->where('semester', $s));
+            }
+        })
+            ->orderBy('start_date')
+            ->get()
+            ->reject(fn ($e) => $e->isPast())
+            ->take(4)
+            ->values();
+    }
+
     public function mahasiswa(Request $request, AttendanceService $attendance): View
     {
         $user = $request->user();
@@ -171,9 +189,10 @@ class DashboardController extends Controller
 
         $krsOpen = \App\Http\Controllers\KrsController::krsOpen();
         $academic = (new \App\Services\AcademicSummary())->forStudent($user);
+        $agenda = $this->upcomingAcademicEvents();
 
         return view('dashboard.mahasiswa', compact(
-            'courses', 'pending', 'recentGrades', 'upcomingMeetings', 'lowAttendance', 'stats', 'krsOpen', 'academic'
+            'courses', 'pending', 'recentGrades', 'upcomingMeetings', 'lowAttendance', 'stats', 'krsOpen', 'academic', 'agenda'
         ));
     }
 }

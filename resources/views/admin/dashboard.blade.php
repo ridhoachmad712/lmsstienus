@@ -90,6 +90,7 @@
     ['admin.students.index', 'ti-users', 'Mahasiswa', 'Kelola & impor akun mahasiswa'],
     ['admin.kurikulum.index', 'ti-notebook', 'Kurikulum', 'Versi kurikulum per prodi'],
     ['admin.matakuliah.index', 'ti-book', 'Mata Kuliah', 'Katalog MK, semester & prasyarat'],
+    ['academic.calendar', 'ti-calendar-event', 'Kalender Akademik', 'Agenda KRS/UTS/UAS/libur'],
 ])
 @if ($isAdmin)
     @php($akademik[] = ['admin.semesters.index', 'ti-calendar-stats', 'Kelola Semester', 'Semester aktif & pengisian KRS'])

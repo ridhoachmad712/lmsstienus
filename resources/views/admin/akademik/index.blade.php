@@ -66,18 +66,17 @@
                 </tr></thead>
                 <tbody>
                     @foreach ($rows as $r)
-                        @php($a = $r['a'])
                         <tr @class(['table-danger' => $r['bermasalah']])>
                             <td>{{ $r['student']->name }}</td>
                             <td class="text-secondary">{{ $r['student']->nim_nip ?? '—' }}</td>
                             <td class="text-secondary">{{ $r['student']->prodi?->code ?? '—' }}</td>
-                            <td class="text-center">{{ $a['semester_ke'] ?? '—' }}</td>
+                            <td class="text-center">{{ $r['semester_ke'] ?? '—' }}</td>
                             <td class="text-center">
-                                <span class="badge bg-{{ $r['bermasalah'] ? 'red' : 'blue' }}-lt">{{ number_format($a['ipk'], 2) }}</span>
+                                <span class="badge bg-{{ $r['bermasalah'] ? 'red' : 'blue' }}-lt">{{ number_format($r['ipk'], 2) }}</span>
                             </td>
-                            <td class="text-center text-secondary">{{ is_null($a['ips_terakhir']) ? '—' : number_format($a['ips_terakhir'], 2) }}</td>
-                            <td class="text-center text-secondary">{{ $a['sks_kumulatif'] }}</td>
-                            <td class="text-center"><span class="badge bg-{{ $a['status_color'] }}-lt text-capitalize">{{ $r['student']->student_status }}</span></td>
+                            <td class="text-center text-secondary">{{ is_null($r['ips']) ? '—' : number_format($r['ips'], 2) }}</td>
+                            <td class="text-center text-secondary">{{ $r['sks'] }}</td>
+                            <td class="text-center"><span class="badge bg-{{ $r['status_color'] }}-lt text-capitalize">{{ $r['student']->student_status }}</span></td>
                             <td class="text-end">
                                 <a href="{{ route('admin.students.transkrip', $r['student']) }}" class="btn btn-sm"><i class="ti ti-certificate me-1"></i>Transkrip</a>
                             </td>

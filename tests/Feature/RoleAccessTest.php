@@ -475,6 +475,61 @@ class RoleAccessTest extends TestCase
         $this->actingAs($wali)->get(route('perwalian.transkrip', $lain))->assertForbidden();
     }
 
+    public function test_kalender_akademik_lihat_dan_kelola(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+
+        // Halaman tetap OK saat belum ada agenda sama sekali (regresi: merge koleksi kosong).
+        $this->actingAs($admin)->get(route('academic.calendar'))->assertOk();
+
+        // Admin tambah agenda
+        $this->actingAs($admin)->post(route('academic.calendar.store'), [
+            'title' => 'Pengisian KRS', 'type' => 'krs', 'start_date' => '2026-08-01',
+            'end_date' => '2026-08-07', 'year' => 2026, 'semester' => 'Ganjil',
+        ])->assertRedirect();
+        $this->assertDatabaseHas('academic_events', ['title' => 'Pengisian KRS', 'type' => 'krs']);
+
+        // Admin melihat halaman kelola (form Tambah Agenda ter-render)
+        $this->actingAs($admin)->get(route('academic.calendar', ['periode' => '2026-Ganjil']))
+            ->assertOk()->assertSee('Tambah Agenda')->assertSee('Pengisian KRS');
+
+        // Semua peran bisa melihat; mahasiswa tak bisa kelola
+        $this->actingAs($this->user(User::ROLE_MAHASISWA))->get(route('academic.calendar', ['periode' => '2026-Ganjil']))
+            ->assertOk()->assertSee('Pengisian KRS');
+        $this->actingAs($this->user(User::ROLE_MAHASISWA))->post(route('academic.calendar.store'), [
+            'title' => 'X', 'type' => 'libur', 'start_date' => '2026-08-01', 'year' => 2026, 'semester' => 'Ganjil',
+        ])->assertForbidden();
+    }
+
+    public function test_cache_ipk_dihitung_dan_dipakai_rekap(): void
+    {
+        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $mk = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN301', 'name' => 'Statistik', 'sks' => 3]);
+        $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id, 'name' => 'Mhs Cache']);
+        $course = Course::create([
+            'user_id' => $dosen->id, 'prodi_id' => $mn->id, 'mata_kuliah_id' => $mk->id,
+            'name' => 'Statistik A', 'code' => 'MN301A', 'semester' => 'Ganjil', 'year' => 2025,
+            'status' => Course::STATUS_COMPLETED, 'join_code' => Course::generateJoinCode(),
+        ]);
+        $course->students()->attach($student->id, ['enrolled_at' => now()]);
+        $comp = $course->gradeComponents()->create(['name' => 'Nilai', 'type' => 'uas', 'weight' => 100]);
+        \App\Models\GradeScore::create(['grade_component_id' => $comp->id, 'user_id' => $student->id, 'score' => 80]);
+
+        $this->assertNull($student->fresh()->ipk_cache);
+
+        // Hitung cache
+        $student->refreshAcademicCache();
+        $this->assertEqualsWithDelta(3.5, $student->fresh()->ipk_cache, 0.01); // 80 → B+ → 3.5
+        $this->assertSame(3, $student->fresh()->sks_cache);
+
+        // Rekap admin memakai cache (lazy) & menampilkan IPK
+        $this->actingAs($this->user(User::ROLE_ADMIN))->get(route('admin.academic.index'))
+            ->assertOk()->assertSee('Mhs Cache')->assertSee('3.50');
+    }
+
     public function test_rekap_akademik_akses_dan_scope(): void
     {
         $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);

@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
+use App\Http\Controllers\AcademicCalendarController;
 use App\Http\Controllers\AiController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AnnouncementController;
@@ -72,6 +73,9 @@ Route::middleware('auth')->group(function () {
     // Kalender jadwal & pencarian global
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar');
     Route::get('/search', [SearchController::class, 'index'])->name('search');
+
+    // Kalender akademik (lihat: semua; kelola: admin)
+    Route::get('/kalender-akademik', [AcademicCalendarController::class, 'index'])->name('academic.calendar');
 
     // Profil & kata sandi
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -169,6 +173,10 @@ Route::middleware('auth')->group(function () {
         // Jadwal kuliah (slot) — ditetapkan admin
         Route::post('/courses/{course}/schedule', [ScheduleController::class, 'store'])->name('schedule.store');
         Route::delete('/schedule/{schedule}', [ScheduleController::class, 'destroy'])->name('schedule.destroy');
+
+        // Kelola kalender akademik
+        Route::post('/kalender-akademik', [AcademicCalendarController::class, 'store'])->name('academic.calendar.store');
+        Route::delete('/kalender-akademik/{event}', [AcademicCalendarController::class, 'destroy'])->name('academic.calendar.destroy');
     });
 
     // --- Khusus dosen (mengelola isi kelas yang diampu) ---
@@ -198,6 +206,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/perwalian', [PerwalianController::class, 'index'])->name('perwalian.index');
         Route::get('/perwalian/{student}/transkrip', [PerwalianController::class, 'transkrip'])->name('perwalian.transkrip');
         Route::get('/perwalian/{student}/transkrip/pdf', [PerwalianController::class, 'transkripPdf'])->name('perwalian.transkrip.pdf');
+        Route::get('/perwalian/{student}/khs/pdf', [PerwalianController::class, 'khsPdf'])->name('perwalian.khs.pdf');
         Route::get('/perwalian/{student}/krs', [PerwalianController::class, 'krs'])->name('perwalian.krs');
         Route::post('/perwalian/{student}/krs/approve', [PerwalianController::class, 'approveKrs'])->name('perwalian.krs.approve');
         Route::post('/perwalian/{student}/krs/reject', [PerwalianController::class, 'rejectKrs'])->name('perwalian.krs.reject');
