@@ -360,6 +360,32 @@ class RoleAccessTest extends TestCase
         $this->actingAs($this->user(User::ROLE_MAHASISWA))->get(route('transkrip.mine'))->assertOk();
     }
 
+    public function test_ringkasan_akademik_mahasiswa(): void
+    {
+        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $mk = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN301', 'name' => 'Statistik', 'sks' => 3]);
+        $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id, 'entry_year' => 2025]);
+        $course = Course::create([
+            'user_id' => $dosen->id, 'prodi_id' => $mn->id, 'mata_kuliah_id' => $mk->id,
+            'name' => 'Statistik A', 'code' => 'MN301A', 'semester' => 'Ganjil', 'year' => 2025,
+            'status' => Course::STATUS_COMPLETED, 'join_code' => Course::generateJoinCode(),
+        ]);
+        $course->students()->attach($student->id, ['enrolled_at' => now()]);
+        $comp = $course->gradeComponents()->create(['name' => 'Nilai', 'type' => 'uas', 'weight' => 100]);
+        \App\Models\GradeScore::create(['grade_component_id' => $comp->id, 'user_id' => $student->id, 'score' => 80]);
+
+        $a = (new \App\Services\AcademicSummary())->forStudent($student->fresh());
+        $this->assertEqualsWithDelta(3.5, $a['ipk'], 0.01);   // 80 → B+ → 3.5
+        $this->assertSame(3, $a['sks_kumulatif']);
+        $this->assertSame(3, $a['semester_ke']);              // (2026-2025)*2 + Ganjil(1)
+        $this->assertSame('aktif', $a['status']);
+
+        $this->actingAs($student)->get(route('dashboard.mahasiswa'))
+            ->assertOk()->assertSee('IPK')->assertSee('Perkuliahan');
+    }
+
     public function test_kaprodi_transkrip_scope(): void
     {
         $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);

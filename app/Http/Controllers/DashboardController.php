@@ -170,9 +170,10 @@ class DashboardController extends Controller
         ];
 
         $krsOpen = \App\Http\Controllers\KrsController::krsOpen();
+        $academic = (new \App\Services\AcademicSummary())->forStudent($user);
 
         return view('dashboard.mahasiswa', compact(
-            'courses', 'pending', 'recentGrades', 'upcomingMeetings', 'lowAttendance', 'stats', 'krsOpen'
+            'courses', 'pending', 'recentGrades', 'upcomingMeetings', 'lowAttendance', 'stats', 'krsOpen', 'academic'
         ));
     }
 }

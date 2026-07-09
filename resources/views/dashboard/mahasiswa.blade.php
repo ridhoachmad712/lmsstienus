@@ -8,11 +8,11 @@
 @include('partials.welcome-banner')
 
 {{-- Alert KRS dibuka --}}
-@if (! empty($krsOpen))
+@if (! empty($krsOpen) && in_array($academic['krs_status'], ['belum', 'draft'], true))
     <div class="alert alert-info d-flex align-items-center" role="alert">
         <i class="ti ti-clipboard-list me-2"></i>
-        <div class="flex-fill">Pengisian <strong>KRS</strong> sedang dibuka. Susun rencana studi Anda dan ajukan ke dosen wali.</div>
-        <a href="{{ route('krs.index') }}" class="btn btn-sm btn-info">Buka KRS</a>
+        <div class="flex-fill">Pengisian <strong>KRS {{ $academic['periode_label'] }}</strong> sedang dibuka. Susun rencana studi Anda dan ajukan ke dosen wali.</div>
+        <a href="{{ route('krs.index') }}" class="btn btn-sm btn-info">{{ $academic['krs_status'] === 'draft' ? 'Lanjutkan KRS' : 'Isi KRS' }}</a>
     </div>
 @endif
 
@@ -24,13 +24,82 @@
     </div>
 @endforeach
 
+{{-- ===================== RINGKASAN AKADEMIK ===================== --}}
+<div class="row row-cards mb-3">
+    @php($ak = [
+        ['label' => 'IPK', 'value' => number_format($academic['ipk'], 2), 'sub' => 'Indeks Prestasi Kumulatif', 'icon' => 'ti-award', 'color' => 'blue', 'route' => 'transkrip.mine'],
+        ['label' => 'IPS Terakhir', 'value' => is_null($academic['ips_terakhir']) ? '—' : number_format($academic['ips_terakhir'], 2), 'sub' => $academic['ips_label'] ?? 'Belum ada nilai', 'icon' => 'ti-chart-line', 'color' => 'azure', 'route' => 'transkrip.mine'],
+        ['label' => 'SKS Kumulatif', 'value' => $academic['sks_kumulatif'], 'sub' => 'Total SKS lulus', 'icon' => 'ti-stack-2', 'color' => 'green', 'route' => 'transkrip.mine'],
+    ])
+    @foreach ($ak as $c)
+        <div class="col-6 col-lg-3">
+            <a href="{{ route($c['route']) }}" class="card card-sm card-link">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto"><span class="bg-{{ $c['color'] }} text-white avatar"><i class="ti {{ $c['icon'] }} fs-2"></i></span></div>
+                        <div class="col">
+                            <div class="h1 m-0">{{ $c['value'] }}</div>
+                            <div class="text-secondary">{{ $c['label'] }}</div>
+                            <div class="text-secondary small text-truncate">{{ $c['sub'] }}</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    @endforeach
+    <div class="col-6 col-lg-3">
+        <div class="card card-sm">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-auto"><span class="bg-purple text-white avatar"><i class="ti ti-calendar-stats fs-2"></i></span></div>
+                    <div class="col">
+                        <div class="h1 m-0">{{ $academic['semester_ke'] ? 'Smt '.$academic['semester_ke'] : '—' }}</div>
+                        <div class="text-secondary">Status</div>
+                        <span class="badge bg-{{ $academic['status_color'] }}-lt text-capitalize">{{ $academic['status'] }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ===================== KRS PERIODE INI ===================== --}}
+@php($krsMap = [
+    'belum' => ['Belum mengisi', 'secondary'],
+    'draft' => ['Rencana (draft) — belum diajukan', 'secondary'],
+    'diajukan' => ['Menunggu persetujuan dosen wali', 'yellow'],
+    'disetujui' => ['Disetujui', 'green'],
+])
+@php([$krsLabel, $krsColor] = $krsMap[$academic['krs_status']] ?? ['—', 'secondary'])
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row align-items-center g-3">
+            <div class="col-auto">
+                <span class="avatar avatar-lg rounded bg-{{ $krsColor }}-lt"><i class="ti ti-clipboard-list icon-lg"></i></span>
+            </div>
+            <div class="col">
+                <div class="text-secondary small">KRS {{ $academic['periode_label'] }}</div>
+                <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
+                    <span class="badge bg-{{ $krsColor }}-lt">{{ $krsLabel }}</span>
+                    <span class="text-secondary small">{{ $academic['sks_krs'] }} SKS diambil</span>
+                </div>
+            </div>
+            <div class="col-auto">
+                <a href="{{ route('krs.index') }}" class="btn"><i class="ti ti-clipboard-list me-1"></i>Buka KRS</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ===================== PERKULIAHAN (e-Learning) ===================== --}}
+<h3 class="text-secondary text-uppercase fs-5 mb-2"><i class="ti ti-device-laptop me-1"></i>Perkuliahan</h3>
 <div class="row row-deck row-cards">
-    {{-- Stat cards --}}
+    {{-- Stat singkat --}}
     @foreach ([
         ['Kelas Diikuti', $stats['courses'], 'ti-school', 'primary'],
         ['Tugas Pending', $stats['pending'], 'ti-checklist', 'orange'],
-        ['Rata-rata Hadir', is_null($stats['attendance']) ? '—' : $stats['attendance'].'%', 'ti-qrcode', 'green'],
-        ['Notif Baru', $stats['unread'], 'ti-bell', 'azure'],
+        ['Rata-rata Hadir', is_null($stats['attendance']) ? '—' : $stats['attendance'].'%', 'ti-qrcode', 'teal'],
+        ['Notif Baru', $stats['unread'], 'ti-bell', 'pink'],
     ] as [$label, $value, $icon, $color])
         <div class="col-sm-6 col-lg-3">
             <div class="card card-sm"><div class="card-body">
