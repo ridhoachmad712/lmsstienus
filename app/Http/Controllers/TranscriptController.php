@@ -45,6 +45,35 @@ class TranscriptController extends Controller
         return $this->pdf($student);
     }
 
+    /** KHS (Kartu Hasil Studi) satu semester milik mahasiswa yang login. */
+    public function khsMinePdf(Request $request)
+    {
+        return $this->khs($request->user(), (string) $request->query('period'));
+    }
+
+    /** KHS satu semester (admin/kaprodi; ter-scope prodi). */
+    public function khsPdf(Request $request, User $student)
+    {
+        $this->authorizeView($request, $student);
+
+        return $this->khs($student, (string) $request->query('period'));
+    }
+
+    private function khs(User $student, string $key)
+    {
+        $data = (new Transcript())->forStudent($student);
+        $period = $data['periods'][$key] ?? abort(404, 'Periode tidak ditemukan.');
+
+        $pdf = Pdf::loadView('transcripts.khs', [
+            'student' => $student->loadMissing(['prodi', 'advisor']),
+            'period' => $period,
+            'ipk' => $data['ipk'],
+            'total_sks' => $data['total_sks'],
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('khs-'.Str::slug($student->name).'-'.Str::slug($key).'.pdf');
+    }
+
     private function authorizeView(Request $request, User $student): void
     {
         abort_unless($student->isMahasiswa(), 404);

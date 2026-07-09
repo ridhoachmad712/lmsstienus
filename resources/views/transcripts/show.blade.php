@@ -29,11 +29,16 @@
     </div>
 </div>
 
-@forelse ($periods as $p)
+@forelse ($periods as $key => $p)
     <div class="card mt-3">
         <div class="card-header">
             <h3 class="card-title">{{ $p['label'] }}</h3>
-            <div class="ms-auto text-secondary small">IPS: <strong>{{ is_null($p['ips']) ? '—' : number_format($p['ips'], 2) }}</strong> · {{ $p['sks'] }} SKS</div>
+            <div class="ms-auto d-flex align-items-center gap-2">
+                <span class="text-secondary small">IPS: <strong>{{ is_null($p['ips']) ? '—' : number_format($p['ips'], 2) }}</strong> · {{ $p['sks'] }} SKS</span>
+                @if ($self)
+                    <a href="{{ route('khs.mine.pdf', ['period' => $key]) }}" class="btn btn-sm btn-outline-red"><i class="ti ti-file-type-pdf me-1"></i>KHS</a>
+                @endif
+            </div>
         </div>
         <div class="table-responsive">
             <table class="table table-vcenter card-table">

@@ -81,9 +81,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:mahasiswa')->group(function () {
         Route::get('/transkrip', [TranscriptController::class, 'mine'])->name('transkrip.mine');
         Route::get('/transkrip/pdf', [TranscriptController::class, 'minePdf'])->name('transkrip.mine.pdf');
+        Route::get('/khs/pdf', [TranscriptController::class, 'khsMinePdf'])->name('khs.mine.pdf');
 
         // KRS — Kartu Rencana Studi
         Route::get('/krs', [KrsController::class, 'index'])->name('krs.index');
+        Route::get('/krs/pdf', [KrsController::class, 'pdf'])->name('krs.mine.pdf');
         Route::post('/krs/courses/{course}', [KrsController::class, 'add'])->name('krs.add');
         Route::delete('/krs/{enrollment}', [KrsController::class, 'remove'])->name('krs.remove');
         Route::post('/krs/submit', [KrsController::class, 'submit'])->name('krs.submit');
@@ -282,6 +284,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/students/{student}', [AdminStudentController::class, 'destroy'])->name('students.destroy');
         Route::get('/students/{student}/transkrip', [TranscriptController::class, 'show'])->name('students.transkrip');
         Route::get('/students/{student}/transkrip/pdf', [TranscriptController::class, 'showPdf'])->name('students.transkrip.pdf');
+        Route::get('/students/{student}/khs/pdf', [TranscriptController::class, 'khsPdf'])->name('students.khs.pdf');
 
         // Pengawasan kelas (kaprodi ter-scope prodi di controller)
         Route::get('/courses', [AdminCourseController::class, 'index'])->name('courses.index');

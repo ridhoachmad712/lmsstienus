@@ -606,6 +606,71 @@ class RoleAccessTest extends TestCase
         $this->actingAs($mhs)->get(route('krs.index'))->assertOk()->assertSee('Jadwal bentrok');
     }
 
+    public function test_krs_prasyarat_belum_lulus_ditolak(): void
+    {
+        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        \App\Models\Setting::put('krs_open', '1');
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $dasar = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN101', 'name' => 'Dasar', 'sks' => 3]);
+        $lanjut = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN201', 'name' => 'Lanjut', 'sks' => 3]);
+        $lanjut->prasyarat()->attach($dasar->id);
+        $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id]);
+        $course = Course::create([
+            'user_id' => $dosen->id, 'prodi_id' => $mn->id, 'mata_kuliah_id' => $lanjut->id,
+            'name' => 'Lanjut A', 'code' => 'MN201A', 'semester' => 'Ganjil', 'year' => 2026,
+            'status' => Course::STATUS_ACTIVE, 'join_code' => Course::generateJoinCode(),
+        ]);
+
+        $this->actingAs($student)->post(route('krs.add', $course))->assertRedirect()->assertSessionHas('error');
+        $this->assertDatabaseMissing('enrollments', ['course_id' => $course->id, 'user_id' => $student->id]);
+    }
+
+    public function test_krs_plafon_sks_ikuti_admin(): void
+    {
+        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        \App\Models\Setting::put('krs_max_sks', '18');
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]); // baru, tanpa IPS → paket 24
+        // Plafon admin (18) memotong jatah.
+        $this->assertSame(18, (new \App\Http\Controllers\KrsController())->quotaFor($student));
+    }
+
+    public function test_cetak_krs_pdf(): void
+    {
+        $course = $this->krsCourse();
+        \App\Models\Setting::put('krs_open', '1');
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+        $this->actingAs($student)->post(route('krs.add', $course));
+
+        $res = $this->actingAs($student)->get(route('krs.mine.pdf'));
+        $res->assertOk();
+        $this->assertSame('application/pdf', $res->headers->get('content-type'));
+    }
+
+    public function test_cetak_khs_pdf(): void
+    {
+        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $mk = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN301', 'name' => 'Statistik', 'sks' => 3]);
+        $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id]);
+        $course = Course::create([
+            'user_id' => $dosen->id, 'prodi_id' => $mn->id, 'mata_kuliah_id' => $mk->id,
+            'name' => 'Statistik A', 'code' => 'MN301A', 'semester' => 'Ganjil', 'year' => 2025,
+            'status' => Course::STATUS_COMPLETED, 'join_code' => Course::generateJoinCode(),
+        ]);
+        $course->students()->attach($student->id, ['enrolled_at' => now()]);
+        $comp = $course->gradeComponents()->create(['name' => 'Nilai', 'type' => 'uas', 'weight' => 100]);
+        \App\Models\GradeScore::create(['grade_component_id' => $comp->id, 'user_id' => $student->id, 'score' => 80]);
+
+        $res = $this->actingAs($student)->get(route('khs.mine.pdf', ['period' => '2025-Ganjil']));
+        $res->assertOk();
+        $this->assertSame('application/pdf', $res->headers->get('content-type'));
+
+        // Periode tak dikenal → 404
+        $this->actingAs($student)->get(route('khs.mine.pdf', ['period' => '1999-Ganjil']))->assertNotFound();
+    }
+
     public function test_wali_lain_tak_bisa_setujui_krs(): void
     {
         $wali = $this->user(User::ROLE_DOSEN);

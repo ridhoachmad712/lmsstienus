@@ -6,8 +6,12 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Semester;
 use App\Models\Setting;
+use App\Models\User;
+use App\Services\Transcript;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class KrsController extends Controller
@@ -20,9 +24,44 @@ class KrsController extends Controller
         return Setting::bool('krs_open', false);
     }
 
+    /** Batas SKS global (plafon) yang diset admin. */
     public static function maxSks(): int
     {
         return (int) Setting::get('krs_max_sks', (string) self::DEFAULT_MAX_SKS);
+    }
+
+    /** Jatah SKS per-mahasiswa berdasar IPS semester lalu (aturan SIAKAD), dibatasi plafon admin. */
+    public function quotaFor(User $student): int
+    {
+        $ips = (new \App\Services\AcademicSummary())->forStudent($student)['ips_terakhir'];
+
+        $base = match (true) {
+            $ips === null => 24,   // mahasiswa baru: paket penuh
+            $ips >= 3.0 => 24,
+            $ips >= 2.5 => 22,
+            $ips >= 2.0 => 20,
+            $ips >= 1.5 => 18,
+            default => 15,
+        };
+
+        return min($base, self::maxSks());
+    }
+
+    /** Id mata kuliah yang SUDAH LULUS mahasiswa (nilai final & point ≥ 1.0 / bukan E). */
+    private function passedMataKuliahIds(User $student): array
+    {
+        $ids = [];
+        foreach ((new Transcript())->forStudent($student)['periods'] as $p) {
+            foreach ($p['items'] as $it) {
+                if (($it['counted'] ?? false) && ($it['point'] ?? 0) >= 1.0) {
+                    if ($mkId = $it['course']->mata_kuliah_id ?? null) {
+                        $ids[$mkId] = true;
+                    }
+                }
+            }
+        }
+
+        return array_keys($ids);
     }
 
     /** Periode KRS = periode aktif utama, mis. ["2026", "Ganjil"]. */
@@ -106,7 +145,7 @@ class KrsController extends Controller
             'myKrs' => $myKrs,
             'available' => $available,
             'totalSks' => $totalSks,
-            'maxSks' => self::maxSks(),
+            'maxSks' => $this->quotaFor($user),
             'krsOpen' => self::krsOpen(),
             'advisor' => $user->advisor,
             'hasSubmitted' => $myKrs->contains(fn ($e) => $e->status === Enrollment::STATUS_SUBMITTED),
@@ -134,10 +173,22 @@ class KrsController extends Controller
             return back()->with('error', 'Kuota kelas '.$course->name.' sudah penuh.');
         }
 
+        // Prasyarat mata kuliah harus sudah lulus.
+        $course->loadMissing('mataKuliah.prasyarat');
+        $prasyarat = $course->mataKuliah?->prasyarat ?? collect();
+        if ($prasyarat->isNotEmpty()) {
+            $passed = $this->passedMataKuliahIds($user);
+            $belum = $prasyarat->reject(fn ($mk) => in_array($mk->id, $passed, true));
+            if ($belum->isNotEmpty()) {
+                return back()->with('error', 'Belum bisa mengambil '.$course->name.' — prasyarat belum lulus: '.$belum->pluck('code')->implode(', ').'.');
+            }
+        }
+
         $sks = (int) ($course->mataKuliah->sks ?? 0);
+        $quota = $this->quotaFor($user);
         $current = $this->currentSks($user->id, $year, $semester);
-        if ($current + $sks > self::maxSks()) {
-            return back()->with('error', 'Melebihi batas '.self::maxSks().' SKS. KRS saat ini '.$current.' SKS.');
+        if ($current + $sks > $quota) {
+            return back()->with('error', 'Melebihi jatah '.$quota.' SKS (berdasar IPS semester lalu). KRS saat ini '.$current.' SKS.');
         }
 
         Enrollment::create([
@@ -185,9 +236,10 @@ class KrsController extends Controller
             return back()->with('error', 'Tidak ada rencana baru untuk diajukan.');
         }
 
+        $quota = $this->quotaFor($user);
         $total = $this->currentSks($user->id, $year, $semester);
-        if ($total > self::maxSks()) {
-            return back()->with('error', 'Total '.$total.' SKS melebihi batas '.self::maxSks().' SKS.');
+        if ($total > $quota) {
+            return back()->with('error', 'Total '.$total.' SKS melebihi jatah '.$quota.' SKS (berdasar IPS semester lalu).');
         }
 
         foreach ($drafts as $e) {
@@ -195,6 +247,29 @@ class KrsController extends Controller
         }
 
         return back()->with('status', $drafts->count().' kelas diajukan ke dosen wali untuk disetujui.');
+    }
+
+    /** Cetak KRS periode aktif (PDF) — ber-tanda tangan mahasiswa & dosen wali. */
+    public function pdf(Request $request)
+    {
+        $user = $request->user();
+        [$year, $semester] = $this->period();
+
+        $items = Enrollment::where('user_id', $user->id)
+            ->whereHas('course', fn ($q) => $q->where('year', $year)->where('semester', $semester))
+            ->with(['course.mataKuliah', 'course.lecturer'])
+            ->get()
+            ->sortBy(fn ($e) => $e->course->mataKuliah->code ?? $e->course->code)
+            ->values();
+
+        $pdf = Pdf::loadView('krs.pdf', [
+            'student' => $user->loadMissing(['prodi', 'advisor']),
+            'items' => $items,
+            'totalSks' => $items->sum(fn ($e) => $this->sksOf($e)),
+            'periodLabel' => Semester::keyLabel($year.'-'.$semester),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('krs-'.Str::slug($user->name).'-'.$year.'-'.$semester.'.pdf');
     }
 
     /** Total SKS non-tolak (draft + diajukan + disetujui) pada periode. */

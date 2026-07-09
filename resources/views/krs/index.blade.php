@@ -4,6 +4,12 @@
 @section('page-pretitle', 'Kartu Rencana Studi')
 @section('page-title', 'KRS — ' . $periodLabel)
 
+@section('page-actions')
+    @if ($myKrs->isNotEmpty())
+        <a href="{{ route('krs.mine.pdf') }}" class="btn btn-outline-red"><i class="ti ti-file-type-pdf me-1"></i>Cetak KRS</a>
+    @endif
+@endsection
+
 @section('content')
 <div class="row row-cards">
     {{-- Ringkasan & status --}}
@@ -24,8 +30,9 @@
         <div class="card">
             <div class="card-body">
                 <div class="row align-items-center">
-                    <div class="col-auto">
+                    <div class="col-auto text-center">
                         <span class="badge bg-{{ $totalSks > $maxSks ? 'red' : 'blue' }}-lt fs-3 px-3 py-2">{{ $totalSks }} / {{ $maxSks }} SKS</span>
+                        <div class="form-hint mt-1" style="max-width:9rem">Jatah SKS berdasar IPS semester lalu</div>
                     </div>
                     <div class="col">
                         <div class="text-secondary small">Dosen wali</div>
