@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['course_id', 'day', 'start_time', 'end_time', 'room'])]
+#[Fillable(['course_id', 'day', 'start_time', 'end_time', 'room', 'room_id', 'time_slot_id'])]
 class ClassSchedule extends Model
 {
     protected $casts = ['day' => 'integer'];
@@ -16,6 +16,22 @@ class ClassSchedule extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function ruangan(): BelongsTo
+    {
+        return $this->belongsTo(Room::class, 'room_id');
+    }
+
+    public function timeSlot(): BelongsTo
+    {
+        return $this->belongsTo(TimeSlot::class);
+    }
+
+    /** Nama ruang untuk tampilan (master bila ada, jika tidak teks bebas lama). */
+    public function roomLabel(): ?string
+    {
+        return $this->ruangan?->name ?? $this->room;
     }
 
     public function dayLabel(): string

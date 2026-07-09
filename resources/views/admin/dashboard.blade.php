@@ -5,30 +5,22 @@
 @section('page-title', 'Dashboard Admin')
 
 @section('content')
-@php($isAdmin = auth()->user()->isAdmin())
-
 {{-- ===================== STATISTIK ===================== --}}
-@php($cards = [
-    ['label' => 'Dosen', 'value' => $stats['dosen'], 'icon' => 'ti-user-star', 'color' => 'blue', 'route' => $isAdmin ? 'admin.staff.index' : null],
-    ['label' => 'Mahasiswa', 'value' => $stats['mahasiswa'], 'icon' => 'ti-users', 'color' => 'green', 'route' => 'admin.students.index'],
-    ['label' => 'Kelas aktif', 'value' => $stats['active_courses'], 'sub' => 'dari '.$stats['courses'].' kelas', 'icon' => 'ti-school', 'color' => 'azure', 'route' => 'admin.courses.index'],
-    ['label' => 'Semester aktif', 'value' => count($activeKeys), 'sub' => collect($activeKeys)->map(fn ($k) => \App\Models\Semester::keyLabel($k))->implode(', '), 'icon' => 'ti-calendar-stats', 'color' => 'purple', 'route' => $isAdmin ? 'admin.semesters.index' : null],
-])
 <div class="row row-cards mb-3">
-    @foreach ($cards as $c)
+    @foreach ($statCards as [$label, $value, $sub, $icon, $color, $route])
         <div class="col-6 col-lg-3">
-            @if ($c['route'])<a href="{{ route($c['route']) }}" class="card card-sm card-link">@else<div class="card card-sm">@endif
+            @if ($route)<a href="{{ route($route) }}" class="card card-sm card-link">@else<div class="card card-sm">@endif
                 <div class="card-body">
                     <div class="row align-items-center">
-                        <div class="col-auto"><span class="bg-{{ $c['color'] }} text-white avatar"><i class="ti {{ $c['icon'] }} fs-2"></i></span></div>
+                        <div class="col-auto"><span class="bg-{{ $color }} text-white avatar"><i class="ti {{ $icon }} fs-2"></i></span></div>
                         <div class="col">
-                            <div class="h1 m-0">{{ $c['value'] }}</div>
-                            <div class="text-secondary">{{ $c['label'] }}</div>
-                            @if (! empty($c['sub']))<div class="text-secondary small text-truncate">{{ $c['sub'] }}</div>@endif
+                            <div class="h1 m-0">{{ $value }}</div>
+                            <div class="text-secondary">{{ $label }}</div>
+                            @if ($sub)<div class="text-secondary small text-truncate">{{ $sub }}</div>@endif
                         </div>
                     </div>
                 </div>
-            @if ($c['route'])</a>@else</div>@endif
+            @if ($route)</a>@else</div>@endif
         </div>
     @endforeach
 </div>
@@ -83,53 +75,15 @@
     <div class="alert alert-info">Anda login sebagai <strong>Kaprodi{{ $prodi ? ' '.$prodi->name : '' }}</strong>. Pengelolaan terbatas pada lingkup program studi Anda.</div>
 @endunless
 
-{{-- ===================== MENU AKADEMIK ===================== --}}
-@php($akademik = [
-    ['admin.academic.index', 'ti-chart-bar', 'Rekap Akademik', 'IPK/IPS & deteksi bermasalah'],
-    ['admin.courses.index', 'ti-school', 'Pengawasan Kelas', 'Pantau kelas & progresnya'],
-    ['admin.students.index', 'ti-users', 'Mahasiswa', 'Kelola & impor akun mahasiswa'],
-    ['admin.kurikulum.index', 'ti-notebook', 'Kurikulum', 'Versi kurikulum per prodi'],
-    ['admin.matakuliah.index', 'ti-book', 'Mata Kuliah', 'Katalog MK, semester & prasyarat'],
-    ['academic.calendar', 'ti-calendar-event', 'Kalender Akademik', 'Agenda KRS/UTS/UAS/libur'],
-])
-@if ($isAdmin)
-    @php($akademik[] = ['admin.semesters.index', 'ti-calendar-stats', 'Kelola Semester', 'Semester aktif & pengisian KRS'])
-@endif
-
-<h3 class="text-secondary text-uppercase fs-5 mb-2"><i class="ti ti-books me-1"></i>Akademik</h3>
-<div class="row row-cards mb-3">
-    @foreach ($akademik as [$route, $icon, $title, $desc])
-        <div class="col-md-6 col-lg-4">
-            <a href="{{ route($route) }}" class="card card-link card-sm">
-                <div class="card-body d-flex align-items-center">
-                    <span class="avatar bg-blue-lt me-3"><i class="ti {{ $icon }} fs-2"></i></span>
-                    <div>
-                        <div class="fw-bold">{{ $title }}</div>
-                        <div class="text-secondary small">{{ $desc }}</div>
-                    </div>
-                </div>
-            </a>
-        </div>
-    @endforeach
-</div>
-
-{{-- ===================== MENU SISTEM (admin) ===================== --}}
-@if ($isAdmin)
-    @php($sistem = [
-        ['admin.staff.index', 'ti-user-star', 'Dosen & Kaprodi', 'Kelola akun staf + prodi'],
-        ['admin.settings.edit', 'ti-palette', 'Tampilan', 'Branding & tema aplikasi'],
-        ['admin.gradeScale.edit', 'ti-award', 'Skala Nilai', 'Ambang konversi huruf'],
-        ['admin.ai.edit', 'ti-sparkles', 'Integrasi AI', 'Kunci & model AI'],
-        ['admin.activity.index', 'ti-history', 'Riwayat Aktivitas', 'Log tindakan pengguna'],
-        ['admin.backups.index', 'ti-database', 'Backup', 'Cadangan basis data'],
-    ])
-    <h3 class="text-secondary text-uppercase fs-5 mb-2"><i class="ti ti-settings me-1"></i>Sistem</h3>
-    <div class="row row-cards">
-        @foreach ($sistem as [$route, $icon, $title, $desc])
+{{-- ===================== KELOMPOK MENU ===================== --}}
+@foreach ($menuGroups as [$groupLabel, $groupIcon, $color, $items])
+    <h3 class="text-secondary text-uppercase fs-5 mb-2"><i class="ti {{ $groupIcon }} me-1"></i>{{ $groupLabel }}</h3>
+    <div class="row row-cards mb-3">
+        @foreach ($items as [$route, $icon, $title, $desc])
             <div class="col-md-6 col-lg-4">
                 <a href="{{ route($route) }}" class="card card-link card-sm">
                     <div class="card-body d-flex align-items-center">
-                        <span class="avatar bg-purple-lt me-3"><i class="ti {{ $icon }} fs-2"></i></span>
+                        <span class="avatar bg-{{ $color }}-lt me-3"><i class="ti {{ $icon }} fs-2"></i></span>
                         <div>
                             <div class="fw-bold">{{ $title }}</div>
                             <div class="text-secondary small">{{ $desc }}</div>
@@ -139,5 +93,5 @@
             </div>
         @endforeach
     </div>
-@endif
+@endforeach
 @endsection

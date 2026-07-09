@@ -209,7 +209,7 @@
                             <li class="nav-item {{ request()->routeIs('courses.*', 'assignments.*', 'quizzes.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*') ? 'active' : '' }}">
                                 <a class="nav-link" href="{{ route('courses.index') }}">
                                     <span class="nav-link-icon"><i class="ti ti-device-laptop"></i></span>
-                                    <span class="nav-link-title">Perkuliahan</span>
+                                    <span class="nav-link-title">LMS</span>
                                 </a>
                             </li>
                             <li class="nav-item {{ request()->routeIs('calendar') ? 'active' : '' }}">
@@ -235,7 +235,7 @@
                             <li class="nav-item {{ request()->routeIs('courses.*', 'assignments.*', 'quizzes.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*', 'analytics.*', 'reports.*') ? 'active' : '' }}">
                                 <a class="nav-link" href="{{ route('courses.index') }}">
                                     <span class="nav-link-icon"><i class="ti ti-device-laptop"></i></span>
-                                    <span class="nav-link-title">Perkuliahan</span>
+                                    <span class="nav-link-title">LMS</span>
                                 </a>
                             </li>
                             <li class="nav-item {{ request()->routeIs('calendar') ? 'active' : '' }}">
@@ -246,34 +246,61 @@
                             </li>
                         @endif
                         @if ($user->isStaff())
-                            {{-- Akademik (admin & kaprodi; kaprodi ter-scope prodi di controller) --}}
-                            <li class="nav-item dropdown {{ request()->routeIs('admin.courses.*', 'admin.students.*', 'admin.kurikulum.*', 'admin.matakuliah.*', 'admin.academic.*', 'academic.calendar') ? 'active' : '' }}">
+                            {{-- Data Master --}}
+                            <li class="nav-item dropdown {{ request()->routeIs('admin.prodi.*', 'admin.kurikulum.*', 'admin.matakuliah.*', 'admin.staff.*', 'admin.students.*', 'admin.rooms.*', 'admin.timeslots.*', 'admin.gradeScale.*') ? 'active' : '' }}">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                                    <span class="nav-link-icon"><i class="ti ti-database"></i></span>
+                                    <span class="nav-link-title">Data Master</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    @if ($user->isAdmin())
+                                        <a class="dropdown-item {{ request()->routeIs('admin.prodi.*') ? 'active' : '' }}" href="{{ route('admin.prodi.index') }}"><i class="ti ti-building me-2"></i>Program Studi</a>
+                                    @endif
+                                    <a class="dropdown-item {{ request()->routeIs('admin.kurikulum.*') ? 'active' : '' }}" href="{{ route('admin.kurikulum.index') }}"><i class="ti ti-notebook me-2"></i>Kurikulum</a>
+                                    <a class="dropdown-item {{ request()->routeIs('admin.matakuliah.*') ? 'active' : '' }}" href="{{ route('admin.matakuliah.index') }}"><i class="ti ti-book me-2"></i>Mata Kuliah</a>
+                                    @if ($user->isAdmin())
+                                        <a class="dropdown-item {{ request()->routeIs('admin.staff.*') ? 'active' : '' }}" href="{{ route('admin.staff.index') }}"><i class="ti ti-user-star me-2"></i>Dosen &amp; Kaprodi</a>
+                                    @endif
+                                    <a class="dropdown-item {{ request()->routeIs('admin.students.*') ? 'active' : '' }}" href="{{ route('admin.students.index') }}"><i class="ti ti-users me-2"></i>Mahasiswa</a>
+                                    @if ($user->isAdmin())
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item {{ request()->routeIs('admin.rooms.*') ? 'active' : '' }}" href="{{ route('admin.rooms.index') }}"><i class="ti ti-door me-2"></i>Ruangan</a>
+                                        <a class="dropdown-item {{ request()->routeIs('admin.timeslots.*') ? 'active' : '' }}" href="{{ route('admin.timeslots.index') }}"><i class="ti ti-clock-hour-8 me-2"></i>Sesi Kuliah</a>
+                                        <a class="dropdown-item {{ request()->routeIs('admin.gradeScale.*') ? 'active' : '' }}" href="{{ route('admin.gradeScale.edit') }}"><i class="ti ti-award me-2"></i>Skala Nilai</a>
+                                    @endif
+                                </div>
+                            </li>
+                            {{-- Akademik --}}
+                            <li class="nav-item dropdown {{ request()->routeIs('admin.academic.*', 'admin.semesters.*', 'academic.calendar') ? 'active' : '' }}">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                     <span class="nav-link-icon"><i class="ti ti-books"></i></span>
                                     <span class="nav-link-title">Akademik</span>
                                 </a>
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item {{ request()->routeIs('admin.academic.*') ? 'active' : '' }}" href="{{ route('admin.academic.index') }}"><i class="ti ti-chart-bar me-2"></i>Rekap Akademik</a>
-                                    <a class="dropdown-item {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}" href="{{ route('admin.courses.index') }}"><i class="ti ti-school me-2"></i>Pengawasan Kelas</a>
-                                    <a class="dropdown-item {{ request()->routeIs('admin.students.*') ? 'active' : '' }}" href="{{ route('admin.students.index') }}"><i class="ti ti-users me-2"></i>Mahasiswa</a>
-                                    <a class="dropdown-item {{ request()->routeIs('admin.kurikulum.*') ? 'active' : '' }}" href="{{ route('admin.kurikulum.index') }}"><i class="ti ti-notebook me-2"></i>Kurikulum</a>
-                                    <a class="dropdown-item {{ request()->routeIs('admin.matakuliah.*') ? 'active' : '' }}" href="{{ route('admin.matakuliah.index') }}"><i class="ti ti-book me-2"></i>Mata Kuliah</a>
+                                    @if ($user->isAdmin())
+                                        <a class="dropdown-item {{ request()->routeIs('admin.semesters.*') ? 'active' : '' }}" href="{{ route('admin.semesters.index') }}"><i class="ti ti-calendar-stats me-2"></i>Kelola Semester</a>
+                                    @endif
                                     <a class="dropdown-item {{ request()->routeIs('academic.calendar') ? 'active' : '' }}" href="{{ route('academic.calendar') }}"><i class="ti ti-calendar-event me-2"></i>Kalender Akademik</a>
                                 </div>
+                            </li>
+                            {{-- LMS --}}
+                            <li class="nav-item {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">
+                                <a class="nav-link" href="{{ route('admin.courses.index') }}">
+                                    <span class="nav-link-icon"><i class="ti ti-device-laptop"></i></span>
+                                    <span class="nav-link-title">LMS</span>
+                                </a>
                             </li>
                         @endif
                         @if ($user->isAdmin())
                             {{-- Sistem (admin saja) --}}
-                            <li class="nav-item dropdown {{ request()->routeIs('admin.semesters.*', 'admin.staff.*', 'admin.settings.*', 'admin.gradeScale.*', 'admin.ai.*', 'admin.activity.*', 'admin.backups.*') ? 'active' : '' }}">
+                            <li class="nav-item dropdown {{ request()->routeIs('admin.settings.*', 'admin.ai.*', 'admin.activity.*', 'admin.backups.*') ? 'active' : '' }}">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                     <span class="nav-link-icon"><i class="ti ti-settings"></i></span>
                                     <span class="nav-link-title">Sistem</span>
                                 </a>
                                 <div class="dropdown-menu">
-                                    <a class="dropdown-item {{ request()->routeIs('admin.staff.*') ? 'active' : '' }}" href="{{ route('admin.staff.index') }}"><i class="ti ti-user-star me-2"></i>Dosen &amp; Kaprodi</a>
-                                    <a class="dropdown-item {{ request()->routeIs('admin.semesters.*') ? 'active' : '' }}" href="{{ route('admin.semesters.index') }}"><i class="ti ti-calendar-stats me-2"></i>Kelola Semester</a>
                                     <a class="dropdown-item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.edit') }}"><i class="ti ti-palette me-2"></i>Tampilan</a>
-                                    <a class="dropdown-item {{ request()->routeIs('admin.gradeScale.*') ? 'active' : '' }}" href="{{ route('admin.gradeScale.edit') }}"><i class="ti ti-award me-2"></i>Skala Nilai</a>
                                     <a class="dropdown-item {{ request()->routeIs('admin.ai.*') ? 'active' : '' }}" href="{{ route('admin.ai.edit') }}"><i class="ti ti-sparkles me-2"></i>Integrasi AI</a>
                                     <a class="dropdown-item {{ request()->routeIs('admin.activity.*') ? 'active' : '' }}" href="{{ route('admin.activity.index') }}"><i class="ti ti-history me-2"></i>Riwayat Aktivitas</a>
                                     <a class="dropdown-item {{ request()->routeIs('admin.backups.*') ? 'active' : '' }}" href="{{ route('admin.backups.index') }}"><i class="ti ti-database me-2"></i>Backup</a>

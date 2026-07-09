@@ -403,12 +403,50 @@ class RoleAccessTest extends TestCase
         $dosen = $this->user(User::ROLE_DOSEN);
         $admin = $this->user(User::ROLE_ADMIN);
         $course = $this->course($dosen);
+        $slot = \App\Models\TimeSlot::create(['name' => 'Sesi 1', 'start_time' => '08:00', 'end_time' => '10:00', 'sort' => 1]);
+        $room = \App\Models\Room::create(['code' => 'R201', 'name' => 'Ruang 201']);
 
         $this->actingAs($admin)->post(route('schedule.store', $course), [
-            'day' => 1, 'start_time' => '08:00', 'end_time' => '10:00', 'room' => 'R201',
+            'day' => 1, 'time_slot_id' => $slot->id, 'room_id' => $room->id,
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('class_schedules', ['course_id' => $course->id, 'day' => 1, 'room' => 'R201']);
+        // Jam & ruang diturunkan dari master sesi/ruangan
+        $this->assertDatabaseHas('class_schedules', [
+            'course_id' => $course->id, 'day' => 1, 'time_slot_id' => $slot->id,
+            'room_id' => $room->id, 'start_time' => '08:00', 'end_time' => '10:00', 'room' => 'Ruang 201',
+        ]);
+    }
+
+    public function test_data_master_admin_only(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $kaprodi = User::factory()->create(['role' => User::ROLE_KAPRODI, 'prodi_id' => $ak->id]);
+
+        // Admin dapat mengelola Prodi/Ruangan/Sesi
+        $this->actingAs($admin)->get(route('admin.prodi.index'))->assertOk()->assertSee('Program Studi');
+        $this->actingAs($admin)->post(route('admin.rooms.store'), ['name' => 'Lab Komputer', 'code' => 'LK1', 'capacity' => 30])
+            ->assertRedirect();
+        $this->assertDatabaseHas('rooms', ['name' => 'Lab Komputer', 'capacity' => 30]);
+        $this->actingAs($admin)->post(route('admin.timeslots.store'), ['name' => 'Sesi 2', 'start_time' => '10:00', 'end_time' => '11:40'])
+            ->assertRedirect();
+        $this->assertDatabaseHas('time_slots', ['name' => 'Sesi 2', 'start_time' => '10:00']);
+
+        // Kaprodi tak boleh akses master admin-only
+        $this->actingAs($kaprodi)->get(route('admin.rooms.index'))->assertForbidden();
+        $this->actingAs($kaprodi)->get(route('admin.prodi.index'))->assertForbidden();
+        $this->actingAs($kaprodi)->get(route('admin.timeslots.index'))->assertForbidden();
+    }
+
+    public function test_master_tolak_hapus_bila_dipakai(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $ak->id]);
+
+        $this->actingAs($admin)->delete(route('admin.prodi.destroy', $ak))
+            ->assertRedirect()->assertSessionHas('error');
+        $this->assertDatabaseHas('prodi', ['id' => $ak->id]);
     }
 
     public function test_jadwal_pribadi_bisa_diakses(): void

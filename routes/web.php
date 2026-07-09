@@ -7,7 +7,10 @@ use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\KurikulumController;
 use App\Http\Controllers\Admin\MataKuliahController;
+use App\Http\Controllers\Admin\ProdiController;
+use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\StaffController;
+use App\Http\Controllers\Admin\TimeSlotController;
 use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
@@ -358,5 +361,19 @@ Route::middleware('auth')->group(function () {
 
         // Mode samaran (spy) — admin masuk sebagai dosen/mahasiswa
         Route::post('/impersonate/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
+
+        // Data Master — Prodi, Ruangan, Sesi Kuliah (admin saja)
+        Route::get('/prodi', [ProdiController::class, 'index'])->name('prodi.index');
+        Route::post('/prodi', [ProdiController::class, 'store'])->name('prodi.store');
+        Route::put('/prodi/{prodi}', [ProdiController::class, 'update'])->name('prodi.update');
+        Route::delete('/prodi/{prodi}', [ProdiController::class, 'destroy'])->name('prodi.destroy');
+
+        Route::get('/ruangan', [RoomController::class, 'index'])->name('rooms.index');
+        Route::post('/ruangan', [RoomController::class, 'store'])->name('rooms.store');
+        Route::delete('/ruangan/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
+
+        Route::get('/sesi-kuliah', [TimeSlotController::class, 'index'])->name('timeslots.index');
+        Route::post('/sesi-kuliah', [TimeSlotController::class, 'store'])->name('timeslots.store');
+        Route::delete('/sesi-kuliah/{timeslot}', [TimeSlotController::class, 'destroy'])->name('timeslots.destroy');
     });
 });

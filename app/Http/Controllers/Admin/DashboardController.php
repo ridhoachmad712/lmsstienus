@@ -51,6 +51,53 @@ class DashboardController extends Controller
             'period' => Semester::keyLabel($year.'-'.$semester),
         ];
 
-        return view('admin.dashboard', compact('stats', 'activeKeys', 'prodi', 'krs'));
+        $isAdmin = $user->isAdmin();
+
+        // Kartu statistik [label, value, sub, icon, color, route|null]
+        $statCards = [
+            ['Dosen', $stats['dosen'], null, 'ti-user-star', 'blue', $isAdmin ? 'admin.staff.index' : null],
+            ['Mahasiswa', $stats['mahasiswa'], null, 'ti-users', 'green', 'admin.students.index'],
+            ['Kelas aktif', $stats['active_courses'], 'dari '.$stats['courses'].' kelas', 'ti-school', 'azure', 'admin.courses.index'],
+            ['Semester aktif', count($activeKeys), collect($activeKeys)->map(fn ($k) => Semester::keyLabel($k))->implode(', '), 'ti-calendar-stats', 'purple', $isAdmin ? 'admin.semesters.index' : null],
+        ];
+
+        // Kelompok menu: Data Master / Akademik / LMS / Sistem
+        $master = [];
+        if ($isAdmin) {
+            $master[] = ['admin.prodi.index', 'ti-building', 'Program Studi', 'Daftar prodi'];
+        }
+        $master[] = ['admin.kurikulum.index', 'ti-notebook', 'Kurikulum', 'Versi kurikulum per prodi'];
+        $master[] = ['admin.matakuliah.index', 'ti-book', 'Mata Kuliah', 'Katalog MK, SKS & prasyarat'];
+        if ($isAdmin) {
+            $master[] = ['admin.staff.index', 'ti-user-star', 'Dosen & Kaprodi', 'Akun staf + prodi'];
+        }
+        $master[] = ['admin.students.index', 'ti-users', 'Mahasiswa', 'Akun & biodata mahasiswa'];
+        if ($isAdmin) {
+            $master[] = ['admin.rooms.index', 'ti-door', 'Ruangan', 'Daftar ruang kuliah'];
+            $master[] = ['admin.timeslots.index', 'ti-clock-hour-8', 'Sesi Kuliah', 'Slot jam baku'];
+            $master[] = ['admin.gradeScale.edit', 'ti-award', 'Skala Nilai', 'Ambang konversi huruf'];
+        }
+
+        $akademik = [['admin.academic.index', 'ti-chart-bar', 'Rekap Akademik', 'IPK/IPS & deteksi bermasalah']];
+        if ($isAdmin) {
+            $akademik[] = ['admin.semesters.index', 'ti-calendar-stats', 'Kelola Semester', 'Semester aktif & KRS'];
+        }
+        $akademik[] = ['academic.calendar', 'ti-calendar-event', 'Kalender Akademik', 'Agenda KRS/UTS/UAS/libur'];
+
+        $menuGroups = [
+            ['Data Master', 'ti-database', 'green', $master],
+            ['Akademik', 'ti-books', 'blue', $akademik],
+            ['LMS', 'ti-device-laptop', 'azure', [['admin.courses.index', 'ti-school', 'Pengawasan Kelas', 'Pantau kelas & progresnya']]],
+        ];
+        if ($isAdmin) {
+            $menuGroups[] = ['Sistem', 'ti-settings', 'purple', [
+                ['admin.settings.edit', 'ti-palette', 'Tampilan', 'Branding & tema aplikasi'],
+                ['admin.ai.edit', 'ti-sparkles', 'Integrasi AI', 'Kunci & model AI'],
+                ['admin.activity.index', 'ti-history', 'Riwayat Aktivitas', 'Log tindakan pengguna'],
+                ['admin.backups.index', 'ti-database', 'Backup', 'Cadangan basis data'],
+            ]];
+        }
+
+        return view('admin.dashboard', compact('stats', 'activeKeys', 'prodi', 'krs', 'isAdmin', 'statCards', 'menuGroups'));
     }
 }

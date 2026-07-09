@@ -19,8 +19,8 @@
                             @foreach ($schedules as $s)
                                 <tr>
                                     <td class="fw-bold">{{ $s->dayLabel() }}</td>
-                                    <td>{{ $s->start_time }}–{{ $s->end_time }}</td>
-                                    <td>{{ $s->room ?? '—' }}</td>
+                                    <td>@if ($s->timeSlot){{ $s->timeSlot->name }} · @endif{{ $s->start_time }}–{{ $s->end_time }}</td>
+                                    <td>{{ $s->roomLabel() ?? '—' }}</td>
                                     <td class="text-end">
                                         @if (auth()->user()->isAdmin())
                                             @unless ($course->isCompleted())
@@ -54,16 +54,25 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="row">
-                            <div class="col-6 mb-3"><label class="form-label required">Mulai</label>
-                                <input type="time" name="start_time" class="form-control" required>
-                            </div>
-                            <div class="col-6 mb-3"><label class="form-label required">Selesai</label>
-                                <input type="time" name="end_time" class="form-control" required>
-                            </div>
+                        <div class="mb-3"><label class="form-label required">Sesi</label>
+                            @if ($timeSlots->isEmpty())
+                                <div class="form-hint">Belum ada sesi. <a href="{{ route('admin.timeslots.index') }}">Tambah Sesi Kuliah</a> dulu.</div>
+                            @else
+                                <select name="time_slot_id" class="form-select" required>
+                                    @foreach ($timeSlots as $slot)
+                                        <option value="{{ $slot->id }}">{{ $slot->label() }}</option>
+                                    @endforeach
+                                </select>
+                            @endif
                         </div>
-                        <div class="mb-1"><label class="form-label">Ruang</label>
-                            <input type="text" name="room" class="form-control" placeholder="mis. R.201 / Lab Komputer">
+                        <div class="mb-1"><label class="form-label">Ruangan</label>
+                            <select name="room_id" class="form-select">
+                                <option value="">— tanpa ruang —</option>
+                                @foreach ($rooms as $room)
+                                    <option value="{{ $room->id }}">{{ $room->label() }}</option>
+                                @endforeach
+                            </select>
+                            @if ($rooms->isEmpty())<div class="form-hint mt-1"><a href="{{ route('admin.rooms.index') }}">Tambah Ruangan</a> di Data Master.</div>@endif
                         </div>
                     </div>
                     <div class="card-footer text-end"><button class="btn btn-primary"><i class="ti ti-plus me-1"></i>Tambah</button></div>
