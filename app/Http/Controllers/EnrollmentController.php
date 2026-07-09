@@ -9,40 +9,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
 
 class EnrollmentController extends Controller
 {
-    /** Halaman mahasiswa gabung kelas via kode. */
-    public function showJoin(): View
-    {
-        return view('courses.join');
-    }
-
-    /** Mahasiswa gabung kelas dengan kode. */
-    public function join(Request $request): RedirectResponse
-    {
-        abort_unless($request->user()->isMahasiswa(), 403);
-
-        $data = $request->validate(['join_code' => ['required', 'string', 'max:12']]);
-        $code = strtoupper(trim($data['join_code']));
-
-        $course = Course::where('join_code', $code)
-            ->where('status', Course::STATUS_ACTIVE)
-            ->first();
-
-        if (! $course) {
-            throw ValidationException::withMessages(['join_code' => 'Kode kelas tidak valid atau kelas tidak aktif.']);
-        }
-
-        if (! $this->enrollApproved($course, $request->user()->id)) {
-            return redirect()->route('courses.show', $course)->with('status', 'Anda sudah terdaftar di kelas ini.');
-        }
-
-        return redirect()->route('courses.show', $course)->with('status', 'Berhasil gabung ke '.$course->name.'.');
-    }
-
     /** Dosen reset kata sandi mahasiswa (ke NIM, atau "password" bila NIM kosong). */
     public function resetPassword(Request $request, Course $course, User $user): RedirectResponse
     {

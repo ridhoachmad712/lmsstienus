@@ -91,7 +91,14 @@ class CourseController extends Controller
             ->withCount('meetings')
             ->get();
 
-        return view('courses.index-mahasiswa', compact('courses'));
+        // Kelas yang diprogramkan di KRS periode aktif tapi belum disetujui (info).
+        [$year, $semester] = explode('-', \App\Models\Semester::primaryKey(), 2);
+        $krsPending = $user->enrollments()
+            ->whereIn('status', [\App\Models\Enrollment::STATUS_DRAFT, \App\Models\Enrollment::STATUS_SUBMITTED])
+            ->whereHas('course', fn ($q) => $q->where('year', $year)->where('semester', $semester))
+            ->count();
+
+        return view('courses.index-mahasiswa', compact('courses', 'krsPending'));
     }
 
     public function create(Request $request): View

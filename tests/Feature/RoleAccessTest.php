@@ -747,8 +747,27 @@ class RoleAccessTest extends TestCase
             'status' => \App\Models\Enrollment::STATUS_APPROVED, 'approved_by' => $wali->id,
         ]);
 
-        // Sekarang mahasiswa dapat mengakses kelas
+        // Sekarang mahasiswa dapat mengakses kelas & kelas otomatis muncul di LMS
         $this->actingAs($mhs)->get(route('courses.show', $course))->assertOk();
+        $this->actingAs($mhs)->get(route('courses.index'))->assertOk()->assertSee($course->name);
+    }
+
+    public function test_gabung_kelas_manual_dihapus(): void
+    {
+        // Alur join-by-code sudah tidak ada (enrolmen lewat KRS).
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('enrollments.join'));
+        $this->actingAs($this->user(User::ROLE_MAHASISWA))->get('/join')->assertNotFound();
+    }
+
+    public function test_lms_tampil_info_krs_menunggu(): void
+    {
+        $course = $this->krsCourse();
+        \App\Models\Setting::put('krs_open', '1');
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+        $this->actingAs($mhs)->post(route('krs.add', $course)); // draft, belum disetujui
+
+        // Kelas belum muncul sebagai kelas aktif, tapi ada info KRS menunggu
+        $this->actingAs($mhs)->get(route('courses.index'))->assertOk()->assertSee('belum disetujui');
     }
 
     public function test_krs_deteksi_bentrok_jadwal(): void

@@ -5,16 +5,24 @@
 @section('page-title', 'Kelas Saya')
 
 @section('page-actions')
-    <a href="{{ route('enrollments.join.show') }}" class="btn btn-primary"><i class="ti ti-key me-1"></i>Gabung Kelas</a>
+    <a href="{{ route('krs.index') }}" class="btn"><i class="ti ti-clipboard-list me-1"></i>Lihat KRS</a>
 @endsection
 
 @section('content')
+@if ($krsPending > 0)
+    <div class="alert alert-info d-flex align-items-center" role="alert">
+        <i class="ti ti-clock-hour-4 me-2"></i>
+        <div class="flex-fill">Ada <strong>{{ $krsPending }}</strong> kelas di KRS Anda yang belum disetujui dosen wali. Kelas otomatis muncul di sini setelah disetujui.</div>
+        <a href="{{ route('krs.index') }}" class="btn btn-sm btn-info">Buka KRS</a>
+    </div>
+@endif
+
 @if ($courses->isEmpty())
     <div class="card">
         <div class="card-body">
-            <x-empty-state icon="ti-school" title="Belum terdaftar di kelas mana pun"
-                description="Punya kode dari dosen? Klik Gabung Kelas. Atau tunggu dosen menambahkan Anda.">
-                <a href="{{ route('enrollments.join.show') }}" class="btn btn-primary"><i class="ti ti-key me-1"></i>Gabung Kelas</a>
+            <x-empty-state icon="ti-school" title="Belum ada kelas aktif"
+                description="Kelas mengikuti KRS yang Anda programkan. Susun KRS lalu ajukan ke dosen wali — setelah disetujui, kelasnya otomatis muncul di sini.">
+                <a href="{{ route('krs.index') }}" class="btn btn-primary"><i class="ti ti-clipboard-list me-1"></i>Buka KRS</a>
             </x-empty-state>
         </div>
     </div>

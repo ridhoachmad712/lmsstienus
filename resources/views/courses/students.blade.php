@@ -5,22 +5,14 @@
 @section('content')
 @include('courses._hero')
 
-{{-- Kode gabung kelas --}}
-<div class="card bg-primary-lt mb-3">
+{{-- Sumber mahasiswa: KRS --}}
+<div class="card mb-3">
     <div class="card-body d-flex align-items-center flex-wrap gap-3">
-        <div>
-            <div class="text-secondary small">Kode gabung kelas</div>
-            <div class="h2 mb-0 fw-bold" style="letter-spacing:.2em">{{ $course->join_code ?? '—' }}</div>
+        <div class="me-auto text-secondary small">
+            <i class="ti ti-info-circle me-1"></i>Mahasiswa masuk kelas ini <strong>otomatis</strong> lewat KRS yang disetujui dosen wali. Anda juga bisa menambah mahasiswa secara manual di bawah.
         </div>
-        <div class="text-secondary small me-auto">Bagikan kode ini agar mahasiswa gabung sendiri lewat menu <strong>Kelas Saya → Gabung Kelas</strong>.</div>
         @unless ($course->isCompleted())
-        <div class="btn-list">
             <a href="{{ route('enrollments.template') }}" class="btn btn-sm"><i class="ti ti-download me-1"></i>Template CSV</a>
-            <form method="POST" action="{{ route('courses.regenerateCode', $course) }}" data-confirm="Buat kode gabung baru? Kode lama tidak berlaku lagi.">
-                @csrf @method('PATCH')
-                <button class="btn btn-sm"><i class="ti ti-refresh me-1"></i>Kode baru</button>
-            </form>
-        </div>
         @endunless
     </div>
 </div>

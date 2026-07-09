@@ -108,10 +108,6 @@ Route::middleware('auth')->group(function () {
     // Jadwal per kelas (lihat kedua role; kelola di grup dosen)
     Route::get('/courses/{course}/schedule', [ScheduleController::class, 'course'])->name('schedule.course');
 
-    // Gabung kelas via kode (mahasiswa)
-    Route::get('/join', [EnrollmentController::class, 'showJoin'])->name('enrollments.join.show');
-    Route::post('/join', [EnrollmentController::class, 'join'])->name('enrollments.join');
-
     // Kelas — index & show untuk kedua role (otorisasi di controller)
     Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
     Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
