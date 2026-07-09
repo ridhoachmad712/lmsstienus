@@ -54,7 +54,7 @@ class BackupDatabase extends Command
         $pdo = \Illuminate\Support\Facades\DB::connection('mysql')->getPdo();
         $handle = fopen($dest, 'w');
 
-        fwrite($handle, "-- Pegboard LMS — backup ".now()->toDateTimeString()."\n");
+        fwrite($handle, "-- SIAKAD — backup ".now()->toDateTimeString()."\n");
         fwrite($handle, "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n");
 
         $tables = $pdo->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN);

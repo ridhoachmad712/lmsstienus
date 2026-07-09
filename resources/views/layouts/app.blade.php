@@ -179,48 +179,59 @@
                                 <span class="nav-link-title">Dashboard</span>
                             </a>
                         </li>
-                        @unless ($user->isStaff())
-                        <li class="nav-item {{ request()->routeIs('courses.*', 'assignments.*', 'quizzes.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*', 'analytics.*', 'reports.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('courses.index') }}">
-                                <span class="nav-link-icon"><i class="ti ti-school"></i></span>
-                                <span class="nav-link-title">Kelas Saya</span>
-                            </a>
-                        </li>
-                        <li class="nav-item {{ request()->routeIs('calendar') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('calendar') }}">
-                                <span class="nav-link-icon"><i class="ti ti-calendar"></i></span>
-                                <span class="nav-link-title">Kalender</span>
-                            </a>
-                        </li>
-                        <li class="nav-item {{ request()->routeIs('schedule.index') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('schedule.index') }}">
-                                <span class="nav-link-icon"><i class="ti ti-calendar-time"></i></span>
-                                <span class="nav-link-title">Jadwal</span>
-                            </a>
-                        </li>
-                        @if ($user->isDosen())
-                            <li class="nav-item {{ request()->routeIs('perwalian.*') ? 'active' : '' }}">
-                                <a class="nav-link" href="{{ route('perwalian.index') }}">
-                                    <span class="nav-link-icon"><i class="ti ti-users-group"></i></span>
-                                    <span class="nav-link-title">Perwalian</span>
-                                </a>
-                            </li>
-                        @endif
                         @if ($user->isMahasiswa())
-                            <li class="nav-item {{ request()->routeIs('krs.*') ? 'active' : '' }}">
-                                <a class="nav-link" href="{{ route('krs.index') }}">
-                                    <span class="nav-link-icon"><i class="ti ti-clipboard-list"></i></span>
-                                    <span class="nav-link-title">KRS</span>
+                            {{-- Akademik (SIAKAD) --}}
+                            <li class="nav-item dropdown {{ request()->routeIs('krs.*', 'transkrip.*', 'schedule.index') ? 'active' : '' }}">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                                    <span class="nav-link-icon"><i class="ti ti-books"></i></span>
+                                    <span class="nav-link-title">Akademik</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item {{ request()->routeIs('krs.*') ? 'active' : '' }}" href="{{ route('krs.index') }}"><i class="ti ti-clipboard-list me-2"></i>KRS</a>
+                                    <a class="dropdown-item {{ request()->routeIs('transkrip.*') ? 'active' : '' }}" href="{{ route('transkrip.mine') }}"><i class="ti ti-certificate me-2"></i>Transkrip &amp; KHS</a>
+                                    <a class="dropdown-item {{ request()->routeIs('schedule.index') ? 'active' : '' }}" href="{{ route('schedule.index') }}"><i class="ti ti-calendar-time me-2"></i>Jadwal Kuliah</a>
+                                    <a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="ti ti-id-badge-2 me-2"></i>Biodata</a>
+                                </div>
+                            </li>
+                            {{-- Perkuliahan (e-Learning) --}}
+                            <li class="nav-item {{ request()->routeIs('courses.*', 'assignments.*', 'quizzes.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*') ? 'active' : '' }}">
+                                <a class="nav-link" href="{{ route('courses.index') }}">
+                                    <span class="nav-link-icon"><i class="ti ti-device-laptop"></i></span>
+                                    <span class="nav-link-title">Perkuliahan</span>
                                 </a>
                             </li>
-                            <li class="nav-item {{ request()->routeIs('transkrip.*') ? 'active' : '' }}">
-                                <a class="nav-link" href="{{ route('transkrip.mine') }}">
-                                    <span class="nav-link-icon"><i class="ti ti-certificate"></i></span>
-                                    <span class="nav-link-title">Transkrip</span>
+                            <li class="nav-item {{ request()->routeIs('calendar') ? 'active' : '' }}">
+                                <a class="nav-link" href="{{ route('calendar') }}">
+                                    <span class="nav-link-icon"><i class="ti ti-calendar"></i></span>
+                                    <span class="nav-link-title">Kalender</span>
+                                </a>
+                            </li>
+                        @elseif ($user->isDosen())
+                            {{-- Akademik (SIAKAD) --}}
+                            <li class="nav-item dropdown {{ request()->routeIs('perwalian.*', 'schedule.index') ? 'active' : '' }}">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                                    <span class="nav-link-icon"><i class="ti ti-books"></i></span>
+                                    <span class="nav-link-title">Akademik</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item {{ request()->routeIs('perwalian.*') ? 'active' : '' }}" href="{{ route('perwalian.index') }}"><i class="ti ti-users-group me-2"></i>Perwalian</a>
+                                    <a class="dropdown-item {{ request()->routeIs('schedule.index') ? 'active' : '' }}" href="{{ route('schedule.index') }}"><i class="ti ti-calendar-time me-2"></i>Jadwal Mengajar</a>
+                                </div>
+                            </li>
+                            {{-- Perkuliahan (e-Learning) --}}
+                            <li class="nav-item {{ request()->routeIs('courses.*', 'assignments.*', 'quizzes.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*', 'analytics.*', 'reports.*') ? 'active' : '' }}">
+                                <a class="nav-link" href="{{ route('courses.index') }}">
+                                    <span class="nav-link-icon"><i class="ti ti-device-laptop"></i></span>
+                                    <span class="nav-link-title">Perkuliahan</span>
+                                </a>
+                            </li>
+                            <li class="nav-item {{ request()->routeIs('calendar') ? 'active' : '' }}">
+                                <a class="nav-link" href="{{ route('calendar') }}">
+                                    <span class="nav-link-icon"><i class="ti ti-calendar"></i></span>
+                                    <span class="nav-link-title">Kalender</span>
                                 </a>
                             </li>
                         @endif
-                        @endunless
                         @if ($user->isStaff())
                             {{-- Akademik (admin & kaprodi; kaprodi ter-scope prodi di controller) --}}
                             <li class="nav-item dropdown {{ request()->routeIs('admin.courses.*', 'admin.students.*', 'admin.kurikulum.*', 'admin.matakuliah.*') ? 'active' : '' }}">
