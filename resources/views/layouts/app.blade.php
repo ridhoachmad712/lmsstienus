@@ -234,12 +234,13 @@
                         @endif
                         @if ($user->isStaff())
                             {{-- Akademik (admin & kaprodi; kaprodi ter-scope prodi di controller) --}}
-                            <li class="nav-item dropdown {{ request()->routeIs('admin.courses.*', 'admin.students.*', 'admin.kurikulum.*', 'admin.matakuliah.*') ? 'active' : '' }}">
+                            <li class="nav-item dropdown {{ request()->routeIs('admin.courses.*', 'admin.students.*', 'admin.kurikulum.*', 'admin.matakuliah.*', 'admin.academic.*') ? 'active' : '' }}">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                     <span class="nav-link-icon"><i class="ti ti-books"></i></span>
                                     <span class="nav-link-title">Akademik</span>
                                 </a>
                                 <div class="dropdown-menu">
+                                    <a class="dropdown-item {{ request()->routeIs('admin.academic.*') ? 'active' : '' }}" href="{{ route('admin.academic.index') }}"><i class="ti ti-chart-bar me-2"></i>Rekap Akademik</a>
                                     <a class="dropdown-item {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}" href="{{ route('admin.courses.index') }}"><i class="ti ti-school me-2"></i>Pengawasan Kelas</a>
                                     <a class="dropdown-item {{ request()->routeIs('admin.students.*') ? 'active' : '' }}" href="{{ route('admin.students.index') }}"><i class="ti ti-users me-2"></i>Mahasiswa</a>
                                     <a class="dropdown-item {{ request()->routeIs('admin.kurikulum.*') ? 'active' : '' }}" href="{{ route('admin.kurikulum.index') }}"><i class="ti ti-notebook me-2"></i>Kurikulum</a>

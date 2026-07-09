@@ -85,6 +85,7 @@
 
 {{-- ===================== MENU AKADEMIK ===================== --}}
 @php($akademik = [
+    ['admin.academic.index', 'ti-chart-bar', 'Rekap Akademik', 'IPK/IPS & deteksi bermasalah'],
     ['admin.courses.index', 'ti-school', 'Pengawasan Kelas', 'Pantau kelas & progresnya'],
     ['admin.students.index', 'ti-users', 'Mahasiswa', 'Kelola & impor akun mahasiswa'],
     ['admin.kurikulum.index', 'ti-notebook', 'Kurikulum', 'Versi kurikulum per prodi'],

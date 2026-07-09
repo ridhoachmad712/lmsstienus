@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AcademicController;
 use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
@@ -288,6 +289,9 @@ Route::middleware('auth')->group(function () {
 
         // Pengawasan kelas (kaprodi ter-scope prodi di controller)
         Route::get('/courses', [AdminCourseController::class, 'index'])->name('courses.index');
+
+        // Rekap akademik (IPK/IPS/SKS + deteksi bermasalah; kaprodi ter-scope prodi)
+        Route::get('/akademik', [AcademicController::class, 'index'])->name('academic.index');
 
         // Kurikulum (kaprodi ter-scope prodi di controller)
         Route::get('/kurikulum', [KurikulumController::class, 'index'])->name('kurikulum.index');

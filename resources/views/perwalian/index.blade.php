@@ -12,19 +12,23 @@
     @else
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
-                <thead><tr><th>Nama</th><th>NIM</th><th>Prodi</th><th class="text-center">Angkatan</th><th class="text-center">Status</th><th class="text-center">KRS {{ $periodLabel }}</th><th></th></tr></thead>
+                <thead><tr><th>Nama</th><th>NIM</th><th class="text-center">Smt</th><th class="text-center">IPK</th><th class="text-center">IPS</th><th class="text-center">SKS</th><th class="text-center">Status</th><th class="text-center">KRS {{ $periodLabel }}</th><th></th></tr></thead>
                 <tbody>
                     @foreach ($advisees as $m)
+                        @php($a = $summaries[$m->id])
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    <x-avatar :name="$m->name" :url="$m->avatarUrl()" class="me-2" />{{ $m->name }}
+                                    <x-avatar :name="$m->name" :url="$m->avatarUrl()" class="me-2" />
+                                    <div>{{ $m->name }}<div class="text-secondary small">{{ $m->prodi?->name ?? '—' }}</div></div>
                                 </div>
                             </td>
                             <td>{{ $m->nim_nip ?? '—' }}</td>
-                            <td>{{ $m->prodi?->name ?? '—' }}</td>
-                            <td class="text-center">{{ $m->entry_year ?? '—' }}</td>
-                            <td class="text-center"><span class="badge bg-{{ $m->student_status === 'aktif' ? 'green' : 'secondary' }}-lt text-capitalize">{{ $m->student_status }}</span></td>
+                            <td class="text-center">{{ $a['semester_ke'] ?? '—' }}</td>
+                            <td class="text-center"><span class="badge bg-{{ $a['sks_kumulatif'] > 0 && $a['ipk'] < 2 ? 'red' : 'blue' }}-lt">{{ number_format($a['ipk'], 2) }}</span></td>
+                            <td class="text-center text-secondary">{{ is_null($a['ips_terakhir']) ? '—' : number_format($a['ips_terakhir'], 2) }}</td>
+                            <td class="text-center text-secondary">{{ $a['sks_kumulatif'] }}</td>
+                            <td class="text-center"><span class="badge bg-{{ $a['status_color'] }}-lt text-capitalize">{{ $m->student_status }}</span></td>
                             <td class="text-center">
                                 @if ($m->krs_pending_count > 0)
                                     <span class="badge bg-yellow-lt">{{ $m->krs_pending_count }} perlu persetujuan</span>

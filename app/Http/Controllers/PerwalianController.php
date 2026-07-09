@@ -27,8 +27,12 @@ class PerwalianController extends Controller
             ->orderBy('name')
             ->get();
 
+        $summary = new \App\Services\AcademicSummary();
+        $summaries = $advisees->mapWithKeys(fn ($m) => [$m->id => $summary->forStudent($m)]);
+
         return view('perwalian.index', [
             'advisees' => $advisees,
+            'summaries' => $summaries,
             'periodLabel' => Semester::keyLabel($year.'-'.$semester),
         ]);
     }

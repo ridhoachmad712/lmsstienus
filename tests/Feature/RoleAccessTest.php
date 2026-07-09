@@ -475,6 +475,31 @@ class RoleAccessTest extends TestCase
         $this->actingAs($wali)->get(route('perwalian.transkrip', $lain))->assertForbidden();
     }
 
+    public function test_rekap_akademik_akses_dan_scope(): void
+    {
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $kaprodiAk = User::factory()->create(['role' => User::ROLE_KAPRODI, 'prodi_id' => $ak->id]);
+        User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $ak->id, 'name' => 'Mhsakun Rekap']);
+        User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id, 'name' => 'Mhsmanaj Rekap']);
+
+        $res = $this->actingAs($kaprodiAk)->get(route('admin.academic.index'));
+        $res->assertOk()->assertSee('Rekap Akademik')->assertSee('Mhsakun Rekap')->assertDontSee('Mhsmanaj Rekap');
+
+        // Bukan untuk dosen/mahasiswa
+        $this->actingAs($this->user(User::ROLE_DOSEN))->get(route('admin.academic.index'))->assertForbidden();
+        $this->actingAs($this->user(User::ROLE_MAHASISWA))->get(route('admin.academic.index'))->assertForbidden();
+    }
+
+    public function test_perwalian_tampil_ringkasan_akademik(): void
+    {
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $wali = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
+        User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id, 'advisor_id' => $wali->id, 'name' => 'Anak Wali', 'entry_year' => 2024]);
+
+        $this->actingAs($wali)->get(route('perwalian.index'))->assertOk()->assertSee('IPK')->assertSee('Anak Wali');
+    }
+
     public function test_dosen_tidak_bisa_akses_kelas_dosen_lain(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);
