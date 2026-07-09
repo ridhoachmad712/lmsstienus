@@ -96,23 +96,35 @@ class CourseController extends Controller
 
     public function create(Request $request): View
     {
-        return view('courses.create', ['mataKuliahs' => $this->mataKuliahOptions($request)]);
+        return view('courses.create', [
+            'mataKuliahs' => $this->mataKuliahOptions(),
+            'dosenOptions' => $this->dosenOptions(),
+        ]);
     }
 
-    /** Pilihan mata kuliah untuk form kelas: MK prodi dosen + MK lintas prodi. */
-    private function mataKuliahOptions(Request $request)
+    /** Pilihan mata kuliah untuk form kelas (admin mengelola semua prodi). */
+    private function mataKuliahOptions()
     {
-        return \App\Models\MataKuliah::where(fn ($q) => $q
-            ->where('prodi_id', $request->user()->prodi_id)
-            ->orWhereNull('prodi_id'))
-            ->orderBy('code')->get();
+        return \App\Models\MataKuliah::orderBy('code')->get();
+    }
+
+    /** Pilihan dosen pengampu untuk form kelas. */
+    private function dosenOptions()
+    {
+        return User::where('role', User::ROLE_DOSEN)->with('prodi')->orderBy('name')->get();
+    }
+
+    /** Pastikan id yang dipilih adalah dosen. */
+    private function resolveDosen(int|string $id): User
+    {
+        return User::where('role', User::ROLE_DOSEN)->findOrFail((int) $id);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validateData($request);
-        $data['user_id'] = $request->user()->id;
-        $data['prodi_id'] = $request->user()->prodi_id; // kelas mengikuti prodi dosen
+        $dosen = $this->resolveDosen($data['user_id']);   // dosen pengampu dipilih admin
+        $data['prodi_id'] = $dosen->prodi_id;              // kelas mengikuti prodi dosen
         $data['status'] = Course::STATUS_ACTIVE;
         $data['join_code'] = Course::generateJoinCode();
 
@@ -232,7 +244,11 @@ class CourseController extends Controller
                 ->with('error', 'Kelas sudah selesai (read-only). Buka kembali untuk mengubah.');
         }
 
-        return view('courses.edit', ['course' => $course, 'mataKuliahs' => $this->mataKuliahOptions($request)]);
+        return view('courses.edit', [
+            'course' => $course,
+            'mataKuliahs' => $this->mataKuliahOptions(),
+            'dosenOptions' => $this->dosenOptions(),
+        ]);
     }
 
     public function update(Request $request, Course $course): RedirectResponse
@@ -240,7 +256,9 @@ class CourseController extends Controller
         $this->authorizeOwner($request, $course);
         abort_if($course->isCompleted(), 403, 'Kelas sudah selesai (read-only).');
 
-        $course->update($this->validateData($request));
+        $data = $this->validateData($request);
+        $data['prodi_id'] = $this->resolveDosen($data['user_id'])->prodi_id;
+        $course->update($data);
         $this->saveSyllabus($request, $course);
 
         return redirect()->route('courses.show', $course)
@@ -257,11 +275,11 @@ class CourseController extends Controller
             ->with('status', 'Kelas dipindahkan ke tong sampah. Bisa dipulihkan dari menu Tong Sampah.');
     }
 
-    /** Daftar kelas yang dihapus (tong sampah) milik dosen. */
+    /** Daftar kelas yang dihapus (tong sampah) — seluruh kampus (admin). */
     public function trash(Request $request): View
     {
-        $courses = $request->user()->teachingCourses()
-            ->onlyTrashed()
+        $courses = Course::onlyTrashed()
+            ->with('lecturer')
             ->withCount(['students', 'meetings'])
             ->latest('deleted_at')
             ->get();
@@ -272,7 +290,7 @@ class CourseController extends Controller
     /** Pulihkan kelas dari tong sampah. */
     public function restore(Request $request, int $id): RedirectResponse
     {
-        $course = $request->user()->teachingCourses()->onlyTrashed()->findOrFail($id);
+        $course = Course::onlyTrashed()->findOrFail($id);
         $course->restore();
 
         return redirect()->route('courses.show', $course)
@@ -282,7 +300,7 @@ class CourseController extends Controller
     /** Hapus permanen kelas beserta seluruh datanya. */
     public function forceDestroy(Request $request, int $id): RedirectResponse
     {
-        $course = $request->user()->teachingCourses()->onlyTrashed()->findOrFail($id);
+        $course = Course::onlyTrashed()->findOrFail($id);
         $course->forceDelete();
 
         return redirect()->route('courses.trash')
@@ -336,14 +354,18 @@ class CourseController extends Controller
     private function validateData(Request $request): array
     {
         return $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50'],
             'class_name' => ['nullable', 'string', 'max:100'],
             'mata_kuliah_id' => ['nullable', 'integer', 'exists:mata_kuliah,id'],
             'semester' => ['required', 'in:Ganjil,Genap,Antara'],
             'year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'quota' => ['nullable', 'integer', 'min:1'],
             'default_meeting_type' => ['required', 'in:tatap_muka,mandiri'],
             'description' => ['nullable', 'string'],
+        ], [
+            'user_id.required' => 'Pilih dosen pengampu.',
         ]);
     }
 

@@ -4,15 +4,6 @@
 @section('page-pretitle', 'Administrasi')
 @section('page-title', 'Kelas Saya')
 
-@section('page-actions')
-    <div class="btn-list">
-        <a href="{{ route('courses.trash') }}" class="btn"><i class="ti ti-trash me-1"></i>Tong Sampah</a>
-        <a href="{{ route('courses.create') }}" class="btn btn-primary">
-            <i class="ti ti-plus me-1"></i>Buat Kelas
-        </a>
-    </div>
-@endsection
-
 @section('content')
 {{-- Filter Aktif / Selesai + dropdown semester --}}
 @php($periodeLabel = $periode === 'all' ? 'Semua semester' : ($periode === 'active' ? $activeLabel : \App\Models\Semester::keyLabel($periode)))
@@ -59,9 +50,7 @@
                     description="Kelas yang sudah Anda tandai selesai akan muncul di sini." />
             @else
                 <x-empty-state icon="ti-school" title="Belum ada kelas aktif"
-                    description="Buat kelas pertama Anda untuk mulai mengelola materi dan mahasiswa.">
-                    <a href="{{ route('courses.create') }}" class="btn btn-primary"><i class="ti ti-plus me-1"></i>Buat Kelas</a>
-                </x-empty-state>
+                    description="Kelas dibuka oleh admin. Kelas yang menugaskan Anda sebagai pengampu akan muncul di sini." />
             @endif
         </div>
     </div>

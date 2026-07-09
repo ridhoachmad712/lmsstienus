@@ -10,7 +10,6 @@
                 <button class="btn btn-success"><i class="ti ti-lock-open me-1"></i>Buka Kembali</button>
             </form>
         @else
-            <a href="{{ route('courses.edit', $course) }}" class="btn"><i class="ti ti-edit me-1"></i>Edit</a>
             @if ($readiness['can_complete'])
                 <form method="POST" action="{{ route('courses.complete', $course) }}"
                       data-confirm="Tandai kelas ini SELESAI? Setelah selesai, kelas hanya bisa dilihat (read-only). Bisa dibuka kembali bila perlu.">
@@ -37,11 +36,6 @@
                     </button>
                 </span>
             @endif
-            <form method="POST" action="{{ route('courses.destroy', $course) }}"
-                  data-confirm="Hapus kelas ini? Kelas dipindahkan ke tong sampah dan bisa dipulihkan nanti.">
-                @csrf @method('DELETE')
-                <button class="btn btn-danger"><i class="ti ti-trash me-1"></i>Hapus</button>
-            </form>
         @endif
     @endif
 @endsection

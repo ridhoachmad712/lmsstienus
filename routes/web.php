@@ -152,9 +152,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/courses/{course}/syllabus', [SyllabusController::class, 'show'])->name('syllabus.show');
     Route::get('/courses/{course}/syllabus/pdf', [SyllabusController::class, 'pdf'])->name('syllabus.pdf');
 
-    // --- Khusus dosen ---
-    Route::middleware('role:dosen')->group(function () {
-        // CRUD kelas
+    // --- Buka & jadwalkan kelas (admin saja) ---
+    Route::middleware('role:admin')->group(function () {
         Route::get('/courses-create', [CourseController::class, 'create'])->name('courses.create');
         Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
         Route::get('/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
@@ -163,6 +162,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/courses-trash', [CourseController::class, 'trash'])->name('courses.trash');
         Route::patch('/courses/{id}/restore', [CourseController::class, 'restore'])->name('courses.restore');
         Route::delete('/courses/{id}/force', [CourseController::class, 'forceDestroy'])->name('courses.forceDestroy');
+
+        // Jadwal kuliah (slot) — ditetapkan admin
+        Route::post('/courses/{course}/schedule', [ScheduleController::class, 'store'])->name('schedule.store');
+        Route::delete('/schedule/{schedule}', [ScheduleController::class, 'destroy'])->name('schedule.destroy');
+    });
+
+    // --- Khusus dosen (mengelola isi kelas yang diampu) ---
+    Route::middleware('role:dosen')->group(function () {
         Route::patch('/courses/{course}/complete', [CourseController::class, 'toggleComplete'])->name('courses.complete');
         Route::patch('/courses/{course}/join-code', [CourseController::class, 'regenerateJoinCode'])->name('courses.regenerateCode');
         Route::get('/enrollments/template', [EnrollmentController::class, 'template'])->name('enrollments.template');
@@ -183,10 +190,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/meetings/{meeting}/materials', [MaterialController::class, 'store'])->name('materials.store');
         Route::put('/materials/{material}', [MaterialController::class, 'update'])->name('materials.update');
         Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->name('materials.destroy');
-
-        // Jadwal kuliah (slot) — dosen pemilik
-        Route::post('/courses/{course}/schedule', [ScheduleController::class, 'store'])->name('schedule.store');
-        Route::delete('/schedule/{schedule}', [ScheduleController::class, 'destroy'])->name('schedule.destroy');
 
         // Perwalian (dosen wali)
         Route::get('/perwalian', [PerwalianController::class, 'index'])->name('perwalian.index');

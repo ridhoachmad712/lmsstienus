@@ -372,12 +372,13 @@ class RoleAccessTest extends TestCase
         $this->actingAs($kaprodiAk)->get(route('admin.students.transkrip', $mhsMn))->assertForbidden();
     }
 
-    public function test_dosen_atur_jadwal_kelas(): void
+    public function test_admin_atur_jadwal_kelas(): void
     {
         $dosen = $this->user(User::ROLE_DOSEN);
+        $admin = $this->user(User::ROLE_ADMIN);
         $course = $this->course($dosen);
 
-        $this->actingAs($dosen)->post(route('schedule.store', $course), [
+        $this->actingAs($admin)->post(route('schedule.store', $course), [
             'day' => 1, 'start_time' => '08:00', 'end_time' => '10:00', 'room' => 'R201',
         ])->assertRedirect();
 
@@ -390,15 +391,46 @@ class RoleAccessTest extends TestCase
         $this->actingAs($this->user(User::ROLE_DOSEN))->get(route('schedule.index'))->assertOk();
     }
 
-    public function test_dosen_lain_tak_bisa_atur_jadwal(): void
+    public function test_dosen_tak_bisa_atur_jadwal(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);
-        $other = $this->user(User::ROLE_DOSEN);
         $course = $this->course($owner);
 
-        $this->actingAs($other)->post(route('schedule.store', $course), [
+        // Penjadwalan kini wewenang admin — dosen pemilik pun tak bisa.
+        $this->actingAs($owner)->post(route('schedule.store', $course), [
             'day' => 1, 'start_time' => '08:00', 'end_time' => '10:00',
         ])->assertForbidden();
+    }
+
+    public function test_dosen_tak_bisa_buka_kelas(): void
+    {
+        $dosen = $this->user(User::ROLE_DOSEN);
+
+        $this->actingAs($dosen)->get(route('courses.create'))->assertForbidden();
+        $this->actingAs($dosen)->post(route('courses.store'), [
+            'user_id' => $dosen->id, 'name' => 'X', 'code' => 'X1',
+            'semester' => 'Ganjil', 'year' => 2026, 'default_meeting_type' => 'tatap_muka',
+        ])->assertForbidden();
+    }
+
+    public function test_admin_buka_kelas_pilih_dosen(): void
+    {
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $admin = $this->user(User::ROLE_ADMIN);
+        $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
+
+        $this->actingAs($admin)->get(route('courses.create'))->assertOk()->assertSee('Dosen Pengampu');
+
+        $this->actingAs($admin)->post(route('courses.store'), [
+            'user_id' => $dosen->id, 'name' => 'Manajemen Strategik', 'code' => 'MN401',
+            'semester' => 'Ganjil', 'year' => 2026, 'quota' => 40, 'default_meeting_type' => 'tatap_muka',
+        ])->assertRedirect();
+
+        $course = Course::where('code', 'MN401')->first();
+        $this->assertNotNull($course);
+        $this->assertSame($dosen->id, $course->user_id);   // pengampu = dosen terpilih
+        $this->assertSame($mn->id, $course->prodi_id);     // prodi mengikuti dosen
+        $this->assertSame(40, $course->quota);
     }
 
     public function test_perwalian_dosen_lihat_bimbingan_dan_transkrip(): void

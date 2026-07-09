@@ -1,4 +1,17 @@
 <div class="row">
+    @if (! empty($dosenOptions))
+        <div class="col-12 mb-3">
+            <label class="form-label required">Dosen Pengampu</label>
+            <select name="user_id" class="form-select @error('user_id') is-invalid @enderror" required>
+                <option value="">— pilih dosen —</option>
+                @foreach ($dosenOptions as $d)
+                    <option value="{{ $d->id }}" @selected(old('user_id', $course->user_id ?? '') == $d->id)>{{ $d->name }}@if ($d->prodi) — {{ $d->prodi->code }}@endif</option>
+                @endforeach
+            </select>
+            <small class="form-hint">Kelas mengikuti program studi dosen yang dipilih.</small>
+            @error('user_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        </div>
+    @endif
     @if (! empty($mataKuliahs) && $mataKuliahs->isNotEmpty())
         <div class="col-12 mb-3">
             <label class="form-label">Mata Kuliah (katalog)</label>
@@ -31,7 +44,7 @@
         <small class="form-hint">Opsional — untuk membedakan beberapa kelas pada mata kuliah yang sama.</small>
         @error('class_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-md-4 mb-3">
         <label class="form-label required">Semester</label>
         <select name="semester" class="form-select @error('semester') is-invalid @enderror" required>
             @foreach (['Ganjil', 'Genap', 'Antara'] as $sem)
@@ -40,11 +53,18 @@
         </select>
         @error('semester')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-md-4 mb-3">
         <label class="form-label required">Tahun Ajaran</label>
         <input type="number" name="year" class="form-control @error('year') is-invalid @enderror"
                value="{{ old('year', $course->year ?? \App\Models\Setting::get('academic_year', date('Y'))) }}" min="2000" max="2100" required>
         @error('year')<div class="invalid-feedback">{{ $message }}</div>@enderror
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label">Kuota</label>
+        <input type="number" name="quota" class="form-control @error('quota') is-invalid @enderror"
+               value="{{ old('quota', $course->quota ?? '') }}" min="1" placeholder="Tanpa batas">
+        <small class="form-hint">Kosongkan = tanpa batas (untuk KRS).</small>
+        @error('quota')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-12 mb-3">
         <label class="form-label required">Jenis Pertemuan Default</label>

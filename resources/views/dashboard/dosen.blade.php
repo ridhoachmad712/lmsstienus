@@ -37,7 +37,6 @@
 
 {{-- Quick actions --}}
 <div class="btn-list mb-3">
-    <a href="{{ route('courses.create') }}" class="btn btn-primary"><i class="ti ti-plus me-1"></i>Buat Kelas</a>
     @if ($activeCourses->isNotEmpty())
         <div class="dropdown">
             <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="ti ti-speakerphone me-1"></i>Buat Pengumuman</button>
@@ -136,20 +135,14 @@
                     @if ($periods->isEmpty())
                         {{-- Benar-benar belum punya kelas sama sekali --}}
                         <x-empty-state icon="ti-school" title="Belum ada kelas"
-                            description="Mulai dengan membuat kelas pertama Anda.">
-                            <a href="{{ route('courses.create') }}" class="btn btn-primary"><i class="ti ti-plus me-1"></i>Buat Kelas</a>
-                        </x-empty-state>
+                            description="Kelas dibuka oleh admin. Anda akan melihat kelas di sini setelah ditugaskan sebagai pengampu." />
                     @elseif ($periode === 'all')
                         {{-- Punya kelas, tapi tidak ada yang berstatus aktif --}}
                         <x-empty-state icon="ti-school-off" title="Belum ada kelas aktif"
-                            description="Semua kelas Anda sudah ditandai selesai.">
-                            <a href="{{ route('courses.create') }}" class="btn btn-primary"><i class="ti ti-plus me-1"></i>Buat Kelas</a>
-                        </x-empty-state>
+                            description="Semua kelas Anda sudah ditandai selesai." />
                     @else
                         {{-- Punya kelas, tapi tidak di semester yang dipilih --}}
-                        <x-empty-state icon="ti-calendar-off" title="Belum ada kelas di {{ $periodeLabel }}">
-                            <a href="{{ route('courses.create') }}" class="btn btn-primary"><i class="ti ti-plus me-1"></i>Buat Kelas</a>
-                        </x-empty-state>
+                        <x-empty-state icon="ti-calendar-off" title="Belum ada kelas di {{ $periodeLabel }}" />
                     @endif
                 </div>
             @else

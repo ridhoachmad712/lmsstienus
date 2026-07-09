@@ -22,14 +22,14 @@
                                     <td>{{ $s->start_time }}–{{ $s->end_time }}</td>
                                     <td>{{ $s->room ?? '—' }}</td>
                                     <td class="text-end">
-                                        @can('manage', $course)
+                                        @if (auth()->user()->isAdmin())
                                             @unless ($course->isCompleted())
                                                 <form method="POST" action="{{ route('schedule.destroy', $s) }}" data-confirm="Hapus jadwal {{ $s->dayLabel() }} {{ $s->start_time }}?">
                                                     @csrf @method('DELETE')
                                                     <button class="btn btn-sm btn-ghost-danger"><i class="ti ti-trash"></i></button>
                                                 </form>
                                             @endunless
-                                        @endcan
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -40,7 +40,7 @@
         </div>
     </div>
 
-    @can('manage', $course)
+    @if (auth()->user()->isAdmin())
         @unless ($course->isCompleted())
             <div class="col-lg-5">
                 <form class="card" method="POST" action="{{ route('schedule.store', $course) }}">
@@ -70,6 +70,6 @@
                 </form>
             </div>
         @endunless
-    @endcan
+    @endif
 </div>
 @endsection
