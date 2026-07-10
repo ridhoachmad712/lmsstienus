@@ -36,6 +36,34 @@
     </div>
 </div>
 
+{{-- Grafik distribusi --}}
+<div class="row row-cards mb-3">
+    @foreach ($charts as $chart)
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header py-2"><h3 class="card-title">{{ $chart['title'] }}</h3></div>
+                <div class="card-body">
+                    @php($max = collect($chart['bars'])->max('count') ?: 1)
+                    @forelse ($chart['bars'] as $b)
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="text-secondary">{{ $b['label'] }}</span>
+                                <span class="fw-bold">{{ $b['count'] }}</span>
+                            </div>
+                            <div class="progress" style="height:.5rem">
+                                <div class="progress-bar bg-{{ $b['color'] }}" style="width: {{ round($b['count'] / $max * 100) }}%"
+                                     role="progressbar" aria-label="{{ $b['label'] }}: {{ $b['count'] }}"></div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-secondary small">Belum ada data.</div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    @endforeach
+</div>
+
 <div class="card">
     <div class="card-header">
         <h3 class="card-title">Daftar Mahasiswa</h3>

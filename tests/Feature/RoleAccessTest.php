@@ -648,7 +648,8 @@ class RoleAccessTest extends TestCase
         User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id, 'name' => 'Mhsmanaj Rekap']);
 
         $res = $this->actingAs($kaprodiAk)->get(route('admin.academic.index'));
-        $res->assertOk()->assertSee('Rekap Akademik')->assertSee('Mhsakun Rekap')->assertDontSee('Mhsmanaj Rekap');
+        $res->assertOk()->assertSee('Rekap Akademik')->assertSee('Distribusi IPK')
+            ->assertSee('Mhsakun Rekap')->assertDontSee('Mhsmanaj Rekap');
 
         // Bukan untuk dosen/mahasiswa
         $this->actingAs($this->user(User::ROLE_DOSEN))->get(route('admin.academic.index'))->assertForbidden();

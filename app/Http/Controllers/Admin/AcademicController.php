@@ -59,6 +59,8 @@ class AcademicController extends Controller
             'bermasalah' => $rows->where('bermasalah', true)->count(),
         ];
 
+        $charts = $this->buildCharts($rows, $withGrades);
+
         // Urut: bermasalah dulu, lalu IPK terendah.
         $rows = $rows->sortBy([
             fn ($a, $b) => ($b['bermasalah'] <=> $a['bermasalah']),
@@ -74,11 +76,55 @@ class AcademicController extends Controller
         return view('admin.akademik.index', [
             'rows' => $rows,
             'stats' => $stats,
+            'charts' => $charts,
             'prodis' => Prodi::orderBy('name')->get(),
             'prodiId' => $prodiId,
             'onlyBermasalah' => $onlyBermasalah,
             'ipkMin' => self::IPK_MIN,
         ]);
+    }
+
+    /**
+     * Data grafik distribusi (bar): IPK, angkatan, status. Tiap bar: [label, count, color].
+     */
+    private function buildCharts($rows, $withGrades): array
+    {
+        // Distribusi IPK (rentang mutu, buruk→baik) — hanya mahasiswa ber-nilai.
+        $ipkBands = [
+            ['< 2,00', 'red', fn ($v) => $v < 2.0],
+            ['2,00–2,49', 'orange', fn ($v) => $v >= 2.0 && $v < 2.5],
+            ['2,50–2,99', 'yellow', fn ($v) => $v >= 2.5 && $v < 3.0],
+            ['3,00–3,49', 'teal', fn ($v) => $v >= 3.0 && $v < 3.5],
+            ['3,50–4,00', 'green', fn ($v) => $v >= 3.5],
+        ];
+        $ipk = array_map(fn ($b) => [
+            'label' => $b[0],
+            'count' => $withGrades->filter(fn ($r) => $b[2]($r['ipk']))->count(),
+            'color' => $b[1],
+        ], $ipkBands);
+
+        // Mahasiswa per angkatan (tahun masuk), urut tahun.
+        $angkatan = $rows->groupBy(fn ($r) => $r['student']->entry_year ?: '—')
+            ->map->count()
+            ->sortKeys()
+            ->map(fn ($count, $year) => ['label' => (string) $year, 'count' => $count, 'color' => 'blue'])
+            ->values()->all();
+
+        // Mahasiswa per status akademik.
+        $status = collect(\App\Models\User::STUDENT_STATUSES)
+            ->map(fn ($s) => [
+                'label' => ucfirst($s),
+                'count' => $rows->filter(fn ($r) => ($r['student']->student_status ?? 'aktif') === $s)->count(),
+                'color' => AcademicSummary::colorForStatus($s),
+            ])
+            ->filter(fn ($b) => $b['count'] > 0)
+            ->values()->all();
+
+        return [
+            ['title' => 'Distribusi IPK', 'bars' => $ipk],
+            ['title' => 'Mahasiswa per Angkatan', 'bars' => $angkatan],
+            ['title' => 'Mahasiswa per Status', 'bars' => $status],
+        ];
     }
 
     /** Paginasi manual atas koleksi hasil komputasi. */
