@@ -118,6 +118,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Manajemen Pemasaran', 'code' => 'MNJ2105'],
         ];
 
+        $activeCourses = [];
         foreach ($courseData as $idx => $cd) {
             $mk = \App\Models\MataKuliah::create([
                 'prodi_id' => $prodiMn->id,
@@ -138,6 +139,7 @@ class DatabaseSeeder extends Seeder
                 'description' => 'Mata kuliah ' . $cd['name'] . ' untuk Prodi Manajemen FEB UNM.',
                 'status' => Course::STATUS_ACTIVE,
             ]);
+            $activeCourses[] = $course;
 
             // enroll 15 mahasiswa (kelas 1: 0-14, kelas 2: 15-29)
             $slice = $students->slice($idx * 15, 15);
@@ -281,7 +283,62 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        $this->command->info('Seeder selesai: 1 dosen, 30 mahasiswa, 2 kelas.');
+        // ===== Kelas SELESAI semester lalu (2024 Genap) → mengisi Transkrip/KHS/IPK =====
+        foreach ([
+            ['code' => 'MNJ1101', 'name' => 'Pengantar Manajemen'],
+            ['code' => 'MNJ1102', 'name' => 'Pengantar Bisnis'],
+        ] as $pc) {
+            $mk = \App\Models\MataKuliah::create([
+                'prodi_id' => $prodiMn->id, 'code' => $pc['code'], 'name' => $pc['name'],
+                'sks' => 3, 'semester_no' => 1, 'jenis' => 'wajib',
+            ]);
+            $past = Course::create([
+                'user_id' => $dosen->id, 'prodi_id' => $prodiMn->id, 'mata_kuliah_id' => $mk->id,
+                'name' => $pc['name'], 'code' => $pc['code'], 'join_code' => Course::generateJoinCode(),
+                'semester' => 'Genap', 'year' => 2024, 'status' => Course::STATUS_COMPLETED,
+                'description' => 'Mata kuliah '.$pc['name'].' (semester lalu).',
+            ]);
+            $enrolled = $students->take(20);
+            foreach ($enrolled as $st) {
+                $past->students()->attach($st->id, ['enrolled_at' => now()->subMonths(8)]);
+            }
+            $comps = [
+                $past->gradeComponents()->create(['name' => 'Tugas', 'type' => 'tugas', 'weight' => 30]),
+                $past->gradeComponents()->create(['name' => 'UTS', 'type' => 'uts', 'weight' => 30]),
+                $past->gradeComponents()->create(['name' => 'UAS', 'type' => 'uas', 'weight' => 40]),
+            ];
+            foreach ($enrolled as $st) {
+                foreach ($comps as $comp) {
+                    \App\Models\GradeScore::create(['grade_component_id' => $comp->id, 'user_id' => $st->id, 'score' => rand(62, 95)]);
+                }
+            }
+        }
+
+        // ===== EDOM: sebagian mahasiswa menilai kelas aktif =====
+        foreach ($activeCourses as $c) {
+            foreach ($c->students()->take(10)->get() as $st) {
+                \App\Models\CourseEvaluation::create([
+                    'course_id' => $c->id, 'user_id' => $st->id,
+                    'answers' => [rand(3, 4), rand(3, 4), rand(2, 4), rand(3, 4), rand(2, 4)],
+                    'comment' => rand(0, 1) ? 'Pengajaran jelas dan komunikatif.' : null,
+                ]);
+            }
+        }
+
+        // ===== KRS: mahasiswa demo punya 1 pengajuan menunggu persetujuan wali =====
+        $demo = $students->first();
+        if ($demo && isset($activeCourses[1])) {
+            \App\Models\Enrollment::create([
+                'course_id' => $activeCourses[1]->id, 'user_id' => $demo->id,
+                'status' => \App\Models\Enrollment::STATUS_SUBMITTED, 'submitted_at' => now(),
+            ]);
+        }
+
+        // ===== Hitung cache akademik (IPK/SKS/IPS) semua mahasiswa =====
+        $students->each->refreshAcademicCache();
+
+        $this->command->info('Seeder selesai: 1 dosen, 30 mahasiswa, 2 kelas aktif + 2 kelas selesai (nilai), EDOM & KRS contoh.');
+        $this->command->info('Login admin: admin@test.com / password');
         $this->command->info('Login dosen: dosen@test.com / password');
         $this->command->info('Login mahasiswa: mhs001@test.com / password');
     }
