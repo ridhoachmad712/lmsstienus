@@ -14,7 +14,15 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $faker = \Faker\Factory::create('id_ID');
+        // Nama mahasiswa statis (tanpa Faker — agar seeder jalan di produksi --no-dev).
+        $names = [
+            'Budi Santoso', 'Siti Aminah', 'Andi Pratama', 'Dewi Lestari', 'Rizky Ramadhan',
+            'Putri Anggraini', 'Fajar Nugroho', 'Ayu Wulandari', 'Dimas Saputra', 'Nur Aisyah',
+            'Rina Marlina', 'Bayu Aji', 'Lina Oktaviani', 'Yusuf Hidayat', 'Sri Wahyuni',
+            'Arif Rahman', 'Citra Dewanti', 'Galih Saputra', 'Wulan Anggraini', 'Hendra Gunawan',
+            'Maya Sari', 'Reza Fahlevi', 'Indah Permata', 'Agus Setiawan', 'Fitri Handayani',
+            'Eko Prasetyo', 'Novi Rahmawati', 'Taufik Hidayat', 'Sinta Bella', 'Rahmat Hakim',
+        ];
 
         // --- Program Studi ---
         $prodiAk = \App\Models\Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
@@ -63,13 +71,13 @@ class DatabaseSeeder extends Seeder
         for ($i = 1; $i <= 30; $i++) {
             $nim = '210901' . str_pad((string) $i, 3, '0', STR_PAD_LEFT);
             $students->push(User::create([
-                'name' => $faker->name(),
+                'name' => $names[$i - 1] ?? ('Mahasiswa '.$i),
                 'email' => sprintf('mhs%03d@test.com', $i),
                 'password' => Hash::make('password'),
                 'role' => User::ROLE_MAHASISWA,
                 'prodi_id' => $i % 2 === 0 ? $prodiMn->id : $prodiAk->id,
                 'nim_nip' => $nim,
-                'phone' => $faker->phoneNumber(),
+                'phone' => '0812'.str_pad((string) $i, 8, '0', STR_PAD_LEFT),
             ]));
         }
 
@@ -165,7 +173,7 @@ class DatabaseSeeder extends Seeder
                     'number' => $m,
                     'topic' => $cd['name'],
                     'date' => now()->subWeeks(3 - $m),
-                    'description' => $faker->sentence(10),
+                    'description' => 'Ringkasan materi pertemuan '.$m.' — '.$cd['name'].'.',
                 ]);
 
                 $meeting->materials()->create([
