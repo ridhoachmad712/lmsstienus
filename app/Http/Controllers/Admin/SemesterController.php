@@ -53,18 +53,21 @@ class SemesterController extends Controller
         $krsMaxSks = \App\Http\Controllers\KrsController::maxSks();
         $krsPeriodLabel = Semester::keyLabel(Semester::primaryKey());
         $edomOpen = \App\Http\Controllers\EvaluationController::edomOpen();
+        $edomRequired = \App\Http\Controllers\EvaluationController::edomRequired();
 
-        return view('admin.semesters.index', compact('periods', 'activeKeys', 'academicYear', 'semester', 'krsOpen', 'krsMaxSks', 'krsPeriodLabel', 'edomOpen'));
+        return view('admin.semesters.index', compact('periods', 'activeKeys', 'academicYear', 'semester', 'krsOpen', 'krsMaxSks', 'krsPeriodLabel', 'edomOpen', 'edomRequired'));
     }
 
-    /** Buka/tutup periode pengisian EDOM (evaluasi dosen). */
+    /** Buka/tutup periode EDOM + opsi wajib (kunci nilai). */
     public function updateEdom(Request $request): RedirectResponse
     {
         $open = $request->boolean('edom_open');
+        $required = $request->boolean('edom_required');
         Setting::put('edom_open', $open ? '1' : '0');
-        Activity::log('update', 'Mengubah EDOM: '.($open ? 'BUKA' : 'TUTUP'));
+        Setting::put('edom_required', $required ? '1' : '0');
+        Activity::log('update', 'Mengubah EDOM: '.($open ? 'BUKA' : 'TUTUP').($required ? ', WAJIB' : ''));
 
-        return back()->with('status', 'Evaluasi Dosen (EDOM) '.($open ? 'DIBUKA' : 'DITUTUP').'.');
+        return back()->with('status', 'Evaluasi Dosen (EDOM) '.($open ? 'DIBUKA' : 'DITUTUP').($required ? ' & diwajibkan' : '').'.');
     }
 
     /** Buka/tutup periode pengisian KRS + batas SKS. */

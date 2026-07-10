@@ -12,9 +12,13 @@ use Illuminate\View\View;
 class TranscriptController extends Controller
 {
     /** Transkrip milik mahasiswa yang login. */
-    public function mine(Request $request): View
+    public function mine(Request $request): View|\Illuminate\Http\RedirectResponse
     {
         $student = $request->user();
+
+        if ($gate = $this->edomGate($student)) {
+            return $gate;
+        }
 
         return view('transcripts.show', array_merge(
             (new Transcript())->forStudent($student),
@@ -25,7 +29,22 @@ class TranscriptController extends Controller
 
     public function minePdf(Request $request)
     {
+        if ($gate = $this->edomGate($request->user())) {
+            return $gate;
+        }
+
         return $this->pdf($request->user());
+    }
+
+    /** Gerbang EDOM: blokir akses nilai bila masih ada EDOM tertunda. */
+    private function edomGate(User $student)
+    {
+        if (\App\Http\Controllers\EvaluationController::hasPending($student)) {
+            return redirect()->route('edom.index')
+                ->with('error', 'Lengkapi EDOM semua kelas dulu untuk membuka Transkrip/KHS.');
+        }
+
+        return null;
     }
 
     /** Transkrip mahasiswa (admin/kaprodi; kaprodi ter-scope prodi). */
@@ -50,6 +69,10 @@ class TranscriptController extends Controller
     /** KHS (Kartu Hasil Studi) satu semester milik mahasiswa yang login. */
     public function khsMinePdf(Request $request)
     {
+        if ($gate = $this->edomGate($request->user())) {
+            return $gate;
+        }
+
         return $this->khs($request->user(), (string) $request->query('period'));
     }
 

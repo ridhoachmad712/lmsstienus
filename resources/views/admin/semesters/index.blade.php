@@ -89,9 +89,13 @@
                     <div class="form-hint mt-1">Saat dibuka, mahasiswa menilai dosen tiap kelas aktif yang diikuti. Hasil direkap di menu Akademik → Rekap EDOM.</div>
                 </div>
                 <div class="col-auto">
-                    <label class="form-check form-switch mt-4">
+                    <label class="form-check form-switch mt-2">
                         <input class="form-check-input" type="checkbox" name="edom_open" value="1" @checked($edomOpen)>
                         <span class="form-check-label">Buka EDOM</span>
+                    </label>
+                    <label class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="edom_required" value="1" @checked($edomRequired)>
+                        <span class="form-check-label">Wajib (kunci nilai)</span>
                     </label>
                 </div>
                 <div class="col-auto">

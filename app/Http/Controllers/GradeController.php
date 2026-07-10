@@ -15,12 +15,18 @@ class GradeController extends Controller
 {
     use ChecksCourseAccess;
 
-    public function index(Request $request, Course $course, GradeCalculator $calc): View
+    public function index(Request $request, Course $course, GradeCalculator $calc): View|RedirectResponse
     {
         $this->ensureCourseAccess($request, $course);
         $user = $request->user();
 
         if ($user->isMahasiswa()) {
+            // Gerbang EDOM: wajib evaluasi kelas ini dulu sebelum melihat nilainya.
+            if (EvaluationController::mustEvaluateCourse($user, $course)) {
+                return redirect()->route('edom.index')
+                    ->with('error', 'Isi EDOM untuk '.$course->name.' dulu untuk membuka nilai.');
+            }
+
             $data = $calc->forStudent($course, $user);
 
             return view('grades.mahasiswa', [

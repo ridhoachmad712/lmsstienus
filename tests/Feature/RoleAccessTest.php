@@ -801,6 +801,38 @@ class RoleAccessTest extends TestCase
         $res->assertOk()->assertSee('Caritest Akun')->assertDontSee('Caritest Manaj');
     }
 
+    public function test_edom_wajib_kunci_nilai_sampai_diisi(): void
+    {
+        $course = $this->krsCourse();
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+        $course->students()->attach($student->id, ['enrolled_at' => now()]);
+        \App\Models\Setting::put('edom_open', '1');
+        \App\Models\Setting::put('edom_required', '1');
+
+        // Terkunci: diarahkan ke EDOM
+        $this->actingAs($student)->get(route('grades.index', $course))->assertRedirect(route('edom.index'));
+        $this->actingAs($student)->get(route('transkrip.mine'))->assertRedirect(route('edom.index'));
+
+        // Isi EDOM
+        $this->actingAs($student)->post(route('edom.store', $course), ['answers' => [4, 4, 4, 4, 4]])->assertRedirect();
+
+        // Terbuka setelah lengkap
+        $this->actingAs($student)->get(route('grades.index', $course))->assertOk();
+        $this->actingAs($student)->get(route('transkrip.mine'))->assertOk();
+    }
+
+    public function test_edom_tidak_wajib_nilai_tetap_terbuka(): void
+    {
+        $course = $this->krsCourse();
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+        $course->students()->attach($student->id, ['enrolled_at' => now()]);
+        \App\Models\Setting::put('edom_open', '1');
+        \App\Models\Setting::put('edom_required', '0'); // hanya sukarela
+
+        $this->actingAs($student)->get(route('grades.index', $course))->assertOk();
+        $this->actingAs($student)->get(route('transkrip.mine'))->assertOk();
+    }
+
     public function test_edom_toggle_admin(): void
     {
         $admin = $this->user(User::ROLE_ADMIN);
