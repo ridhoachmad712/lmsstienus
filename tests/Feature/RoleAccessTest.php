@@ -752,6 +752,62 @@ class RoleAccessTest extends TestCase
         ])->assertForbidden();
     }
 
+    // ===================== EDOM (Evaluasi Dosen) =====================
+
+    public function test_edom_isi_mahasiswa_dan_rekap(): void
+    {
+        $course = $this->krsCourse();
+        \App\Models\Setting::put('edom_open', '1');
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+        $course->students()->attach($student->id, ['enrolled_at' => now()]);
+
+        $this->actingAs($student)->post(route('edom.store', $course), [
+            'answers' => [4, 4, 3, 4, 3], 'comment' => 'Mantap',
+        ])->assertRedirect();
+        $this->assertDatabaseHas('course_evaluations', ['course_id' => $course->id, 'user_id' => $student->id]);
+
+        // Rekap: overall = (4+4+3+4+3)/5 = 3.60
+        $this->actingAs($this->user(User::ROLE_ADMIN))->get(route('admin.edom.index'))
+            ->assertOk()->assertSee('Kelas KRS')->assertSee('3.60');
+    }
+
+    public function test_edom_tutup_tolak_dan_dobel_dicegah(): void
+    {
+        $course = $this->krsCourse();
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+        $course->students()->attach($student->id, ['enrolled_at' => now()]);
+
+        // Tutup → 403
+        \App\Models\Setting::put('edom_open', '0');
+        $this->actingAs($student)->post(route('edom.store', $course), ['answers' => [4, 4, 4, 4, 4]])->assertForbidden();
+
+        // Buka → isi sekali, isi kedua ditolak (dobel)
+        \App\Models\Setting::put('edom_open', '1');
+        $this->actingAs($student)->post(route('edom.store', $course), ['answers' => [3, 3, 3, 3, 3]])->assertRedirect();
+        $this->actingAs($student)->post(route('edom.store', $course), ['answers' => [4, 4, 4, 4, 4]])
+            ->assertRedirect()->assertSessionHas('error');
+        $this->assertSame(1, \App\Models\CourseEvaluation::where('course_id', $course->id)->where('user_id', $student->id)->count());
+    }
+
+    public function test_pencarian_global_staf_scoped(): void
+    {
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $kaprodiAk = User::factory()->create(['role' => User::ROLE_KAPRODI, 'prodi_id' => $ak->id]);
+        User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $ak->id, 'name' => 'Caritest Akun']);
+        User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id, 'name' => 'Caritest Manaj']);
+
+        $res = $this->actingAs($kaprodiAk)->get(route('search', ['q' => 'Caritest']));
+        $res->assertOk()->assertSee('Caritest Akun')->assertDontSee('Caritest Manaj');
+    }
+
+    public function test_edom_toggle_admin(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+        $this->actingAs($admin)->put(route('admin.semesters.edom'), ['edom_open' => '1'])->assertRedirect();
+        $this->assertTrue(\App\Http\Controllers\EvaluationController::edomOpen());
+    }
+
     public function test_dosen_tidak_bisa_akses_kelas_dosen_lain(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);

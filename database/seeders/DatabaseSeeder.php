@@ -73,6 +73,45 @@ class DatabaseSeeder extends Seeder
             ]));
         }
 
+        // --- Periode aktif = 2025 Ganjil (selaras dengan kelas di bawah) ---
+        \App\Models\Setting::put('academic_year', '2025');
+        \App\Models\Setting::put('semester', 'Ganjil');
+        \App\Models\Setting::put('active_periods', json_encode(['2025-Ganjil']));
+
+        // --- Dosen wali + biodata angkatan/status untuk semua mahasiswa ---
+        User::whereIn('id', $students->pluck('id'))
+            ->update(['advisor_id' => $dosen->id, 'entry_year' => 2024, 'student_status' => 'aktif']);
+
+        // --- Data Master: Ruangan & Sesi Kuliah ---
+        $rooms = collect([
+            ['code' => 'R201', 'name' => 'Ruang 201', 'capacity' => 40],
+            ['code' => 'LAB1', 'name' => 'Lab Komputer', 'capacity' => 30],
+        ])->map(fn ($r) => \App\Models\Room::create($r));
+        $slots = collect([
+            ['name' => 'Sesi 1', 'start_time' => '08:00', 'end_time' => '09:40', 'sort' => 1],
+            ['name' => 'Sesi 2', 'start_time' => '10:00', 'end_time' => '11:40', 'sort' => 2],
+            ['name' => 'Sesi 3', 'start_time' => '13:00', 'end_time' => '14:40', 'sort' => 3],
+        ])->map(fn ($s) => \App\Models\TimeSlot::create($s));
+
+        // --- Agenda akademik (2025 Ganjil) ---
+        foreach ([
+            ['title' => 'Pengisian KRS', 'type' => 'krs', 'start_date' => '2025-08-01', 'end_date' => '2025-08-07'],
+            ['title' => 'Awal Perkuliahan', 'type' => 'kuliah', 'start_date' => '2025-08-11', 'end_date' => null],
+            ['title' => 'UTS', 'type' => 'uts', 'start_date' => '2025-10-06', 'end_date' => '2025-10-11'],
+            ['title' => 'UAS', 'type' => 'uas', 'start_date' => '2025-12-08', 'end_date' => '2025-12-13'],
+        ] as $ev) {
+            \App\Models\AcademicEvent::create($ev + ['year' => 2025, 'semester' => 'Ganjil']);
+        }
+
+        // --- Pengumuman kampus contoh ---
+        \App\Models\CampusAnnouncement::create([
+            'created_by' => User::where('role', User::ROLE_ADMIN)->value('id'),
+            'prodi_id' => null,
+            'title' => 'Registrasi Ulang Semester Ganjil 2025/2026',
+            'body' => 'Seluruh mahasiswa wajib melakukan registrasi ulang sebelum pengisian KRS.',
+            'pinned' => true,
+        ]);
+
         // --- 2 Kelas, masing-masing 15 mahasiswa ---
         $courseData = [
             ['name' => 'Manajemen Keuangan', 'code' => 'MNJ2103'],
@@ -105,6 +144,18 @@ class DatabaseSeeder extends Seeder
             foreach ($slice as $student) {
                 $course->students()->attach($student->id, ['enrolled_at' => now()]);
             }
+
+            // Jadwal pakai Sesi & Ruangan (master)
+            $slot = $slots[$idx % $slots->count()];
+            $room = $rooms[$idx % $rooms->count()];
+            $course->schedules()->create([
+                'day' => $idx + 1,
+                'time_slot_id' => $slot->id,
+                'start_time' => $slot->start_time,
+                'end_time' => $slot->end_time,
+                'room_id' => $room->id,
+                'room' => $room->name,
+            ]);
 
             // 3 pertemuan + materi
             for ($m = 1; $m <= 3; $m++) {

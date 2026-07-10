@@ -198,7 +198,7 @@
                         </li>
                         @if ($user->isMahasiswa())
                             {{-- Akademik (SIAKAD) --}}
-                            <li class="nav-item dropdown {{ request()->routeIs('krs.*', 'transkrip.*', 'schedule.index') ? 'active' : '' }}">
+                            <li class="nav-item dropdown {{ request()->routeIs('krs.*', 'transkrip.*', 'schedule.index', 'edom.index') ? 'active' : '' }}">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                     <span class="nav-link-icon"><i class="ti ti-books"></i></span>
                                     <span class="nav-link-title">Akademik</span>
@@ -206,6 +206,7 @@
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item {{ request()->routeIs('krs.*') ? 'active' : '' }}" href="{{ route('krs.index') }}"><i class="ti ti-clipboard-list me-2"></i>KRS</a>
                                     <a class="dropdown-item {{ request()->routeIs('transkrip.*') ? 'active' : '' }}" href="{{ route('transkrip.mine') }}"><i class="ti ti-certificate me-2"></i>Transkrip &amp; KHS</a>
+                                    <a class="dropdown-item {{ request()->routeIs('edom.*') ? 'active' : '' }}" href="{{ route('edom.index') }}"><i class="ti ti-star me-2"></i>Evaluasi Dosen</a>
                                     <a class="dropdown-item {{ request()->routeIs('schedule.index') ? 'active' : '' }}" href="{{ route('schedule.index') }}"><i class="ti ti-calendar-time me-2"></i>Jadwal Kuliah</a>
                                     <a class="dropdown-item {{ request()->routeIs('academic.calendar') ? 'active' : '' }}" href="{{ route('academic.calendar') }}"><i class="ti ti-calendar-event me-2"></i>Kalender Akademik</a>
                                     <a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="ti ti-id-badge-2 me-2"></i>Biodata</a>
@@ -277,13 +278,14 @@
                                 </div>
                             </li>
                             {{-- Akademik --}}
-                            <li class="nav-item dropdown {{ request()->routeIs('admin.academic.*', 'admin.semesters.*', 'academic.calendar') ? 'active' : '' }}">
+                            <li class="nav-item dropdown {{ request()->routeIs('admin.academic.*', 'admin.edom.*', 'admin.semesters.*', 'academic.calendar') ? 'active' : '' }}">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                     <span class="nav-link-icon"><i class="ti ti-books"></i></span>
                                     <span class="nav-link-title">Akademik</span>
                                 </a>
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item {{ request()->routeIs('admin.academic.*') ? 'active' : '' }}" href="{{ route('admin.academic.index') }}"><i class="ti ti-chart-bar me-2"></i>Rekap Akademik</a>
+                                    <a class="dropdown-item {{ request()->routeIs('admin.edom.*') ? 'active' : '' }}" href="{{ route('admin.edom.index') }}"><i class="ti ti-star me-2"></i>Rekap EDOM</a>
                                     @if ($user->isAdmin())
                                         <a class="dropdown-item {{ request()->routeIs('admin.semesters.*') ? 'active' : '' }}" href="{{ route('admin.semesters.index') }}"><i class="ti ti-calendar-stats me-2"></i>Kelola Semester</a>
                                     @endif

@@ -193,8 +193,17 @@ class DashboardController extends Controller
         $academic = (new \App\Services\AcademicSummary())->forStudent($user);
         $agenda = $this->upcomingAcademicEvents();
 
+        // EDOM: berapa kelas aktif yang belum dievaluasi (saat periode dibuka).
+        $edomOpen = \App\Http\Controllers\EvaluationController::edomOpen();
+        $edomPending = 0;
+        if ($edomOpen && $courseIds->isNotEmpty()) {
+            $evaluated = \App\Models\CourseEvaluation::where('user_id', $user->id)
+                ->whereIn('course_id', $courseIds)->count();
+            $edomPending = $courseIds->count() - $evaluated;
+        }
+
         return view('dashboard.mahasiswa', compact(
-            'courses', 'pending', 'recentGrades', 'upcomingMeetings', 'lowAttendance', 'stats', 'krsOpen', 'academic', 'agenda'
+            'courses', 'pending', 'recentGrades', 'upcomingMeetings', 'lowAttendance', 'stats', 'krsOpen', 'academic', 'agenda', 'edomOpen', 'edomPending'
         ));
     }
 }

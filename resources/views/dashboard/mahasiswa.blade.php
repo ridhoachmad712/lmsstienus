@@ -16,6 +16,15 @@
     </div>
 @endif
 
+{{-- Alert EDOM dibuka --}}
+@if (! empty($edomOpen) && $edomPending > 0)
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="ti ti-star me-2"></i>
+        <div class="flex-fill">Evaluasi Dosen (EDOM) sedang dibuka — <strong>{{ $edomPending }}</strong> kelas belum Anda evaluasi.</div>
+        <a href="{{ route('edom.index') }}" class="btn btn-sm btn-warning">Isi EDOM</a>
+    </div>
+@endif
+
 {{-- Alert kehadiran rendah --}}
 @foreach ($lowAttendance as $low)
     <div class="alert alert-warning" role="alert">

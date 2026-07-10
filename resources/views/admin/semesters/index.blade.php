@@ -70,6 +70,38 @@
     </div>
 </div>
 
+{{-- ===================== EVALUASI DOSEN (EDOM) ===================== --}}
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="POST" action="{{ route('admin.semesters.edom') }}">
+            @csrf @method('PUT')
+            <div class="row align-items-center g-3">
+                <div class="col-auto">
+                    <span class="avatar avatar-lg rounded bg-{{ $edomOpen ? 'green' : 'secondary' }}-lt"><i class="ti ti-star icon-lg"></i></span>
+                </div>
+                <div class="col-md">
+                    <div class="text-secondary">Evaluasi Dosen oleh Mahasiswa (EDOM)</div>
+                    <div class="mt-1">
+                        <span class="badge bg-{{ $edomOpen ? 'green' : 'red' }}-lt fs-3">
+                            <i class="ti ti-{{ $edomOpen ? 'lock-open' : 'lock' }} me-1"></i>{{ $edomOpen ? 'DIBUKA' : 'DITUTUP' }}
+                        </span>
+                    </div>
+                    <div class="form-hint mt-1">Saat dibuka, mahasiswa menilai dosen tiap kelas aktif yang diikuti. Hasil direkap di menu Akademik → Rekap EDOM.</div>
+                </div>
+                <div class="col-auto">
+                    <label class="form-check form-switch mt-4">
+                        <input class="form-check-input" type="checkbox" name="edom_open" value="1" @checked($edomOpen)>
+                        <span class="form-check-label">Buka EDOM</span>
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary mt-3"><i class="ti ti-device-floppy me-1"></i>Simpan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 {{-- ===================== DAFTAR PERIODE ===================== --}}
 <div class="card">
     <div class="card-header">

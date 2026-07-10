@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\EdomController;
 use App\Http\Controllers\Admin\KurikulumController;
 use App\Http\Controllers\Admin\MataKuliahController;
 use App\Http\Controllers\Admin\ProdiController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ForumController;
 use App\Http\Controllers\GradeComponentController;
@@ -106,6 +108,10 @@ Route::middleware('auth')->group(function () {
         // KRS — Kartu Rencana Studi
         Route::get('/krs', [KrsController::class, 'index'])->name('krs.index');
         Route::get('/krs/pdf', [KrsController::class, 'pdf'])->name('krs.mine.pdf');
+
+        // EDOM — evaluasi dosen oleh mahasiswa
+        Route::get('/evaluasi', [EvaluationController::class, 'index'])->name('edom.index');
+        Route::post('/evaluasi/{course}', [EvaluationController::class, 'store'])->name('edom.store');
         Route::post('/krs/courses/{course}', [KrsController::class, 'add'])->name('krs.add');
         Route::delete('/krs/{enrollment}', [KrsController::class, 'remove'])->name('krs.remove');
         Route::post('/krs/submit', [KrsController::class, 'submit'])->name('krs.submit');
@@ -312,6 +318,9 @@ Route::middleware('auth')->group(function () {
         // Rekap akademik (IPK/IPS/SKS + deteksi bermasalah; kaprodi ter-scope prodi)
         Route::get('/akademik', [AcademicController::class, 'index'])->name('academic.index');
 
+        // Rekap EDOM (evaluasi dosen; kaprodi ter-scope prodi)
+        Route::get('/edom', [EdomController::class, 'index'])->name('edom.index');
+
         // Kurikulum (kaprodi ter-scope prodi di controller)
         Route::get('/kurikulum', [KurikulumController::class, 'index'])->name('kurikulum.index');
         Route::get('/kurikulum/create', [KurikulumController::class, 'create'])->name('kurikulum.create');
@@ -351,6 +360,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/semesters', [SemesterController::class, 'store'])->name('semesters.store');
         Route::put('/semesters/active', [SemesterController::class, 'updateActive'])->name('semesters.updateActive');
         Route::put('/semesters/krs', [SemesterController::class, 'updateKrs'])->name('semesters.krs');
+        Route::put('/semesters/edom', [SemesterController::class, 'updateEdom'])->name('semesters.edom');
         Route::delete('/semesters/{semester}', [SemesterController::class, 'destroy'])->name('semesters.destroy');
 
         Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');

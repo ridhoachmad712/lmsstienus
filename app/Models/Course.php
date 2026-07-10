@@ -103,6 +103,11 @@ class Course extends Model
         return $this->hasMany(GradeComponent::class);
     }
 
+    public function evaluations(): HasMany
+    {
+        return $this->hasMany(CourseEvaluation::class);
+    }
+
     public function assignments(): HasMany
     {
         return $this->hasMany(Assignment::class)->latest();

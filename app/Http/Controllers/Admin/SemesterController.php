@@ -52,8 +52,19 @@ class SemesterController extends Controller
         $krsOpen = \App\Http\Controllers\KrsController::krsOpen();
         $krsMaxSks = \App\Http\Controllers\KrsController::maxSks();
         $krsPeriodLabel = Semester::keyLabel(Semester::primaryKey());
+        $edomOpen = \App\Http\Controllers\EvaluationController::edomOpen();
 
-        return view('admin.semesters.index', compact('periods', 'activeKeys', 'academicYear', 'semester', 'krsOpen', 'krsMaxSks', 'krsPeriodLabel'));
+        return view('admin.semesters.index', compact('periods', 'activeKeys', 'academicYear', 'semester', 'krsOpen', 'krsMaxSks', 'krsPeriodLabel', 'edomOpen'));
+    }
+
+    /** Buka/tutup periode pengisian EDOM (evaluasi dosen). */
+    public function updateEdom(Request $request): RedirectResponse
+    {
+        $open = $request->boolean('edom_open');
+        Setting::put('edom_open', $open ? '1' : '0');
+        Activity::log('update', 'Mengubah EDOM: '.($open ? 'BUKA' : 'TUTUP'));
+
+        return back()->with('status', 'Evaluasi Dosen (EDOM) '.($open ? 'DIBUKA' : 'DITUTUP').'.');
     }
 
     /** Buka/tutup periode pengisian KRS + batas SKS. */
