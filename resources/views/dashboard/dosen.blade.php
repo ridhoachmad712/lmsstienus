@@ -111,6 +111,24 @@
     ['Tugas & Kuis', $stats['assignments'], 'ti-checklist', 'purple', null],
 ])
 
+@if ($agenda->isNotEmpty())
+    <div class="card mb-3">
+        <div class="card-header py-2">
+            <h3 class="card-title"><i class="ti ti-calendar-event me-1"></i>Agenda Akademik</h3>
+            <a href="{{ route('academic.calendar') }}" class="btn btn-sm ms-auto">Lihat semua</a>
+        </div>
+        <div class="list-group list-group-flush">
+            @foreach ($agenda as $e)
+                <div class="list-group-item d-flex align-items-center">
+                    <span class="avatar bg-{{ $e->typeColor() }}-lt me-2"><i class="ti {{ $e->typeIcon() }}"></i></span>
+                    <div class="me-auto"><div class="fw-bold">{{ $e->title }} @if ($e->isOngoing())<span class="badge bg-green-lt ms-1">berlangsung</span>@endif</div><div class="small text-secondary">{{ $e->typeLabel() }}</div></div>
+                    <span class="text-secondary small text-nowrap">{{ $e->dateRange() }}</span>
+                </div>
+            @endforeach
+        </div>
+    </div>
+@endif
+
 <div class="d-flex align-items-center mb-2">
     <h3 class="mb-0">Ringkasan</h3>
     <span class="text-secondary ms-2">· {{ $periodeLabel }}</span>

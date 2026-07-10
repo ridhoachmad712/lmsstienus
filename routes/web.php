@@ -185,7 +185,6 @@ Route::middleware('auth')->group(function () {
     // --- Khusus dosen (mengelola isi kelas yang diampu) ---
     Route::middleware('role:dosen')->group(function () {
         Route::patch('/courses/{course}/complete', [CourseController::class, 'toggleComplete'])->name('courses.complete');
-        Route::patch('/courses/{course}/join-code', [CourseController::class, 'regenerateJoinCode'])->name('courses.regenerateCode');
         Route::get('/enrollments/template', [EnrollmentController::class, 'template'])->name('enrollments.template');
         Route::post('/courses/{course}/students/{user}/reset-password', [EnrollmentController::class, 'resetPassword'])->name('enrollments.resetPassword');
 

@@ -246,6 +246,11 @@ class KrsController extends Controller
             $e->update(['status' => Enrollment::STATUS_SUBMITTED, 'submitted_at' => now()]);
         }
 
+        // Beri tahu dosen wali ada pengajuan KRS.
+        \App\Services\Notifier::toUser($user->advisor_id, 'krs', 'Pengajuan KRS',
+            $user->name.' mengajukan KRS ('.$drafts->count().' kelas) untuk disetujui.',
+            route('perwalian.krs', $user));
+
         return back()->with('status', $drafts->count().' kelas diajukan ke dosen wali untuk disetujui.');
     }
 

@@ -314,14 +314,6 @@ class CourseController extends Controller
             ->with('status', 'Kelas dihapus permanen.');
     }
 
-    public function regenerateJoinCode(Request $request, Course $course): RedirectResponse
-    {
-        $this->authorizeOwner($request, $course);
-        $course->update(['join_code' => Course::generateJoinCode()]);
-
-        return back()->with('status', 'Kode gabung diperbarui.');
-    }
-
     public function toggleComplete(Request $request, Course $course, GradeCalculator $calc): RedirectResponse
     {
         $this->authorizeOwner($request, $course);

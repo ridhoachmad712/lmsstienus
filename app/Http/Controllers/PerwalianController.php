@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Enrollment;
 use App\Models\Semester;
 use App\Models\User;
+use App\Services\Notifier;
 use App\Services\Transcript;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
@@ -115,22 +116,48 @@ class PerwalianController extends Controller
         $submitted = $student->enrollments()
             ->where('status', Enrollment::STATUS_SUBMITTED)
             ->whereHas('course', fn ($q) => $q->where('year', $year)->where('semester', $semester))
+            ->with('course')
             ->get();
 
         if ($submitted->isEmpty()) {
             return back()->with('error', 'Tidak ada pengajuan KRS untuk disetujui.');
         }
 
+        $approved = 0;
+        $penuh = [];
         foreach ($submitted as $e) {
+            $course = $e->course;
+            // Cek ulang kuota saat menyetujui (cegah kelebihan kapasitas).
+            $terisi = $course->enrollments()->where('status', Enrollment::STATUS_APPROVED)->count();
+            if ($course->quota !== null && $terisi >= $course->quota) {
+                $penuh[] = $course->name;
+
+                continue;
+            }
+
             $e->update([
                 'status' => Enrollment::STATUS_APPROVED,
                 'approved_at' => now(),
                 'approved_by' => $request->user()->id,
                 'enrolled_at' => $e->enrolled_at ?? now(),
             ]);
+            $approved++;
         }
 
-        return back()->with('status', 'KRS '.$student->name.' disetujui ('.$submitted->count().' kelas). Mahasiswa kini dapat mengakses kelasnya.');
+        if ($approved > 0) {
+            Notifier::toUser($student, 'krs', 'KRS disetujui',
+                $approved.' kelas KRS '.Semester::keyLabel($year.'-'.$semester).' Anda disetujui.',
+                route('krs.index'));
+        }
+
+        $msg = $approved > 0
+            ? "KRS {$student->name} disetujui ({$approved} kelas). Mahasiswa kini dapat mengakses kelasnya."
+            : 'Tidak ada kelas yang disetujui.';
+        if ($penuh) {
+            return back()->with($approved > 0 ? 'status' : 'error', $msg.' Kelas penuh (dilewati): '.implode(', ', $penuh).'.');
+        }
+
+        return back()->with('status', $msg);
     }
 
     /** Tolak pengajuan → kembalikan ke Rencana agar mahasiswa dapat merevisi. */
@@ -150,6 +177,10 @@ class PerwalianController extends Controller
         if ($affected === 0) {
             return back()->with('error', 'Tidak ada pengajuan KRS untuk ditolak.');
         }
+
+        Notifier::toUser($student, 'krs', 'KRS dikembalikan',
+            'Pengajuan KRS '.Semester::keyLabel($year.'-'.$semester).' Anda dikembalikan dosen wali untuk direvisi.',
+            route('krs.index'));
 
         return back()->with('status', 'Pengajuan KRS dikembalikan ke mahasiswa untuk direvisi.');
     }

@@ -455,6 +455,63 @@ class RoleAccessTest extends TestCase
         $this->actingAs($this->user(User::ROLE_DOSEN))->get(route('schedule.index'))->assertOk();
     }
 
+    public function test_bentrok_ruang_ditolak(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+        $courseA = $this->course($this->user(User::ROLE_DOSEN));
+        $courseB = $this->course($this->user(User::ROLE_DOSEN)); // dosen beda, periode sama (2026 Ganjil)
+        $slot = \App\Models\TimeSlot::create(['name' => 'Sesi 1', 'start_time' => '08:00', 'end_time' => '10:00', 'sort' => 1]);
+        $room = \App\Models\Room::create(['name' => 'Ruang 201']);
+
+        $this->actingAs($admin)->post(route('schedule.store', $courseA), ['day' => 1, 'time_slot_id' => $slot->id, 'room_id' => $room->id])->assertRedirect();
+
+        // Kelas lain di ruang & sesi & hari yang sama → ditolak
+        $this->actingAs($admin)->post(route('schedule.store', $courseB), ['day' => 1, 'time_slot_id' => $slot->id, 'room_id' => $room->id])
+            ->assertRedirect()->assertSessionHas('error');
+        $this->assertDatabaseMissing('class_schedules', ['course_id' => $courseB->id]);
+    }
+
+    public function test_notifikasi_krs_ajukan_dan_setujui(): void
+    {
+        $wali = $this->user(User::ROLE_DOSEN);
+        $course = $this->krsCourse();
+        \App\Models\Setting::put('krs_open', '1');
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'advisor_id' => $wali->id]);
+
+        $this->actingAs($mhs)->post(route('krs.add', $course));
+        $this->actingAs($mhs)->post(route('krs.submit'));
+        // Wali dapat notifikasi pengajuan
+        $this->assertDatabaseHas('notifications', ['user_id' => $wali->id, 'type' => 'krs']);
+
+        $this->actingAs($wali)->post(route('perwalian.krs.approve', $mhs));
+        // Mahasiswa dapat notifikasi disetujui
+        $this->assertDatabaseHas('notifications', ['user_id' => $mhs->id, 'type' => 'krs']);
+    }
+
+    public function test_approve_krs_lewati_kelas_penuh(): void
+    {
+        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        \App\Models\Setting::put('krs_open', '1');
+        $wali = $this->user(User::ROLE_DOSEN);
+        $course = $this->krsCourse();
+        $course->update(['quota' => 1]);
+        $m1 = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'advisor_id' => $wali->id]);
+        $m2 = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'advisor_id' => $wali->id]);
+
+        // Keduanya menyusun draft dulu (belum penuh), baru mengajukan — submit tak cek kuota.
+        $this->actingAs($m1)->post(route('krs.add', $course));
+        $this->actingAs($m2)->post(route('krs.add', $course));
+        $this->actingAs($m1)->post(route('krs.submit'));
+        $this->actingAs($m2)->post(route('krs.submit'));
+
+        $this->actingAs($wali)->post(route('perwalian.krs.approve', $m1)); // isi 1 kursi
+        $this->actingAs($wali)->post(route('perwalian.krs.approve', $m2))->assertSessionHas('error');
+
+        // m1 disetujui, m2 tetap diajukan (kelas penuh)
+        $this->assertDatabaseHas('enrollments', ['course_id' => $course->id, 'user_id' => $m1->id, 'status' => \App\Models\Enrollment::STATUS_APPROVED]);
+        $this->assertDatabaseHas('enrollments', ['course_id' => $course->id, 'user_id' => $m2->id, 'status' => \App\Models\Enrollment::STATUS_SUBMITTED]);
+    }
+
     public function test_dosen_tak_bisa_atur_jadwal(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);
@@ -538,6 +595,20 @@ class RoleAccessTest extends TestCase
         $this->actingAs($this->user(User::ROLE_MAHASISWA))->post(route('academic.calendar.store'), [
             'title' => 'X', 'type' => 'libur', 'start_date' => '2026-08-01', 'year' => 2026, 'semester' => 'Ganjil',
         ])->assertForbidden();
+    }
+
+    public function test_kalender_tampil_agenda_akademik(): void
+    {
+        \App\Models\AcademicEvent::create([
+            'title' => 'Pekan UTS', 'type' => 'uts',
+            'start_date' => '2026-08-03', 'end_date' => '2026-08-08',
+            'year' => 2026, 'semester' => 'Ganjil',
+        ]);
+
+        // Agenda kampus tampil di kalender untuk semua pengguna (walau tanpa kelas).
+        $this->actingAs($this->user(User::ROLE_MAHASISWA))
+            ->get(route('calendar', ['month' => '2026-08']))
+            ->assertOk()->assertSee('Pekan UTS');
     }
 
     public function test_cache_ipk_dihitung_dan_dipakai_rekap(): void

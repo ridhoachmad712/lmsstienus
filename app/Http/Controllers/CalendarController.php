@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicEvent;
 use App\Models\Assignment;
 use App\Models\Course;
 use App\Models\Meeting;
@@ -43,6 +44,12 @@ class CalendarController extends Controller
             ->with('course')
             ->get();
 
+        // Agenda akademik yang beririsan dengan bulan tampil (kampus-wide).
+        $academic = AcademicEvent::whereDate('start_date', '<=', $end)
+            ->whereRaw('COALESCE(end_date, start_date) >= ?', [$start->toDateString()])
+            ->orderBy('start_date')
+            ->get();
+
         // Map per tanggal 'Y-m-d'
         $events = [];
         foreach ($meetings as $m) {
@@ -50,6 +57,15 @@ class CalendarController extends Controller
         }
         foreach ($deadlines as $a) {
             $events[$a->deadline->format('Y-m-d')]['deadlines'][] = $a;
+        }
+        foreach ($academic as $e) {
+            $from = $e->start_date->copy();
+            $to = ($e->end_date ?? $e->start_date)->copy();
+            for ($d = $from; $d->lte($to); $d->addDay()) {
+                if ($d->betweenIncluded($start, $end)) {
+                    $events[$d->format('Y-m-d')]['academic'][] = $e;
+                }
+            }
         }
 
         // Grid: Minggu–Sabtu (Minggu didahulukan)
@@ -68,6 +84,7 @@ class CalendarController extends Controller
             'nextMonth' => $cursor->copy()->addMonth()->format('Y-m'),
             'meetings' => $meetings->sortBy('date'),
             'deadlines' => $deadlines->sortBy('deadline'),
+            'academic' => $academic,
         ]);
     }
 }

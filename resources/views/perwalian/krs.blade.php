@@ -49,9 +49,10 @@
             @else
                 <div class="table-responsive">
                     <table class="table table-vcenter card-table">
-                        <thead><tr><th>Kode</th><th>Mata Kuliah / Kelas</th><th>Dosen</th><th class="text-center">SKS</th><th class="text-center">Status</th></tr></thead>
+                        <thead><tr><th>Kode</th><th>Mata Kuliah / Kelas</th><th>Dosen</th><th class="text-center">SKS</th><th class="text-center">Kuota</th><th class="text-center">Status</th></tr></thead>
                         <tbody>
                             @foreach ($items as $e)
+                                @php($sisa = $e->course->remainingQuota())
                                 <tr>
                                     <td class="text-secondary">{{ $e->course->mataKuliah->code ?? $e->course->code }}</td>
                                     <td>
@@ -60,6 +61,15 @@
                                     </td>
                                     <td>{{ $e->course->lecturer->name }}</td>
                                     <td class="text-center">{{ $e->course->mataKuliah->sks ?? 0 }}</td>
+                                    <td class="text-center">
+                                        @if (is_null($sisa))
+                                            <span class="text-secondary">∞</span>
+                                        @elseif ($sisa <= 0)
+                                            <span class="badge bg-red-lt">Penuh</span>
+                                        @else
+                                            <span class="text-secondary small">sisa {{ $sisa }}</span>
+                                        @endif
+                                    </td>
                                     <td class="text-center"><span class="badge bg-{{ $e->statusColor() }}-lt">{{ $e->statusLabel() }}</span></td>
                                 </tr>
                             @endforeach

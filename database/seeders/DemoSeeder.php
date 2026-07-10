@@ -117,12 +117,37 @@ class DemoSeeder extends Seeder
             ]));
         }
 
+        // --- Dosen wali demo untuk semua mahasiswa + biodata angkatan/status ---
+        User::whereIn('id', $others->pluck('id')->push($demoMhs->id))
+            ->update(['advisor_id' => $dosen->id, 'entry_year' => $year - 1, 'student_status' => 'aktif']);
+
+        // --- Data Master demo: Ruangan & Sesi Kuliah ---
+        $rooms = collect([
+            ['code' => 'R201', 'name' => 'Ruang 201', 'capacity' => 40],
+            ['code' => 'LAB1', 'name' => 'Lab Komputer', 'capacity' => 30],
+        ])->map(fn ($r) => \App\Models\Room::create($r));
+        $slots = collect([
+            ['name' => 'Sesi 1', 'start_time' => '08:00', 'end_time' => '09:40', 'sort' => 1],
+            ['name' => 'Sesi 2', 'start_time' => '10:00', 'end_time' => '11:40', 'sort' => 2],
+            ['name' => 'Sesi 3', 'start_time' => '13:00', 'end_time' => '14:40', 'sort' => 3],
+        ])->map(fn ($s) => \App\Models\TimeSlot::create($s));
+
+        // --- Agenda akademik demo (periode aktif) ---
+        foreach ([
+            ['title' => 'Pengisian KRS', 'type' => 'krs', 'start_date' => "$year-08-01", 'end_date' => "$year-08-07"],
+            ['title' => 'Awal Perkuliahan', 'type' => 'kuliah', 'start_date' => "$year-08-11", 'end_date' => null],
+            ['title' => 'UTS', 'type' => 'uts', 'start_date' => "$year-10-06", 'end_date' => "$year-10-11"],
+            ['title' => 'UAS', 'type' => 'uas', 'start_date' => "$year-12-08", 'end_date' => "$year-12-13"],
+        ] as $ev) {
+            \App\Models\AcademicEvent::create($ev + ['year' => $year, 'semester' => $semester]);
+        }
+
         $courseData = [
             ['name' => 'Manajemen Keuangan', 'code' => 'MNJ2103', 'slice' => [0, 14]],
             ['name' => 'Manajemen Pemasaran', 'code' => 'MNJ2105', 'slice' => [10, 14]],
         ];
 
-        foreach ($courseData as $cd) {
+        foreach ($courseData as $ci => $cd) {
             $mk = \App\Models\MataKuliah::firstOrCreate(
                 ['code' => $cd['code']],
                 ['prodi_id' => $prodiMn->id, 'name' => $cd['name'], 'sks' => 3],
@@ -149,6 +174,18 @@ class DemoSeeder extends Seeder
             foreach ($enrolled as $student) {
                 $course->students()->attach($student->id, ['enrolled_at' => now()]);
             }
+
+            // Jadwal kelas pakai Sesi & Ruangan (master) — hari beda per kelas.
+            $slot = $slots[$ci % $slots->count()];
+            $room = $rooms[$ci % $rooms->count()];
+            $course->schedules()->create([
+                'day' => $ci + 1,
+                'time_slot_id' => $slot->id,
+                'start_time' => $slot->start_time,
+                'end_time' => $slot->end_time,
+                'room_id' => $room->id,
+                'room' => $room->name,
+            ]);
 
             // 3 pertemuan + materi
             for ($m = 1; $m <= 3; $m++) {

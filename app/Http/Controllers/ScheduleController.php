@@ -65,6 +65,11 @@ class ScheduleController extends Controller
         $slot = TimeSlot::findOrFail($data['time_slot_id']);
         $room = $data['room_id'] ? Room::find($data['room_id']) : null;
 
+        // Deteksi bentrok tingkat institusi (kelas aktif pada periode yang sama, hari & jam beririsan).
+        if ($conflict = $this->findConflict($course, $data['day'], $slot, $room)) {
+            return back()->with('error', $conflict);
+        }
+
         // Simpan juga string jam/ruang (dipakai tampilan & deteksi bentrok KRS).
         $course->schedules()->create([
             'day' => $data['day'],
@@ -76,6 +81,40 @@ class ScheduleController extends Controller
         ]);
 
         return back()->with('status', 'Jadwal ditambahkan.');
+    }
+
+    /**
+     * Cari bentrok ruang/dosen: jadwal kelas AKTIF lain di periode sama, hari sama,
+     * jam beririsan. Mengembalikan pesan bentrok, atau null bila aman.
+     */
+    private function findConflict(Course $course, int $day, TimeSlot $slot, ?Room $room): ?string
+    {
+        $candidates = ClassSchedule::where('day', $day)
+            ->where('start_time', '<', $slot->end_time)
+            ->where('end_time', '>', $slot->start_time)
+            ->where('course_id', '!=', $course->id)
+            ->whereHas('course', fn ($q) => $q
+                ->where('status', Course::STATUS_ACTIVE)
+                ->where('year', $course->year)
+                ->where('semester', $course->semester))
+            ->with('course')
+            ->get();
+
+        $jam = $slot->start_time.'–'.$slot->end_time;
+
+        if ($room) {
+            $bentrokRuang = $candidates->firstWhere('room_id', $room->id);
+            if ($bentrokRuang) {
+                return "Ruang {$room->name} sudah dipakai kelas \"{$bentrokRuang->course->name}\" pada {$slot->name} ({$jam}).";
+            }
+        }
+
+        $bentrokDosen = $candidates->first(fn ($c) => $c->course->user_id === $course->user_id);
+        if ($bentrokDosen) {
+            return "Dosen pengampu sudah mengajar kelas \"{$bentrokDosen->course->name}\" pada {$slot->name} ({$jam}).";
+        }
+
+        return null;
     }
 
     public function destroy(Request $request, ClassSchedule $schedule): RedirectResponse

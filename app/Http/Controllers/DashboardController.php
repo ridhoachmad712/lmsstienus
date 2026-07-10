@@ -106,9 +106,11 @@ class DashboardController extends Controller
             ? \App\Models\Semester::keyLabel($activeKeys[0])
             : 'Semester aktif ('.count($activeKeys).')';
 
+        $agenda = $this->upcomingAcademicEvents();
+
         return view('dashboard.dosen', compact(
             'stats', 'activeCourses', 'periods', 'periode', 'activeKeys', 'activeLabel',
-            'needGrading', 'needAttendance', 'todayMeetings'
+            'needGrading', 'needAttendance', 'todayMeetings', 'agenda'
         ));
     }
 
