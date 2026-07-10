@@ -708,6 +708,50 @@ class RoleAccessTest extends TestCase
         $this->actingAs($dosen)->post(route('admin.impersonate.start', $mhs))->assertForbidden();
     }
 
+    // ===================== Pengumuman kampus/prodi =====================
+
+    public function test_pengumuman_admin_broadcast_dan_notifikasi(): void
+    {
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $admin = $this->user(User::ROLE_ADMIN);
+        $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id]);
+
+        $this->actingAs($admin)->post(route('pengumuman.store'), [
+            'title' => 'Registrasi Ulang', 'body' => 'Segera lakukan registrasi.', 'prodi_id' => null,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('campus_announcements', ['title' => 'Registrasi Ulang', 'prodi_id' => null]);
+        // Notifikasi broadcast ke mahasiswa
+        $this->assertDatabaseHas('notifications', ['user_id' => $mhs->id, 'type' => 'pengumuman']);
+        // Mahasiswa melihat pengumuman kampus
+        $this->actingAs($mhs)->get(route('pengumuman.index'))->assertOk()->assertSee('Registrasi Ulang');
+    }
+
+    public function test_pengumuman_kaprodi_scoped_prodi(): void
+    {
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $kaprodiAk = User::factory()->create(['role' => User::ROLE_KAPRODI, 'prodi_id' => $ak->id]);
+        $mhsAk = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $ak->id]);
+        $mhsMn = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id]);
+
+        // Kaprodi mencoba menyasar prodi lain (MN) — tetap dipaksa ke prodinya (AK)
+        $this->actingAs($kaprodiAk)->post(route('pengumuman.store'), [
+            'title' => 'Rapat Prodi AK', 'body' => 'Hadir semua.', 'prodi_id' => $mn->id,
+        ])->assertRedirect();
+        $this->assertDatabaseHas('campus_announcements', ['title' => 'Rapat Prodi AK', 'prodi_id' => $ak->id]);
+
+        $this->actingAs($mhsAk)->get(route('pengumuman.index'))->assertOk()->assertSee('Rapat Prodi AK');
+        $this->actingAs($mhsMn)->get(route('pengumuman.index'))->assertOk()->assertDontSee('Rapat Prodi AK');
+    }
+
+    public function test_mahasiswa_tak_bisa_terbitkan_pengumuman(): void
+    {
+        $this->actingAs($this->user(User::ROLE_MAHASISWA))->post(route('pengumuman.store'), [
+            'title' => 'X', 'body' => 'Y',
+        ])->assertForbidden();
+    }
+
     public function test_dosen_tidak_bisa_akses_kelas_dosen_lain(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);

@@ -19,6 +19,7 @@ use App\Http\Controllers\AiController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CampusAnnouncementController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
@@ -83,6 +84,13 @@ Route::middleware('auth')->group(function () {
 
     // Kalender akademik (lihat: semua; kelola: admin)
     Route::get('/kalender-akademik', [AcademicCalendarController::class, 'index'])->name('academic.calendar');
+
+    // Papan pengumuman kampus/prodi (lihat: semua; kelola: admin & kaprodi)
+    Route::get('/pengumuman', [CampusAnnouncementController::class, 'index'])->name('pengumuman.index');
+    Route::middleware('role:admin,kaprodi')->group(function () {
+        Route::post('/pengumuman', [CampusAnnouncementController::class, 'store'])->name('pengumuman.store');
+        Route::delete('/pengumuman/{announcement}', [CampusAnnouncementController::class, 'destroy'])->name('pengumuman.destroy');
+    });
 
     // Profil & kata sandi
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

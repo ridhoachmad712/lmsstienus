@@ -190,6 +190,12 @@
                                 <span class="nav-link-title">Dashboard</span>
                             </a>
                         </li>
+                        <li class="nav-item {{ request()->routeIs('pengumuman.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('pengumuman.index') }}">
+                                <span class="nav-link-icon"><i class="ti ti-speakerphone"></i></span>
+                                <span class="nav-link-title">Pengumuman</span>
+                            </a>
+                        </li>
                         @if ($user->isMahasiswa())
                             {{-- Akademik (SIAKAD) --}}
                             <li class="nav-item dropdown {{ request()->routeIs('krs.*', 'transkrip.*', 'schedule.index') ? 'active' : '' }}">
