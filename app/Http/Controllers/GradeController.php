@@ -73,15 +73,12 @@ class GradeController extends Controller
 
         $componentIds = $course->gradeComponents()->pluck('id')->all();
         $studentIds = $course->students()->pluck('users.id')->all();
-        // Komponen otomatis (tugas ditautkan atau kehadiran) → abaikan input manualnya
-        $autoIds = $course->assignments()->whereNotNull('grade_component_id')
-            ->pluck('grade_component_id')->unique()->map(fn ($v) => (int) $v)->all();
-        $autoIds = array_merge($autoIds, $course->gradeComponents()
-            ->where('type', 'kehadiran')->pluck('id')->map(fn ($v) => (int) $v)->all());
 
+        // Semua komponen boleh diisi manual. Untuk komponen otomatis, nilai yang
+        // diisi menjadi OVERRIDE (mengalahkan hitungan); dikosongkan = kembali otomatis.
         foreach ((array) $request->input('scores', []) as $cid => $perStudent) {
             $cid = (int) $cid;
-            if (! in_array($cid, $componentIds) || in_array($cid, $autoIds) || ! is_array($perStudent)) {
+            if (! in_array($cid, $componentIds) || ! is_array($perStudent)) {
                 continue;
             }
 

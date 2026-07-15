@@ -50,13 +50,13 @@
     @elseif ($rows->isEmpty())
         <div class="card-body"><x-empty-state icon="ti-users" title="Belum ada mahasiswa" /></div>
     @else
-        @php($hasManual = $components->whereNotIn('id', $autoComponentIds ?? [])->count() > 0)
+        @php($editable = ! $course->isCompleted())
         <form method="POST" action="{{ route('grades.saveManual', $course) }}">
             @csrf
             <div class="card-body py-2 border-bottom d-flex align-items-center gap-2 flex-wrap">
                 <input type="text" class="form-control form-control-sm" style="max-width:240px" placeholder="Cari mahasiswa…" data-table-search="#tbl-rekap">
-                @if ($hasManual)
-                    <span class="text-secondary small ms-auto"><i class="ti ti-pencil me-1"></i>Kolom <span class="badge bg-blue-lt">manual</span> bisa diisi langsung (0–100), lalu Simpan.</span>
+                @if ($editable)
+                    <span class="text-secondary small ms-auto"><i class="ti ti-pencil me-1"></i>Semua kolom bisa diisi (0–100), lalu Simpan. Kolom <span class="text-secondary">otomatis</span>: isi untuk <strong>override manual</strong>, kosongkan untuk kembali otomatis.</span>
                 @endif
             </div>
             <div class="table-responsive">
@@ -84,8 +84,20 @@
                                 <td>{{ $row['student']->name }}<div class="small text-secondary">{{ $row['student']->nim_nip }}</div></td>
                                 @foreach ($components as $c)
                                     @php($val = $row['components'][$c->id])
-                                    @if (in_array($c->id, $autoComponentIds ?? []) || $course->isCompleted())
+                                    @php($isAuto = in_array($c->id, $autoComponentIds ?? []))
+                                    @php($isOverride = $row['overrides'][$c->id] ?? false)
+                                    @if ($course->isCompleted())
                                         <td class="text-center">{{ is_null($val) ? '—' : \App\Support\Grades::num($val) }}</td>
+                                    @elseif ($isAuto)
+                                        {{-- Otomatis: kosong = pakai hitungan (placeholder), isi = override manual --}}
+                                        <td class="text-center" style="min-width:92px">
+                                            <input type="number" name="scores[{{ $c->id }}][{{ $row['student']->id }}]"
+                                                   value="{{ $isOverride ? \App\Support\Grades::num($val) : '' }}"
+                                                   min="0" max="100" step="0.01"
+                                                   class="form-control form-control-sm text-center @if ($isOverride) fw-bold text-orange @endif"
+                                                   placeholder="{{ is_null($val) ? 'auto' : \App\Support\Grades::num($val) }}"
+                                                   title="Otomatis: {{ is_null($val) ? '—' : \App\Support\Grades::num($val) }}. Isi untuk override; kosongkan untuk kembali otomatis.">
+                                        </td>
                                     @else
                                         <td class="text-center" style="min-width:84px">
                                             <input type="number" name="scores[{{ $c->id }}][{{ $row['student']->id }}]"
@@ -101,9 +113,9 @@
                     </tbody>
                 </table>
             </div>
-            @if ($hasManual && ! $course->isCompleted())
+            @if ($editable)
                 <div class="card-footer text-end">
-                    <button class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i>Simpan Nilai Manual</button>
+                    <button class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i>Simpan Nilai</button>
                 </div>
             @endif
         </form>
