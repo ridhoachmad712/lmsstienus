@@ -32,10 +32,13 @@
                                     <td>{{ $s->start_time }}–{{ $s->end_time }}</td>
                                     <td class="text-center text-secondary">{{ $s->schedules_count }}</td>
                                     <td class="text-end">
-                                        <form method="POST" action="{{ route('admin.timeslots.destroy', $s) }}" data-confirm="Hapus sesi {{ $s->name }}?@if ($s->schedules_count > 0) (Akan ditolak — dipakai {{ $s->schedules_count }} jadwal.)@endif">
-                                            @csrf @method('DELETE')
-                                            <button class="btn btn-sm btn-ghost-danger" title="Hapus"><i class="ti ti-trash"></i></button>
-                                        </form>
+                                        <div class="btn-list justify-content-end">
+                                            <button class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#modal-edit-slot-{{ $s->id }}" title="Edit"><i class="ti ti-edit"></i></button>
+                                            <form method="POST" action="{{ route('admin.timeslots.destroy', $s) }}" data-confirm="Hapus sesi {{ $s->name }}?@if ($s->schedules_count > 0) (Akan ditolak — dipakai {{ $s->schedules_count }} jadwal.)@endif">
+                                                @csrf @method('DELETE')
+                                                <button class="btn btn-sm btn-ghost-danger" title="Hapus"><i class="ti ti-trash"></i></button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -73,10 +76,36 @@
     </div>
 </div>
 
+{{-- Modal edit sesi --}}
+@foreach ($slots as $s)
+    <div class="modal modal-blur fade" id="modal-edit-slot-{{ $s->id }}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <form class="modal-content" method="POST" action="{{ route('admin.timeslots.update', $s) }}">
+                @csrf @method('PUT')
+                <div class="modal-header"><h5 class="modal-title">Edit Sesi</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label required">Nama</label>
+                        <input type="text" name="name" class="form-control" value="{{ $s->name }}" required></div>
+                    <div class="row g-2">
+                        <div class="col-6"><label class="form-label required">Mulai</label>
+                            <input type="time" name="start_time" class="form-control" value="{{ $s->start_time }}" required></div>
+                        <div class="col-6"><label class="form-label required">Selesai</label>
+                            <input type="time" name="end_time" class="form-control" value="{{ $s->end_time }}" required></div>
+                    </div>
+                    <div class="mt-2"><label class="form-label">Urutan</label>
+                        <input type="number" name="sort" class="form-control" value="{{ $s->sort }}" min="0"></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-link" data-bs-dismiss="modal">Batal</button><button class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i>Simpan</button></div>
+            </form>
+        </div>
+    </div>
+@endforeach
+
 @include('partials.import-modal', [
     'importRoute' => route('admin.timeslots.import'),
     'title' => 'Import Sesi Kuliah (CSV)',
     'columns' => 'nama, mulai, selesai, urutan',
     'note' => 'Format jam 24 jam, mis. 08:00. Urutan boleh kosong (default 0).',
+    'templateRoute' => route('admin.master.template', 'timeslots'),
 ])
 @endsection

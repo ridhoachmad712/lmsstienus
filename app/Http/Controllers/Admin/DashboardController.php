@@ -53,6 +53,20 @@ class DashboardController extends Controller
 
         $isAdmin = $user->isAdmin();
 
+        // Dosen yang merangkap kaprodi: sediakan ringkasan sisi mengajar (satu akun).
+        $teaching = null;
+        if ($user->isDosen()) {
+            $teachingCourses = $user->teachingCourses()
+                ->withCount(['submissions as ungraded_count' => fn ($q) => $q
+                    ->whereNotNull('submissions.submitted_at')
+                    ->whereNull('submissions.score')])
+                ->get();
+            $teaching = [
+                'courses' => $teachingCourses->count(),
+                'ungraded' => (int) $teachingCourses->sum('ungraded_count'),
+            ];
+        }
+
         // Kartu statistik [label, value, sub, icon, color, route|null]
         $statCards = [
             ['Dosen', $stats['dosen'], null, 'ti-user-star', 'blue', $isAdmin ? 'admin.staff.index' : null],
@@ -98,6 +112,6 @@ class DashboardController extends Controller
             ]];
         }
 
-        return view('admin.dashboard', compact('stats', 'activeKeys', 'prodi', 'krs', 'isAdmin', 'statCards', 'menuGroups'));
+        return view('admin.dashboard', compact('stats', 'activeKeys', 'prodi', 'krs', 'isAdmin', 'statCards', 'menuGroups', 'teaching'));
     }
 }

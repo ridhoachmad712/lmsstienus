@@ -37,6 +37,22 @@ class TimeSlotController extends Controller
         return back()->with('status', "Sesi {$data['name']} ditambahkan.");
     }
 
+    public function update(Request $request, TimeSlot $timeslot): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:50'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'sort' => ['nullable', 'integer', 'min:0', 'max:100'],
+        ]);
+        $data['sort'] ??= 0;
+
+        $timeslot->update($data);
+        Activity::log('update', "Mengubah sesi {$timeslot->name}");
+
+        return back()->with('status', "Sesi {$timeslot->name} diperbarui.");
+    }
+
     public function destroy(TimeSlot $timeslot): RedirectResponse
     {
         $used = $timeslot->schedules()->count();

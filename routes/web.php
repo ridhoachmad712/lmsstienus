@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\MataKuliahController;
 use App\Http\Controllers\Admin\ProdiController;
 use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\StaffController;
+use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Admin\TimeSlotController;
 use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\SettingController;
@@ -321,6 +322,9 @@ Route::middleware('auth')->group(function () {
         // Rekap EDOM (evaluasi dosen; kaprodi ter-scope prodi)
         Route::get('/edom', [EdomController::class, 'index'])->name('edom.index');
 
+        // Unduh template CSV Data Master (semua entitas)
+        Route::get('/master/template/{entity}', [TemplateController::class, 'download'])->name('master.template');
+
         // Kurikulum (kaprodi ter-scope prodi di controller)
         Route::get('/kurikulum', [KurikulumController::class, 'index'])->name('kurikulum.index');
         Route::get('/kurikulum/create', [KurikulumController::class, 'create'])->name('kurikulum.create');
@@ -393,12 +397,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/ruangan', [RoomController::class, 'store'])->name('rooms.store');
         Route::post('/ruangan/import', [RoomController::class, 'import'])->name('rooms.import');
         Route::post('/ruangan/bulk/destroy', [RoomController::class, 'bulkDestroy'])->name('rooms.bulkDestroy');
+        Route::put('/ruangan/{room}', [RoomController::class, 'update'])->name('rooms.update');
         Route::delete('/ruangan/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
 
         Route::get('/sesi-kuliah', [TimeSlotController::class, 'index'])->name('timeslots.index');
         Route::post('/sesi-kuliah', [TimeSlotController::class, 'store'])->name('timeslots.store');
         Route::post('/sesi-kuliah/import', [TimeSlotController::class, 'import'])->name('timeslots.import');
         Route::post('/sesi-kuliah/bulk/destroy', [TimeSlotController::class, 'bulkDestroy'])->name('timeslots.bulkDestroy');
+        Route::put('/sesi-kuliah/{timeslot}', [TimeSlotController::class, 'update'])->name('timeslots.update');
         Route::delete('/sesi-kuliah/{timeslot}', [TimeSlotController::class, 'destroy'])->name('timeslots.destroy');
     });
 });

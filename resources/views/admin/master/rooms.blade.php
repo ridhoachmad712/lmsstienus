@@ -33,10 +33,13 @@
                                     <td class="text-secondary small">{{ $r->note ?? '—' }}</td>
                                     <td class="text-center text-secondary">{{ $r->schedules_count }}</td>
                                     <td class="text-end">
-                                        <form method="POST" action="{{ route('admin.rooms.destroy', $r) }}" data-confirm="Hapus ruangan {{ $r->name }}?@if ($r->schedules_count > 0) (Akan ditolak — dipakai {{ $r->schedules_count }} jadwal.)@endif">
-                                            @csrf @method('DELETE')
-                                            <button class="btn btn-sm btn-ghost-danger" title="Hapus"><i class="ti ti-trash"></i></button>
-                                        </form>
+                                        <div class="btn-list justify-content-end">
+                                            <button class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#modal-edit-room-{{ $r->id }}" title="Edit"><i class="ti ti-edit"></i></button>
+                                            <form method="POST" action="{{ route('admin.rooms.destroy', $r) }}" data-confirm="Hapus ruangan {{ $r->name }}?@if ($r->schedules_count > 0) (Akan ditolak — dipakai {{ $r->schedules_count }} jadwal.)@endif">
+                                                @csrf @method('DELETE')
+                                                <button class="btn btn-sm btn-ghost-danger" title="Hapus"><i class="ti ti-trash"></i></button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -72,10 +75,36 @@
     </div>
 </div>
 
+{{-- Modal edit ruangan --}}
+@foreach ($rooms as $r)
+    <div class="modal modal-blur fade" id="modal-edit-room-{{ $r->id }}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <form class="modal-content" method="POST" action="{{ route('admin.rooms.update', $r) }}">
+                @csrf @method('PUT')
+                <div class="modal-header"><h5 class="modal-title">Edit Ruangan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="row g-2">
+                        <div class="col-5"><label class="form-label">Kode</label>
+                            <input type="text" name="code" class="form-control" value="{{ $r->code }}"></div>
+                        <div class="col-7"><label class="form-label required">Nama</label>
+                            <input type="text" name="name" class="form-control" value="{{ $r->name }}" required></div>
+                    </div>
+                    <div class="mt-2"><label class="form-label">Kapasitas</label>
+                        <input type="number" name="capacity" class="form-control" value="{{ $r->capacity }}" min="1"></div>
+                    <div class="mt-2"><label class="form-label">Catatan</label>
+                        <input type="text" name="note" class="form-control" value="{{ $r->note }}"></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-link" data-bs-dismiss="modal">Batal</button><button class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i>Simpan</button></div>
+            </form>
+        </div>
+    </div>
+@endforeach
+
 @include('partials.import-modal', [
     'importRoute' => route('admin.rooms.import'),
     'title' => 'Import Ruangan (CSV)',
     'columns' => 'kode, nama, kapasitas, catatan',
     'note' => 'Hanya nama yang wajib. Kapasitas & catatan boleh kosong.',
+    'templateRoute' => route('admin.master.template', 'rooms'),
 ])
 @endsection

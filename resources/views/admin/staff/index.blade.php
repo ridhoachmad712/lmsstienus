@@ -93,5 +93,6 @@
     'title' => 'Import Dosen & Kaprodi (CSV)',
     'columns' => 'nama, email, peran, kode_prodi, nip, nidn',
     'note' => 'peran: dosen/kaprodi (default dosen). kode_prodi wajib & mengikuti Data Master. Sandi awal = NIP (atau "password"). Email duplikat dilewati.',
+    'templateRoute' => route('admin.master.template', 'staff'),
 ])
 @endsection

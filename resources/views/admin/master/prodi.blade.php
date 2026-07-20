@@ -110,5 +110,6 @@
     'title' => 'Import Program Studi (CSV)',
     'columns' => 'kode, nama',
     'note' => 'Kode yang sudah ada akan dilewati.',
+    'templateRoute' => route('admin.master.template', 'prodi'),
 ])
 @endsection

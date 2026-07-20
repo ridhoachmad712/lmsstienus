@@ -68,5 +68,6 @@
     'title' => 'Import Mata Kuliah (CSV)',
     'columns' => 'kode, nama, sks, semester, jenis, kode_prodi',
     'note' => 'jenis: wajib/pilihan (default wajib). kode_prodi mengikuti Data Master; kaprodi otomatis memakai prodinya. Kode yang sudah ada dilewati.',
+    'templateRoute' => route('admin.master.template', 'matakuliah'),
 ])
 @endsection

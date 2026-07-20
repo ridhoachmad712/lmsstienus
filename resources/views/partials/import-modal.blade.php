@@ -18,7 +18,9 @@
                 <div class="alert alert-info mb-0">
                     <strong>Format kolom:</strong> <code>{{ $columns }}</code>.
                     Baris pertama boleh berupa judul kolom (akan dilewati otomatis).
+                    Pemisah koma <code>,</code> atau titik-koma <code>;</code> keduanya didukung.
                     @isset($note)<div class="mt-1 small">{{ $note }}</div>@endisset
+                    @isset($templateRoute)<div class="mt-2"><a href="{{ $templateRoute }}" class="btn btn-sm btn-outline-info"><i class="ti ti-download me-1"></i>Unduh contoh CSV</a></div>@endisset
                 </div>
             </div>
             <div class="modal-footer"><button type="button" class="btn btn-link" data-bs-dismiss="modal">Batal</button><button class="btn btn-primary"><i class="ti ti-file-import me-1"></i>Import</button></div>

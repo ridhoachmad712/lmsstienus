@@ -36,6 +36,21 @@ class RoomController extends Controller
         return back()->with('status', "Ruangan {$data['name']} ditambahkan.");
     }
 
+    public function update(Request $request, Room $room): RedirectResponse
+    {
+        $data = $request->validate([
+            'code' => ['nullable', 'string', 'max:30'],
+            'name' => ['required', 'string', 'max:100'],
+            'capacity' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'note' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $room->update($data);
+        Activity::log('update', "Mengubah ruangan {$room->name}");
+
+        return back()->with('status', "Ruangan {$room->name} diperbarui.");
+    }
+
     public function destroy(Room $room): RedirectResponse
     {
         $used = $room->schedules()->count();

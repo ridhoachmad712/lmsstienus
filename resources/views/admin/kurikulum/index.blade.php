@@ -59,5 +59,6 @@
     'title' => 'Import Kurikulum (CSV)',
     'columns' => 'nama, tahun, kode_prodi, aktif',
     'note' => 'kode_prodi mengikuti kode di Data Master (mis. AK/MN); kaprodi otomatis memakai prodinya. Kolom aktif: 1/aktif/ya.',
+    'templateRoute' => route('admin.master.template', 'kurikulum'),
 ])
 @endsection

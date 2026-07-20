@@ -75,6 +75,31 @@
     <div class="alert alert-info">Anda login sebagai <strong>Kaprodi{{ $prodi ? ' '.$prodi->name : '' }}</strong>. Pengelolaan terbatas pada lingkup program studi Anda.</div>
 @endunless
 
+{{-- Akses cepat sisi mengajar — untuk dosen yang merangkap kaprodi (satu akun) --}}
+@if ($teaching)
+    <div class="card mb-3 border-primary">
+        <div class="card-body">
+            <div class="row align-items-center g-3">
+                <div class="col-auto">
+                    <span class="avatar avatar-lg rounded bg-primary-lt"><i class="ti ti-device-laptop icon-lg"></i></span>
+                </div>
+                <div class="col-md">
+                    <div class="fw-bold">Anda juga dosen pengampu</div>
+                    <div class="text-secondary mt-1">
+                        Mengampu <strong>{{ $teaching['courses'] }}</strong> kelas.
+                        @if ($teaching['ungraded'] > 0)
+                            <span class="text-orange ms-1"><i class="ti ti-clipboard-list me-1"></i><strong>{{ $teaching['ungraded'] }}</strong> pengumpulan menunggu dinilai.</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="col-md-auto">
+                    <a href="{{ route('courses.index') }}" class="btn btn-primary"><i class="ti ti-school me-1"></i>Kelas Saya (mengajar)</a>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
 {{-- ===================== KELOMPOK MENU ===================== --}}
 @foreach ($menuGroups as [$groupLabel, $groupIcon, $color, $items])
     <h3 class="text-secondary text-uppercase fs-5 mb-2"><i class="ti {{ $groupIcon }} me-1"></i>{{ $groupLabel }}</h3>
