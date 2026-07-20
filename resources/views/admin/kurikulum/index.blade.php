@@ -5,7 +5,10 @@
 @section('page-title', 'Kurikulum')
 
 @section('page-actions')
-    <a href="{{ route('admin.kurikulum.create') }}" class="btn btn-primary"><i class="ti ti-plus me-1"></i>Tambah Kurikulum</a>
+    <div class="btn-list">
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-import"><i class="ti ti-file-import me-1"></i>Import CSV</button>
+        <a href="{{ route('admin.kurikulum.create') }}" class="btn btn-primary"><i class="ti ti-plus me-1"></i>Tambah Kurikulum</a>
+    </div>
 @endsection
 
 @section('content')
@@ -14,12 +17,17 @@
     @if ($items->isEmpty())
         <div class="card-body"><x-empty-state icon="ti-notebook" title="Belum ada kurikulum" description="Tambahkan versi kurikulum per prodi, lalu susun mata kuliahnya." /></div>
     @else
+        @include('partials.bulk-select', ['deleteRoute' => route('admin.kurikulum.bulkDestroy'), 'noun' => 'kurikulum'])
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
-                <thead><tr><th>Nama</th><th>Prodi</th><th class="text-center">Tahun</th><th class="text-center">Mata Kuliah</th><th class="text-center">Status</th><th></th></tr></thead>
+                <thead><tr>
+                    <th class="w-1"><input type="checkbox" id="sel-all" class="form-check-input m-0"></th>
+                    <th>Nama</th><th>Prodi</th><th class="text-center">Tahun</th><th class="text-center">Mata Kuliah</th><th class="text-center">Status</th><th></th>
+                </tr></thead>
                 <tbody>
                     @foreach ($items as $k)
                         <tr>
+                            <td><input type="checkbox" class="form-check-input m-0 row-select" value="{{ $k->id }}"></td>
                             <td class="fw-bold">{{ $k->name }}</td>
                             <td>{{ $k->prodi?->name ?? '—' }}</td>
                             <td class="text-center">{{ $k->year }}</td>
@@ -45,4 +53,11 @@
         <div class="card-footer d-flex">{{ $items->links() }}</div>
     @endif
 </div>
+
+@include('partials.import-modal', [
+    'importRoute' => route('admin.kurikulum.import'),
+    'title' => 'Import Kurikulum (CSV)',
+    'columns' => 'nama, tahun, kode_prodi, aktif',
+    'note' => 'kode_prodi mengikuti kode di Data Master (mis. AK/MN); kaprodi otomatis memakai prodinya. Kolom aktif: 1/aktif/ya.',
+])
 @endsection

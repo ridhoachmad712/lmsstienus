@@ -76,16 +76,61 @@ class User extends Authenticatable
         return $this->hasMany(User::class, 'advisor_id');
     }
 
+    /** Prodi yang dikepalai user ini (bila menjabat kaprodi). */
+    public function headedProdi(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Prodi::class, 'kaprodi_id');
+    }
+
     // --- Role helpers ---
+
+    /** Cache per-instance: apakah user ini mengepalai suatu prodi. */
+    private ?bool $headsProdiCache = null;
 
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
     }
 
+    /**
+     * Kaprodi = punya role 'kaprodi' MURNI, ATAU seorang dosen yang ditunjuk
+     * mengepalai suatu prodi (prodi.kaprodi_id). Dengan begitu satu akun dosen
+     * bisa merangkap jabatan kaprodi tanpa akun terpisah.
+     */
     public function isKaprodi(): bool
     {
-        return $this->role === self::ROLE_KAPRODI;
+        return $this->role === self::ROLE_KAPRODI || $this->headsProdi();
+    }
+
+    /** Apakah user ini menjabat kaprodi di suatu prodi (via prodi.kaprodi_id). */
+    public function headsProdi(): bool
+    {
+        if ($this->headsProdiCache !== null) {
+            return $this->headsProdiCache;
+        }
+        if (! $this->exists || ! $this->id) {
+            return $this->headsProdiCache = false;
+        }
+        if ($this->relationLoaded('headedProdi')) {
+            return $this->headsProdiCache = (bool) $this->getRelation('headedProdi');
+        }
+
+        return $this->headsProdiCache = Prodi::where('kaprodi_id', $this->id)->exists();
+    }
+
+    /**
+     * Apakah user memegang peran tertentu (memperhitungkan jabatan rangkap).
+     * Dipakai RoleMiddleware agar dosen-kaprodi lolos gate 'kaprodi'.
+     */
+    public function hasRole(string $role): bool
+    {
+        return match ($role) {
+            self::ROLE_ADMIN => $this->isAdmin(),
+            self::ROLE_KAPRODI => $this->isKaprodi(),
+            self::ROLE_DOSEN => $this->isDosen(),
+            self::ROLE_MAHASISWA => $this->isMahasiswa(),
+            default => false,
+        };
     }
 
     /** Admin atau kaprodi (staf pengelola, bukan dosen/mahasiswa). */

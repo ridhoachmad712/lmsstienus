@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ImportsCsv;
 use App\Http\Controllers\Controller;
 use App\Models\Kurikulum;
 use App\Models\MataKuliah;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
 
 class MataKuliahController extends Controller
 {
+    use ImportsCsv;
+
     /** Kaprodi hanya melihat/menyentuh MK prodinya. */
     private function authorize(Request $request, MataKuliah $mk): void
     {
@@ -126,12 +129,74 @@ class MataKuliahController extends Controller
     {
         $this->authorize($request, $matakuliah);
 
-        if ($matakuliah->courses()->exists()) {
-            return back()->with('error', 'Tidak bisa dihapus — masih ada kelas yang menautkan mata kuliah ini.');
+        $courses = $matakuliah->courses()->count();
+        if ($courses > 0) {
+            return back()->with('error', "Tidak bisa menghapus {$matakuliah->code} — masih ditautkan ke {$courses} kelas. Hapus/pindahkan kelasnya dulu, atau lepas tautan mata kuliah pada kelas tersebut.");
         }
 
+        $code = $matakuliah->code;
         $matakuliah->delete();
 
-        return back()->with('status', 'Mata kuliah dihapus.');
+        return back()->with('status', "Mata kuliah {$code} dihapus.");
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $query = MataKuliah::whereIn('id', $data['ids'])->withCount('courses')
+            ->when($request->user()->isKaprodi(), fn ($q) => $q->where('prodi_id', $request->user()->prodi_id));
+
+        $deleted = 0;
+        $skipped = 0;
+        foreach ($query->get() as $mk) {
+            if ($mk->courses_count > 0) {
+                $skipped++;
+
+                continue;
+            }
+            $mk->delete();
+            $deleted++;
+        }
+
+        return back()->with('status', "$deleted mata kuliah dihapus."
+            .($skipped > 0 ? " $skipped dilewati karena masih ditautkan ke kelas." : ''));
+    }
+
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:2048']]);
+
+        $prodiByCode = Prodi::pluck('id', 'code');
+        $forcedProdi = $request->user()->isKaprodi() ? $request->user()->prodi_id : null;
+
+        $created = 0;
+        $skipped = 0;
+        foreach ($this->readCsvRows($request->file('file'), ['kode', 'code']) as $cols) {
+            $code = $cols[0] ?? '';
+            $name = $cols[1] ?? '';
+            $sks = (int) ($cols[2] ?? 0);
+            $semesterNo = ($cols[3] ?? '') !== '' ? (int) $cols[3] : null;
+            $jenis = in_array(strtolower(trim($cols[4] ?? '')), ['pilihan'], true) ? 'pilihan' : 'wajib';
+            $prodiCode = $cols[5] ?? '';
+            $prodiId = $forcedProdi ?: ($prodiCode !== '' ? ($prodiByCode[$prodiCode] ?? null) : null);
+
+            if ($code === '' || $name === '' || $sks < 1 || $sks > 10 || MataKuliah::where('code', $code)->exists()) {
+                $skipped++;
+
+                continue;
+            }
+
+            MataKuliah::create([
+                'code' => $code, 'name' => $name, 'sks' => $sks,
+                'semester_no' => $semesterNo, 'jenis' => $jenis, 'prodi_id' => $prodiId,
+            ]);
+            $created++;
+        }
+
+        return back()->with('status', "Import selesai: $created mata kuliah dibuat, $skipped dilewati.");
     }
 }

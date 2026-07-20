@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ImportsCsv;
 use App\Http\Controllers\Controller;
 use App\Models\Kurikulum;
 use App\Models\Prodi;
@@ -11,6 +12,8 @@ use Illuminate\View\View;
 
 class KurikulumController extends Controller
 {
+    use ImportsCsv;
+
     private function authorizeKurikulum(Request $request, Kurikulum $k): void
     {
         if ($request->user()->isKaprodi()) {
@@ -98,6 +101,65 @@ class KurikulumController extends Controller
         $kurikulum->delete();
 
         return back()->with('status', 'Kurikulum dihapus.');
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $query = Kurikulum::whereIn('id', $data['ids'])->withCount('mataKuliah')
+            ->when($request->user()->isKaprodi(), fn ($q) => $q->where('prodi_id', $request->user()->prodi_id));
+
+        $deleted = 0;
+        $skipped = 0;
+        foreach ($query->get() as $k) {
+            if ($k->mata_kuliah_count > 0) {
+                $skipped++;
+
+                continue;
+            }
+            $k->delete();
+            $deleted++;
+        }
+
+        return back()->with('status', "$deleted kurikulum dihapus."
+            .($skipped > 0 ? " $skipped dilewati karena masih memuat mata kuliah." : ''));
+    }
+
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:2048']]);
+
+        // Peta kode prodi → id (untuk kolom prodi pada CSV; kaprodi dipaksa prodinya).
+        $prodiByCode = Prodi::pluck('id', 'code');
+        $forcedProdi = $request->user()->isKaprodi() ? $request->user()->prodi_id : null;
+
+        $created = 0;
+        $skipped = 0;
+        foreach ($this->readCsvRows($request->file('file'), ['nama', 'name', 'tahun']) as $cols) {
+            $name = $cols[0] ?? '';
+            $year = (int) ($cols[1] ?? 0);
+            $prodiCode = $cols[2] ?? '';
+            $prodiId = $forcedProdi ?: ($prodiCode !== '' ? ($prodiByCode[$prodiCode] ?? null) : null);
+            $active = in_array(strtolower(trim($cols[3] ?? '')), ['1', 'aktif', 'ya', 'true'], true);
+
+            if ($name === '' || $year < 2000 || $year > 2100) {
+                $skipped++;
+
+                continue;
+            }
+
+            $k = Kurikulum::create([
+                'name' => $name, 'year' => $year, 'prodi_id' => $prodiId, 'is_active' => $active,
+            ]);
+            $this->syncActive($k);
+            $created++;
+        }
+
+        return back()->with('status', "Import selesai: $created kurikulum dibuat, $skipped dilewati.");
     }
 
     /** Satu prodi hanya boleh punya satu kurikulum aktif. */

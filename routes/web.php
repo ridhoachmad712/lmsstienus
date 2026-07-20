@@ -325,6 +325,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/kurikulum', [KurikulumController::class, 'index'])->name('kurikulum.index');
         Route::get('/kurikulum/create', [KurikulumController::class, 'create'])->name('kurikulum.create');
         Route::post('/kurikulum', [KurikulumController::class, 'store'])->name('kurikulum.store');
+        Route::post('/kurikulum/import', [KurikulumController::class, 'import'])->name('kurikulum.import');
+        Route::post('/kurikulum/bulk/destroy', [KurikulumController::class, 'bulkDestroy'])->name('kurikulum.bulkDestroy');
         Route::get('/kurikulum/{kurikulum}/edit', [KurikulumController::class, 'edit'])->name('kurikulum.edit');
         Route::put('/kurikulum/{kurikulum}', [KurikulumController::class, 'update'])->name('kurikulum.update');
         Route::delete('/kurikulum/{kurikulum}', [KurikulumController::class, 'destroy'])->name('kurikulum.destroy');
@@ -333,6 +335,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/matakuliah', [MataKuliahController::class, 'index'])->name('matakuliah.index');
         Route::get('/matakuliah/create', [MataKuliahController::class, 'create'])->name('matakuliah.create');
         Route::post('/matakuliah', [MataKuliahController::class, 'store'])->name('matakuliah.store');
+        Route::post('/matakuliah/import', [MataKuliahController::class, 'import'])->name('matakuliah.import');
+        Route::post('/matakuliah/bulk/destroy', [MataKuliahController::class, 'bulkDestroy'])->name('matakuliah.bulkDestroy');
         Route::get('/matakuliah/{matakuliah}/edit', [MataKuliahController::class, 'edit'])->name('matakuliah.edit');
         Route::put('/matakuliah/{matakuliah}', [MataKuliahController::class, 'update'])->name('matakuliah.update');
         Route::delete('/matakuliah/{matakuliah}', [MataKuliahController::class, 'destroy'])->name('matakuliah.destroy');
@@ -344,6 +348,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
         Route::get('/staff/create', [StaffController::class, 'create'])->name('staff.create');
         Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');
+        Route::post('/staff/import', [StaffController::class, 'import'])->name('staff.import');
+        Route::post('/staff/bulk/destroy', [StaffController::class, 'bulkDestroy'])->name('staff.bulkDestroy');
         Route::get('/staff/{staff}/edit', [StaffController::class, 'edit'])->name('staff.edit');
         Route::put('/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
         Route::post('/staff/{staff}/reset-password', [StaffController::class, 'resetPassword'])->name('staff.resetPassword');
@@ -378,15 +384,21 @@ Route::middleware('auth')->group(function () {
         // Data Master — Prodi, Ruangan, Sesi Kuliah (admin saja)
         Route::get('/prodi', [ProdiController::class, 'index'])->name('prodi.index');
         Route::post('/prodi', [ProdiController::class, 'store'])->name('prodi.store');
+        Route::post('/prodi/import', [ProdiController::class, 'import'])->name('prodi.import');
+        Route::post('/prodi/bulk/destroy', [ProdiController::class, 'bulkDestroy'])->name('prodi.bulkDestroy');
         Route::put('/prodi/{prodi}', [ProdiController::class, 'update'])->name('prodi.update');
         Route::delete('/prodi/{prodi}', [ProdiController::class, 'destroy'])->name('prodi.destroy');
 
         Route::get('/ruangan', [RoomController::class, 'index'])->name('rooms.index');
         Route::post('/ruangan', [RoomController::class, 'store'])->name('rooms.store');
+        Route::post('/ruangan/import', [RoomController::class, 'import'])->name('rooms.import');
+        Route::post('/ruangan/bulk/destroy', [RoomController::class, 'bulkDestroy'])->name('rooms.bulkDestroy');
         Route::delete('/ruangan/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
 
         Route::get('/sesi-kuliah', [TimeSlotController::class, 'index'])->name('timeslots.index');
         Route::post('/sesi-kuliah', [TimeSlotController::class, 'store'])->name('timeslots.store');
+        Route::post('/sesi-kuliah/import', [TimeSlotController::class, 'import'])->name('timeslots.import');
+        Route::post('/sesi-kuliah/bulk/destroy', [TimeSlotController::class, 'bulkDestroy'])->name('timeslots.bulkDestroy');
         Route::delete('/sesi-kuliah/{timeslot}', [TimeSlotController::class, 'destroy'])->name('timeslots.destroy');
     });
 });

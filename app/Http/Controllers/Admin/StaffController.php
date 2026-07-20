@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ImportsCsv;
 use App\Http\Controllers\Controller;
 use App\Models\Prodi;
 use App\Models\User;
@@ -14,6 +15,8 @@ use Illuminate\View\View;
 /** Kelola akun staf: dosen & kaprodi (khusus admin). */
 class StaffController extends Controller
 {
+    use ImportsCsv;
+
     private const ROLES = [User::ROLE_DOSEN, User::ROLE_KAPRODI];
 
     private function ensureStaff(User $user): void
@@ -34,7 +37,7 @@ class StaffController extends Controller
                 ->orWhere('nim_nip', 'like', "%$q%")))
             ->when($role, fn ($x) => $x->where('role', $role))
             ->when($prodiId, fn ($x) => $x->where('prodi_id', $prodiId))
-            ->with('prodi')
+            ->with('prodi', 'headedProdi')
             ->withCount('teachingCourses')
             ->orderBy('name')
             ->paginate(20)
@@ -106,6 +109,70 @@ class StaffController extends Controller
         $staff->delete();
 
         return back()->with('status', 'Akun dihapus.');
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $query = User::whereIn('id', $data['ids'])
+            ->whereIn('role', self::ROLES)
+            ->withCount('teachingCourses');
+
+        $deleted = 0;
+        $skipped = 0;
+        foreach ($query->get() as $staff) {
+            if ($staff->teaching_courses_count > 0) {
+                $skipped++;
+
+                continue;
+            }
+            $staff->delete();
+            $deleted++;
+        }
+
+        return back()->with('status', "$deleted akun dihapus."
+            .($skipped > 0 ? " $skipped dilewati karena masih mengampu kelas." : ''));
+    }
+
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:2048']]);
+
+        $prodiByCode = Prodi::pluck('id', 'code');
+
+        $created = 0;
+        $skipped = 0;
+        foreach ($this->readCsvRows($request->file('file'), ['nama', 'name', 'email']) as $cols) {
+            $name = $cols[0] ?? '';
+            $email = strtolower($cols[1] ?? '');
+            $role = in_array(strtolower(trim($cols[2] ?? '')), [User::ROLE_KAPRODI], true) ? User::ROLE_KAPRODI : User::ROLE_DOSEN;
+            $prodiId = ($cols[3] ?? '') !== '' ? ($prodiByCode[$cols[3]] ?? null) : null;
+            $nip = $cols[4] ?? '';
+            $nidn = $cols[5] ?? '';
+
+            if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL) || ! $prodiId || User::where('email', $email)->exists()) {
+                $skipped++;
+
+                continue;
+            }
+
+            User::create([
+                'name' => $name !== '' ? $name : $email,
+                'email' => $email,
+                'role' => $role,
+                'prodi_id' => $prodiId,
+                'nim_nip' => $nip !== '' ? $nip : null,
+                'nidn' => $nidn !== '' ? $nidn : null,
+                'password' => Hash::make($nip !== '' ? $nip : 'password'),
+            ]);
+            $created++;
+        }
+
+        return back()->with('status', "Import selesai: $created akun dibuat, $skipped dilewati (email duplikat / prodi tidak dikenal).");
     }
 
     private function validated(Request $request, ?User $staff = null): array

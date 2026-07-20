@@ -16,7 +16,10 @@ class RoleMiddleware
     {
         $user = $request->user();
 
-        if (! $user || ! in_array($user->role, $roles, true)) {
+        // Perhitungkan jabatan rangkap (dosen yang merangkap kaprodi) via hasRole().
+        $allowed = $user && collect($roles)->contains(fn ($role) => $user->hasRole($role));
+
+        if (! $allowed) {
             abort(403, 'Anda tidak memiliki akses ke halaman ini.');
         }
 

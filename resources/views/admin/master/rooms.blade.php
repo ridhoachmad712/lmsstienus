@@ -4,29 +4,38 @@
 @section('page-pretitle', 'Data Master')
 @section('page-title', 'Ruangan')
 
+@section('page-actions')
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-import"><i class="ti ti-file-import me-1"></i>Import CSV</button>
+@endsection
+
 @section('content')
 <div class="row row-cards">
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header"><h3 class="card-title">{{ $rooms->count() }} ruangan</h3></div>
             @if ($rooms->isEmpty())
-                <div class="card-body"><x-empty-state icon="ti-door" title="Belum ada ruangan" description="Tambahkan ruangan di sebelah kanan." /></div>
+                <div class="card-body"><x-empty-state icon="ti-door" title="Belum ada ruangan" description="Tambahkan ruangan di sebelah kanan atau import CSV." /></div>
             @else
+                @include('partials.bulk-select', ['deleteRoute' => route('admin.rooms.bulkDestroy'), 'noun' => 'ruangan'])
                 <div class="table-responsive">
                     <table class="table table-vcenter card-table">
-                        <thead><tr><th>Kode</th><th>Nama</th><th class="text-center">Kapasitas</th><th>Catatan</th><th class="text-center">Jadwal</th><th></th></tr></thead>
+                        <thead><tr>
+                            <th class="w-1"><input type="checkbox" id="sel-all" class="form-check-input m-0"></th>
+                            <th>Kode</th><th>Nama</th><th class="text-center">Kapasitas</th><th>Catatan</th><th class="text-center">Jadwal</th><th></th>
+                        </tr></thead>
                         <tbody>
                             @foreach ($rooms as $r)
                                 <tr>
+                                    <td><input type="checkbox" class="form-check-input m-0 row-select" value="{{ $r->id }}"></td>
                                     <td class="fw-bold">{{ $r->code ?? '—' }}</td>
                                     <td>{{ $r->name }}</td>
                                     <td class="text-center text-secondary">{{ $r->capacity ?? '—' }}</td>
                                     <td class="text-secondary small">{{ $r->note ?? '—' }}</td>
                                     <td class="text-center text-secondary">{{ $r->schedules_count }}</td>
                                     <td class="text-end">
-                                        <form method="POST" action="{{ route('admin.rooms.destroy', $r) }}" onsubmit="return confirm('Hapus ruangan {{ $r->name }}?');">
+                                        <form method="POST" action="{{ route('admin.rooms.destroy', $r) }}" data-confirm="Hapus ruangan {{ $r->name }}?@if ($r->schedules_count > 0) (Akan ditolak — dipakai {{ $r->schedules_count }} jadwal.)@endif">
                                             @csrf @method('DELETE')
-                                            <button class="btn btn-sm btn-ghost-danger"><i class="ti ti-trash"></i></button>
+                                            <button class="btn btn-sm btn-ghost-danger" title="Hapus"><i class="ti ti-trash"></i></button>
                                         </form>
                                     </td>
                                 </tr>
@@ -62,4 +71,11 @@
         </form>
     </div>
 </div>
+
+@include('partials.import-modal', [
+    'importRoute' => route('admin.rooms.import'),
+    'title' => 'Import Ruangan (CSV)',
+    'columns' => 'kode, nama, kapasitas, catatan',
+    'note' => 'Hanya nama yang wajib. Kapasitas & catatan boleh kosong.',
+])
 @endsection
