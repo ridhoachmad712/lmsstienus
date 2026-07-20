@@ -21,7 +21,7 @@ class KrsController extends Controller
 
     public static function krsOpen(): bool
     {
-        return Setting::bool('krs_open', false);
+        return Setting::scheduleOpen('krs_start', 'krs_end', 'krs_open');
     }
 
     /** Batas SKS global (plafon) yang diset admin. */

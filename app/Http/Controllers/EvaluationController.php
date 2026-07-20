@@ -16,7 +16,7 @@ class EvaluationController extends Controller
 {
     public static function edomOpen(): bool
     {
-        return Setting::bool('edom_open', false);
+        return Setting::scheduleOpen('edom_start', 'edom_end', 'edom_open');
     }
 
     /** Wajibkan EDOM (kunci akses nilai sampai terisi). */

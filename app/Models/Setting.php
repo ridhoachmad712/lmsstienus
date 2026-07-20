@@ -36,4 +36,23 @@ class Setting extends Model
 
         return $v === null ? $default : ($v === '1' || $v === 'true');
     }
+
+    /**
+     * Status buka berbasis jadwal opsional. Bila rentang tanggal (start/end) diisi,
+     * status mengikuti tanggal hari ini (otomatis). Bila keduanya kosong, jatuh ke
+     * sakelar manual ($boolKey). Mendukung rentang terbuka (hanya start / hanya end).
+     */
+    public static function scheduleOpen(string $startKey, string $endKey, string $boolKey): bool
+    {
+        $start = static::get($startKey);
+        $end = static::get($endKey);
+
+        if ($start || $end) {
+            $today = now()->toDateString();
+
+            return (! $start || $today >= $start) && (! $end || $today <= $end);
+        }
+
+        return static::bool($boolKey, false);
+    }
 }

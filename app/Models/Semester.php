@@ -21,6 +21,26 @@ class Semester extends Model
         return $this->semester.' '.$this->year;
     }
 
+    /**
+     * Tahun akademik gaya SIAKAD, mis. "2025/2026".
+     * Konvensi Indonesia: Ganjil dimulai tahun T (T/T+1); Genap/Antara di tahun T
+     * merupakan lanjutan TA (T-1)/T.
+     */
+    public static function academicYear(int $year, string $semester): string
+    {
+        return $semester === 'Ganjil'
+            ? $year.'/'.($year + 1)
+            : ($year - 1).'/'.$year;
+    }
+
+    /** Tahun akademik untuk sebuah kunci "THN-Sem". */
+    public static function academicYearForKey(string $key): string
+    {
+        [$y, $s] = array_pad(explode('-', $key, 2), 2, '');
+
+        return static::academicYear((int) $y, $s);
+    }
+
     /** Label untuk sebuah kunci periode "THN-Sem", mis. "2026-Genap" → "Genap 2026". */
     public static function keyLabel(string $key): string
     {

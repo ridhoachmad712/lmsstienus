@@ -370,6 +370,14 @@
             </div>
         </div>
     @endif
+    @if (session('warning'))
+        <div class="toast align-items-center border-0" role="alert" data-bs-delay="8000">
+            <div class="d-flex">
+                <div class="toast-body"><i class="ti ti-alert-triangle text-orange me-1"></i>{{ session('warning') }}</div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    @endif
     @if (session('error'))
         <div class="toast align-items-center border-0" role="alert" data-bs-delay="6000">
             <div class="d-flex">
