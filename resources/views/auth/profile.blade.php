@@ -41,17 +41,17 @@
                     <input type="text" name="phone" class="form-control" value="{{ old('phone', $user->phone) }}" placeholder="08xx">
                 </div>
                 <div class="row">
-                    <div class="col-6 mb-3"><label class="form-label">Jenis Kelamin</label>
+                    <div class="col-md-4 mb-3"><label class="form-label">Jenis Kelamin</label>
                         <select name="gender" class="form-select">
                             <option value="">—</option>
                             <option value="L" @selected(old('gender', $user->gender) === 'L')>Laki-laki</option>
                             <option value="P" @selected(old('gender', $user->gender) === 'P')>Perempuan</option>
                         </select>
                     </div>
-                    <div class="col-6 mb-3"><label class="form-label">Tempat Lahir</label>
+                    <div class="col-md-4 mb-3"><label class="form-label">Tempat Lahir</label>
                         <input type="text" name="birth_place" class="form-control" value="{{ old('birth_place', $user->birth_place) }}">
                     </div>
-                    <div class="col-6 mb-3"><label class="form-label">Tanggal Lahir</label>
+                    <div class="col-md-4 mb-3"><label class="form-label">Tanggal Lahir</label>
                         <input type="date" name="birth_date" class="form-control" value="{{ old('birth_date', $user->birth_date?->format('Y-m-d')) }}">
                     </div>
                 </div>

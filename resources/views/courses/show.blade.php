@@ -92,18 +92,26 @@
                                     <button class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#edit-meeting-{{ $meeting->id }}">
                                         <i class="ti ti-edit me-1"></i>Edit
                                     </button>
-                                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modal-material-{{ $meeting->id }}">
-                                        <i class="ti ti-plus me-1"></i>Materi
-                                    </button>
-                                    @if ($aiEnabled)
-                                        <form method="POST" action="{{ route('ai.material.generate', $meeting) }}"
-                                              data-confirm="Buat draf materi dengan AI untuk pertemuan ini? Materi disusun dari RPS (CPL/CPMK/Sub-CPMK), topik, dan PDF yang sudah ada. Bisa diedit setelahnya.">
-                                            @csrf
-                                            <button class="btn btn-sm btn-outline-purple" data-loading="Menyusun materi…"><i class="ti ti-sparkles me-1"></i>Materi AI</button>
-                                        </form>
-                                    @endif
-                                    <a href="{{ route('assignments.create', [$course, 'meeting' => $meeting->id, 'type' => 'tugas']) }}" class="btn btn-sm"><i class="ti ti-checklist me-1"></i>Tugas</a>
-                                    <a href="{{ route('assignments.create', [$course, 'meeting' => $meeting->id, 'type' => 'kuis']) }}" class="btn btn-sm"><i class="ti ti-help-circle me-1"></i>Kuis</a>
+                                    {{-- Aksi tambah konten diciutkan ke satu dropdown agar header tak berdesakan --}}
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="ti ti-plus me-1"></i>Tambah
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modal-material-{{ $meeting->id }}">
+                                                <i class="ti ti-file-text me-2"></i>Materi
+                                            </button>
+                                            @if ($aiEnabled)
+                                                <form method="POST" action="{{ route('ai.material.generate', $meeting) }}"
+                                                      data-confirm="Buat draf materi dengan AI untuk pertemuan ini? Materi disusun dari RPS (CPL/CPMK/Sub-CPMK), topik, dan PDF yang sudah ada. Bisa diedit setelahnya.">
+                                                    @csrf
+                                                    <button class="dropdown-item" data-loading="Menyusun materi…"><i class="ti ti-sparkles me-2"></i>Materi AI</button>
+                                                </form>
+                                            @endif
+                                            <a class="dropdown-item" href="{{ route('assignments.create', [$course, 'meeting' => $meeting->id, 'type' => 'tugas']) }}"><i class="ti ti-checklist me-2"></i>Tugas</a>
+                                            <a class="dropdown-item" href="{{ route('assignments.create', [$course, 'meeting' => $meeting->id, 'type' => 'kuis']) }}"><i class="ti ti-help-circle me-2"></i>Kuis</a>
+                                        </div>
+                                    </div>
                                     <form method="POST" action="{{ route('meetings.destroy', $meeting) }}"
                                           data-confirm="Hapus pertemuan ini beserta materinya?">
                                         @csrf @method('DELETE')

@@ -25,13 +25,20 @@
     </div>
 @endif
 
-{{-- Alert kehadiran rendah --}}
-@foreach ($lowAttendance as $low)
+{{-- Alert kehadiran rendah (digabung jadi satu agar tidak membanjiri) --}}
+@if (count($lowAttendance) > 0)
     <div class="alert alert-warning" role="alert">
-        <i class="ti ti-alert-triangle me-1"></i>
-        Kehadiran Anda di <strong>{{ $low['course']->name }}</strong> baru <strong>{{ $low['percent'] }}%</strong> (di bawah 75%).
+        <div class="d-flex align-items-center">
+            <i class="ti ti-alert-triangle me-2 fs-3"></i>
+            <div>Kehadiran di bawah 75% pada <strong>{{ count($lowAttendance) }}</strong> kelas — perhatikan agar tidak mengganggu penilaian:</div>
+        </div>
+        <ul class="mt-2 mb-0">
+            @foreach ($lowAttendance as $low)
+                <li>{{ $low['course']->name }} — <strong>{{ $low['percent'] }}%</strong></li>
+            @endforeach
+        </ul>
     </div>
-@endforeach
+@endif
 
 {{-- ===================== RINGKASAN AKADEMIK ===================== --}}
 <div class="row row-cards mb-3">
