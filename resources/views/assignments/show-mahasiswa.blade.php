@@ -34,17 +34,90 @@
                 @endif
             </div>
         </div>
+
+        {{-- ============ KELOMPOK (tugas kelompok) ============ --}}
+        @if ($assignment->isGroup())
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="ti ti-users-group me-1"></i>Kelompok</h3>
+                    @if ($assignment->group_max)<div class="card-actions text-secondary small">Maks {{ $assignment->group_max }} anggota</div>@endif
+                </div>
+                <div class="card-body">
+                    @if ($myGroup)
+                        <div class="mb-2">
+                            <span class="fw-bold">{{ $myGroup->name }}</span>
+                            @if ($myGroup->isLocked())<span class="badge bg-secondary-lt ms-1"><i class="ti ti-lock me-1"></i>Terkunci (sudah dinilai)</span>@endif
+                        </div>
+                        <div class="list-group list-group-flush mb-2">
+                            @foreach ($myGroup->members as $m)
+                                <div class="list-group-item d-flex align-items-center px-0">
+                                    <x-avatar :name="$m->name" :url="$m->avatarUrl()" class="me-2" />
+                                    <div class="me-auto">{{ $m->name }}
+                                        @if ($m->id === $myGroup->created_by)<span class="badge bg-blue-lt ms-1">Ketua</span>@endif
+                                        @if ($m->id === auth()->id())<span class="text-secondary small">(Anda)</span>@endif
+                                    </div>
+                                    @if (! $myGroup->isLocked() && ($m->id === auth()->id() || auth()->id() === $myGroup->created_by))
+                                        <form method="POST" action="{{ route('assignment-groups.removeMember', [$myGroup, $m]) }}"
+                                              data-confirm="{{ $m->id === auth()->id() ? 'Keluar dari kelompok ini?' : 'Keluarkan '.$m->name.' dari kelompok?' }}">
+                                            @csrf @method('DELETE')
+                                            <button class="btn btn-sm btn-ghost-danger" title="{{ $m->id === auth()->id() ? 'Keluar' : 'Keluarkan' }}"><i class="ti ti-user-minus"></i></button>
+                                        </form>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                        @if (! $myGroup->isLocked() && $groupmateCandidates->isNotEmpty() && (! $assignment->group_max || $myGroup->members->count() < $assignment->group_max))
+                            <form method="POST" action="{{ route('assignment-groups.addMember', $myGroup) }}" class="d-flex gap-2">
+                                @csrf
+                                <select name="user_id" class="form-select form-select-sm" required>
+                                    <option value="">+ Tambah anggota…</option>
+                                    @foreach ($groupmateCandidates as $cand)<option value="{{ $cand->id }}">{{ $cand->name }}</option>@endforeach
+                                </select>
+                                <button class="btn btn-sm"><i class="ti ti-user-plus me-1"></i>Tambah</button>
+                            </form>
+                        @endif
+                    @else
+                        <p class="text-secondary">Anda belum tergabung kelompok. Buat kelompok dan pilih anggota dari peserta kelas — cukup <strong>satu orang</strong> yang mengumpulkan untuk seluruh anggota.</p>
+                        <form method="POST" action="{{ route('assignment-groups.store', $assignment) }}">
+                            @csrf
+                            <label class="form-label">Pilih anggota <span class="text-secondary">(Anda otomatis termasuk)</span></label>
+                            <div class="row">
+                                @forelse ($groupmateCandidates as $cand)
+                                    <div class="col-md-6"><label class="form-check">
+                                        <input type="checkbox" name="members[]" value="{{ $cand->id }}" class="form-check-input">
+                                        <span class="form-check-label">{{ $cand->name }}</span>
+                                    </label></div>
+                                @empty
+                                    <div class="col-12 text-secondary small">Belum ada peserta lain yang tersedia (semua sudah berkelompok). Anda tetap bisa membuat kelompok sendiri.</div>
+                                @endforelse
+                            </div>
+                            <button class="btn btn-primary mt-2"><i class="ti ti-users-plus me-1"></i>Buat Kelompok</button>
+                            @if ($assignment->group_max)<small class="form-hint d-block mt-1">Maksimal {{ $assignment->group_max }} anggota termasuk Anda.</small>@endif
+                        </form>
+                    @endif
+                </div>
+            </div>
+        @endif
     </div>
 
     <div class="col-lg-5">
         <div class="card">
-            <div class="card-header"><h3 class="card-title">Pengumpulan Anda</h3></div>
+            <div class="card-header"><h3 class="card-title">{{ $assignment->isGroup() ? 'Pengumpulan Kelompok' : 'Pengumpulan Anda' }}</h3></div>
             <div class="card-body">
+            @if ($assignment->isGroup() && ! $myGroup)
+                <div class="text-secondary text-center py-3">
+                    <i class="ti ti-users-group" style="font-size:2rem"></i>
+                    <div class="mt-2">Buat atau gabung kelompok dulu (panel di kiri) sebelum mengumpulkan tugas.</div>
+                </div>
+            @else
                 @php($mode = $assignment->submission_mode)
                 @if ($submission)
                     <div class="mb-3">
                         <span class="badge bg-{{ $submission->isLate() ? 'red' : 'green' }}-lt">{{ $submission->isLate() ? 'Terlambat' : 'Tepat waktu' }}</span>
                         <span class="text-secondary small ms-1">{{ $submission->submitted_at?->translatedFormat('d M Y H:i') }}</span>
+                        @if ($assignment->isGroup() && $submission->student)
+                            <div class="text-secondary small mt-1"><i class="ti ti-upload me-1"></i>Diunggah oleh {{ $submission->student->id === auth()->id() ? 'Anda' : $submission->student->name }}</div>
+                        @endif
                     </div>
                 @endif
 
@@ -123,6 +196,7 @@
                         </form>
                     @endif
                 @endif
+            @endif
             </div>
         </div>
     </div>

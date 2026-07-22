@@ -39,6 +39,22 @@ class GradeCalculator
             ->get()
             ->groupBy('user_id');
 
+        // Tugas kelompok: pengumpulan bersama dipetakan ke SEMUA anggota → [assignment_id][user_id] => submission.
+        $groupSubs = [];
+        $groupAssignmentIds = $assignments->where('mode', \App\Models\Assignment::MODE_KELOMPOK)->pluck('id');
+        if ($groupAssignmentIds->isNotEmpty()) {
+            $groups = \App\Models\AssignmentGroup::whereIn('assignment_id', $groupAssignmentIds)
+                ->with(['members:id', 'submission'])
+                ->get();
+            foreach ($groups as $g) {
+                if ($g->submission && ! is_null($g->submission->score)) {
+                    foreach ($g->members as $m) {
+                        $groupSubs[$g->assignment_id][$m->id] = $g->submission;
+                    }
+                }
+            }
+        }
+
         // Nilai manual (untuk komponen tanpa tugas online) → [component_id][user_id]
         $manual = \App\Models\GradeScore::whereIn('grade_component_id', $components->pluck('id'))
             ->whereNotNull('score')
@@ -46,7 +62,7 @@ class GradeCalculator
             ->groupBy('grade_component_id')
             ->map(fn ($g) => $g->keyBy('user_id'));
 
-        $rows = $students->map(function (User $student) use ($components, $assignmentsByComponent, $submissions, $manual, $attendancePercents) {
+        $rows = $students->map(function (User $student) use ($components, $assignmentsByComponent, $submissions, $groupSubs, $manual, $attendancePercents) {
             $studentSubs = ($submissions->get($student->id) ?? collect())->keyBy('assignment_id');
             $componentScores = [];
             $overrides = [];
@@ -70,7 +86,7 @@ class GradeCalculator
                     // Otomatis dari tugas/kuis yang ditautkan (belum dikumpulkan = 0).
                     $percents = [];
                     foreach ($compAssignments as $a) {
-                        $sub = $studentSubs->get($a->id);
+                        $sub = $studentSubs->get($a->id) ?? ($groupSubs[$a->id][$student->id] ?? null);
                         $percents[] = ($sub && $a->max_score > 0)
                             ? (float) $sub->score / $a->max_score * 100
                             : 0.0;

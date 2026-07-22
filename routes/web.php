@@ -10,6 +10,7 @@ use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\AssignmentGroupController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ProfileController;
@@ -99,6 +100,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/submissions/{submission}/preview', [SubmissionController::class, 'preview'])->name('submissions.preview');
     Route::get('/submissions/{submission}/download', [SubmissionController::class, 'download'])->name('submissions.download');
     Route::delete('/submissions/{submission}', [SubmissionController::class, 'destroy'])->name('submissions.destroy');
+
+    // Kelompok tugas (mahasiswa membentuk; dosen boleh mengatur — otorisasi di controller)
+    Route::post('/assignments/{assignment}/groups', [AssignmentGroupController::class, 'store'])->name('assignment-groups.store');
+    Route::post('/assignment-groups/{group}/members', [AssignmentGroupController::class, 'addMember'])->name('assignment-groups.addMember');
+    Route::delete('/assignment-groups/{group}/members/{member}', [AssignmentGroupController::class, 'removeMember'])->name('assignment-groups.removeMember');
+    Route::delete('/assignment-groups/{group}', [AssignmentGroupController::class, 'destroy'])->name('assignment-groups.destroy');
 
     // Kuis — kerjakan & review (mahasiswa + dosen review)
     Route::get('/assignments/{assignment}/take', [QuizController::class, 'take'])->name('quizzes.take');

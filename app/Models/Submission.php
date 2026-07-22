@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'assignment_id', 'user_id', 'file_path', 'answer_text', 'score',
+    'assignment_id', 'user_id', 'assignment_group_id', 'file_path', 'answer_text', 'score',
     'feedback', 'status', 'started_at', 'submitted_at',
 ])]
 class Submission extends Model
@@ -30,6 +30,12 @@ class Submission extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /** Kelompok pemilik pengumpulan (untuk tugas kelompok). */
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(AssignmentGroup::class, 'assignment_group_id');
     }
 
     public function answers(): HasMany
