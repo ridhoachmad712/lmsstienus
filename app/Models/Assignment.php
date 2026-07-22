@@ -52,6 +52,14 @@ class Assignment extends Model
         ];
     }
 
+    /** Tanpa FK level-DB → hapus kelompok (beserta anggota & pengumpulan) saat tugas dihapus. */
+    protected static function booted(): void
+    {
+        static::deleting(function (Assignment $assignment) {
+            $assignment->groups()->get()->each->delete();
+        });
+    }
+
     /** Tugas dikerjakan berkelompok (bukan individu). */
     public function isGroup(): bool
     {

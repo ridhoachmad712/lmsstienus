@@ -12,6 +12,15 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 #[Fillable(['assignment_id', 'name', 'created_by'])]
 class AssignmentGroup extends Model
 {
+    /** Tanpa FK level-DB → bersihkan anggota & pengumpulan bersama saat kelompok dihapus. */
+    protected static function booted(): void
+    {
+        static::deleting(function (AssignmentGroup $group) {
+            $group->members()->detach();
+            $group->submission()->delete();
+        });
+    }
+
     public function assignment(): BelongsTo
     {
         return $this->belongsTo(Assignment::class);
