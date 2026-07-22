@@ -121,7 +121,7 @@
                                 @php($myAtt = $myAttendance[$meeting->id] ?? null)
                                 @if ($myAtt && $myAtt->status === 'hadir')
                                     <span class="badge bg-green-lt"><i class="ti ti-checks me-1"></i>Hadir</span>
-                                @elseif ($meeting->activeToken())
+                                @elseif ($meeting->attendanceOpen())
                                     <form method="POST" action="{{ route('attendance.selfAttend', $meeting) }}">
                                         @csrf
                                         <button class="btn btn-sm btn-primary"><i class="ti ti-user-check me-1"></i>Tandai Hadir</button>
@@ -357,6 +357,14 @@
                                                 <label class="form-label">Tanggal</label>
                                                 <input type="date" name="date" class="form-control" value="{{ $meeting->date?->format('Y-m-d') }}">
                                             </div>
+                                            <div class="col-12 mb-2">
+                                                <label class="form-label">Jadwal absensi otomatis <span class="text-secondary">(opsional)</span></label>
+                                                <div class="row g-2">
+                                                    <div class="col-6"><input type="datetime-local" name="attend_opens_at" class="form-control form-control-sm" value="{{ $meeting->attend_opens_at?->format('Y-m-d\TH:i') }}" aria-label="Absensi buka"></div>
+                                                    <div class="col-6"><input type="datetime-local" name="attend_closes_at" class="form-control form-control-sm" value="{{ $meeting->attend_closes_at?->format('Y-m-d\TH:i') }}" aria-label="Absensi tutup"></div>
+                                                </div>
+                                                <small class="form-hint">Kosongkan = absensi otomatis terbuka sepanjang hari tanggal pertemuan. Isi untuk menentukan jam buka–tutup sendiri.</small>
+                                            </div>
                                             <div class="col-12 mb-3">
                                                 <label class="form-label required">Jenis Pertemuan</label>
                                                 <select name="type" class="form-select" x-model="mtype">
@@ -412,6 +420,14 @@
                         <div class="col-8 mb-3">
                             <label class="form-label">Tanggal</label>
                             <input type="date" name="date" class="form-control">
+                        </div>
+                        <div class="col-12 mb-2">
+                            <label class="form-label">Jadwal absensi otomatis <span class="text-secondary">(opsional)</span></label>
+                            <div class="row g-2">
+                                <div class="col-6"><input type="datetime-local" name="attend_opens_at" class="form-control form-control-sm" aria-label="Absensi buka"></div>
+                                <div class="col-6"><input type="datetime-local" name="attend_closes_at" class="form-control form-control-sm" aria-label="Absensi tutup"></div>
+                            </div>
+                            <small class="form-hint">Kosongkan = absensi otomatis terbuka sepanjang hari tanggal pertemuan. Isi untuk menentukan jam buka–tutup sendiri.</small>
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label required">Jenis Pertemuan</label>

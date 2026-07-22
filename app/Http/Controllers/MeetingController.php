@@ -26,6 +26,8 @@ class MeetingController extends Controller
             'type' => ['required', 'in:tatap_muka,mandiri'],
             'location' => ['nullable', 'string', 'max:255'],
             'date' => ['nullable', 'date'],
+            'attend_opens_at' => ['nullable', 'date'],
+            'attend_closes_at' => ['nullable', 'date', 'after_or_equal:attend_opens_at'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -48,6 +50,8 @@ class MeetingController extends Controller
             'type' => ['required', 'in:tatap_muka,mandiri'],
             'location' => ['nullable', 'string', 'max:255'],
             'date' => ['nullable', 'date'],
+            'attend_opens_at' => ['nullable', 'date'],
+            'attend_closes_at' => ['nullable', 'date', 'after_or_equal:attend_opens_at'],
             'description' => ['nullable', 'string'],
         ]);
 

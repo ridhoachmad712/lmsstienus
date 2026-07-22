@@ -16,6 +16,23 @@
 @endsection
 
 @section('content')
+{{-- Status jadwal absensi otomatis (dibungkus 1 div: .alert Tabler = flex-row) --}}
+@php($aOpen = $meeting->attendOpensAt())
+@php($aClose = $meeting->attendClosesAt())
+@if ($aOpen && $aClose)
+    <div class="alert {{ $meeting->scheduledOpen() ? 'alert-success' : 'alert-info' }} mb-3">
+        <div>
+            <i class="ti ti-calendar-clock me-1"></i>
+            @if ($meeting->scheduledOpen())
+                <strong>Absensi terbuka otomatis</strong> sesuai jadwal —
+            @else
+                <strong>Jadwal absensi otomatis:</strong>
+            @endif
+            {{ $aOpen->translatedFormat('d M Y H:i') }} s/d {{ $aClose->translatedFormat('d M Y H:i') }}.
+            <span class="d-block small mt-1 text-secondary">Ubah jadwalnya lewat <em>Edit Pertemuan</em>. Anda tetap bisa membuka/menutup manual di bawah.</span>
+        </div>
+    </div>
+@endif
 <div class="row row-cards">
     {{-- Kontrol presensi --}}
     @if ($meeting->isMandiri())

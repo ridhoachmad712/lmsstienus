@@ -117,6 +117,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/courses/{course}/forum', [ForumController::class, 'storeThread'])->name('forum.threads.store');
     Route::get('/forum/{thread}', [ForumController::class, 'show'])->name('forum.show');
     Route::post('/forum/{thread}/replies', [ForumController::class, 'storeReply'])->name('forum.replies.store');
+    Route::put('/forum/{thread}', [ForumController::class, 'updateThread'])->name('forum.threads.update');
+    Route::put('/forum-replies/{reply}', [ForumController::class, 'updateReply'])->name('forum.replies.update');
     Route::delete('/forum/{thread}', [ForumController::class, 'destroyThread'])->name('forum.threads.destroy');
     Route::delete('/forum-replies/{reply}', [ForumController::class, 'destroyReply'])->name('forum.replies.destroy');
 

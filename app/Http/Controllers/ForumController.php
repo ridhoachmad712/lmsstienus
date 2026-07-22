@@ -83,6 +83,34 @@ class ForumController extends Controller
         return back()->with('status', 'Balasan dikirim.');
     }
 
+    public function updateThread(Request $request, ForumThread $thread): RedirectResponse
+    {
+        $this->authorizeAuthorOrOwner($request, $thread->course, $thread->user_id);
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'content' => ['required', 'string'],
+        ]);
+
+        $thread->update($data);
+
+        return redirect()->route('forum.show', $thread)->with('status', 'Diskusi diperbarui.');
+    }
+
+    public function updateReply(Request $request, ForumReply $reply): RedirectResponse
+    {
+        $reply->load('thread.course');
+        $this->authorizeAuthorOrOwner($request, $reply->thread->course, $reply->user_id);
+
+        $data = $request->validate([
+            'content' => ['required', 'string'],
+        ]);
+
+        $reply->update($data);
+
+        return redirect()->route('forum.show', $reply->thread)->with('status', 'Balasan diperbarui.');
+    }
+
     public function pin(Request $request, ForumThread $thread): RedirectResponse
     {
         $this->ensureCourseOwner($request, $thread->course);
