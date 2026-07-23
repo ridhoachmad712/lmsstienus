@@ -77,7 +77,7 @@
 
                 @forelse ($course->meetings as $meeting)
                     <div class="card mb-3 overflow-hidden">
-                        <div class="card-header d-flex flex-wrap align-items-center gap-2">
+                        <div class="card-header d-flex flex-wrap align-items-start gap-2">
                             <a class="me-auto d-flex align-items-start text-reset text-decoration-none collapsed gap-2" role="button" style="min-width:0"
                                data-bs-toggle="collapse" href="#meeting-{{ $meeting->id }}" aria-expanded="false" aria-controls="meeting-{{ $meeting->id }}">
                                 <i class="ti ti-chevron-down meeting-chevron text-secondary mt-1 flex-shrink-0"></i>
@@ -123,18 +123,21 @@
                                     </form>
                                 </div>
                             @endif
+                            {{-- Presensi mandiri (mahasiswa): chip ringkas & konsisten di kanan-atas kartu --}}
                             @if (! $isDosen && $meeting->isMandiri())
                                 @php($myAtt = $myAttendance[$meeting->id] ?? null)
-                                @if ($myAtt && $myAtt->status === 'hadir')
-                                    <span class="badge bg-green-lt"><i class="ti ti-checks me-1"></i>Hadir</span>
-                                @elseif ($meeting->attendanceOpen())
-                                    <form method="POST" action="{{ route('attendance.selfAttend', $meeting) }}">
-                                        @csrf
-                                        <button class="btn btn-sm btn-primary"><i class="ti ti-user-check me-1"></i>Tandai Hadir</button>
-                                    </form>
-                                @else
-                                    <span class="badge bg-secondary-lt" title="Dosen belum membuka presensi">Presensi belum dibuka</span>
-                                @endif
+                                <div class="flex-shrink-0 ms-auto">
+                                    @if ($myAtt && $myAtt->status === 'hadir')
+                                        <span class="badge bg-green-lt py-2"><i class="ti ti-circle-check-filled me-1"></i>Hadir</span>
+                                    @elseif ($meeting->attendanceOpen())
+                                        <form method="POST" action="{{ route('attendance.selfAttend', $meeting) }}">
+                                            @csrf
+                                            <button class="btn btn-sm btn-outline-green"><i class="ti ti-user-check me-1"></i>Tandai hadir</button>
+                                        </form>
+                                    @else
+                                        <span class="badge bg-secondary-lt py-2" title="Dosen belum membuka presensi"><i class="ti ti-clock me-1"></i>Belum dibuka</span>
+                                    @endif
+                                </div>
                             @endif
                         </div>
                         <div class="collapse" id="meeting-{{ $meeting->id }}">
