@@ -67,6 +67,14 @@
                     </div>
                 @endif
 
+                @if ($course->meetings->isNotEmpty())
+                    <div class="mb-3 d-flex align-items-center gap-2">
+                        <span class="text-secondary small me-auto"><i class="ti ti-folder me-1"></i>{{ $course->meetings->count() }} pertemuan</span>
+                        <button type="button" class="btn btn-sm" id="expand-all-meetings"><i class="ti ti-chevrons-down me-1"></i>Buka semua</button>
+                        <button type="button" class="btn btn-sm" id="collapse-all-meetings"><i class="ti ti-chevrons-up me-1"></i>Tutup semua</button>
+                    </div>
+                @endif
+
                 @forelse ($course->meetings as $meeting)
                     <div class="card mb-3 overflow-hidden">
                         <div class="card-header d-flex flex-wrap align-items-center gap-2">
@@ -503,6 +511,23 @@
         });
         // Hentikan pemuatan saat modal ditutup.
         modal.addEventListener('hidden.bs.modal', function () { frame.src = ''; });
+    })();
+
+    // Buka/tutup semua pertemuan sekaligus (memudahkan menelusuri materi).
+    (function () {
+        var bs = window.bootstrap;
+        if (!bs) return;
+        var panels = function () { return document.querySelectorAll('.collapse[id^="meeting-"]'); };
+        function setAll(open) {
+            panels().forEach(function (el) {
+                var c = bs.Collapse.getOrCreateInstance(el, { toggle: false });
+                open ? c.show() : c.hide();
+            });
+        }
+        var e = document.getElementById('expand-all-meetings');
+        var k = document.getElementById('collapse-all-meetings');
+        if (e) e.addEventListener('click', function () { setAll(true); });
+        if (k) k.addEventListener('click', function () { setAll(false); });
     })();
 </script>
 @endpush

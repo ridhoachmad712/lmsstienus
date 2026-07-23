@@ -55,6 +55,17 @@
             --tblr-primary-rgb: {{ $themeColorRgb }};
             --tblr-primary-darken: color-mix(in srgb, {{ $themeColor }}, #000 12%);
         }
+        /* ============ Penghalusan tampilan mobile (≤575px) ============ */
+        @media (max-width: 575.98px) {
+            .page-title{font-size:1.2rem;}
+            .page-header{padding-top:.75rem;padding-bottom:.25rem;}
+            /* Aksi halaman: turun penuh & boleh membungkus rapi di bawah judul */
+            .page-header .btn-list{width:100%;flex-wrap:wrap;}
+            /* Hero kelas rapi saat elemen menumpuk */
+            .course-hero .card-body{gap:.75rem;}
+            /* Target sentuh tombol ikon lebih nyaman */
+            .btn-icon{min-width:2.25rem;min-height:2.25rem;}
+        }
     </style>
     @stack('styles')
 </head>

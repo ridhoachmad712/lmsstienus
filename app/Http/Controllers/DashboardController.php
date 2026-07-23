@@ -121,6 +121,16 @@ class DashboardController extends Controller
         $courseIds = $courses->pluck('id');
         $submittedIds = $user->submissions()->pluck('assignment_id');
 
+        // Tugas kelompok yang kelompoknya (kelompok si mahasiswa) sudah mengumpulkan
+        // dianggap sudah dikumpulkan juga bagi mahasiswa ini.
+        $groupSubmittedIds = Assignment::whereIn('course_id', $courseIds)
+            ->where('mode', Assignment::MODE_KELOMPOK)
+            ->whereHas('groups', fn ($g) => $g
+                ->whereHas('members', fn ($m) => $m->whereKey($user->id))
+                ->has('submission'))
+            ->pluck('id');
+        $submittedIds = $submittedIds->merge($groupSubmittedIds)->unique();
+
         // Tugas/kuis pending (belum dikumpulkan)
         $pending = Assignment::whereIn('course_id', $courseIds)
             ->where('published', true)

@@ -15,21 +15,41 @@
     </div>
 @endforeach
 
+{{-- Aksi cepat: tugas terdekat yang belum dikerjakan --}}
+@if ($pending->isNotEmpty())
+    @php($next = $pending->first())
+    <div class="card mb-3 border-primary">
+        <div class="card-body d-flex align-items-center flex-wrap gap-2">
+            <span class="avatar bg-orange-lt"><i class="ti ti-{{ $next->isQuiz() ? 'help-circle' : 'file-text' }}"></i></span>
+            <div class="me-auto">
+                <div class="text-secondary small">{{ $pending->count() }} tugas/kuis belum dikerjakan — terdekat:</div>
+                <div class="fw-bold">{{ $next->title }} <span class="text-secondary fw-normal">· {{ $next->course->name }}</span></div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <x-due :date="$next->deadline" />
+                <a href="{{ route('assignments.show', $next) }}" class="btn btn-primary"><i class="ti ti-pencil me-1"></i>Kerjakan</a>
+            </div>
+        </div>
+    </div>
+@endif
+
 <div class="row row-deck row-cards">
-    {{-- Stat cards --}}
+    {{-- Stat cards (dapat diklik ke halaman terkait) --}}
     @foreach ([
-        ['Kelas Diikuti', $stats['courses'], 'ti-school', 'primary'],
-        ['Tugas Pending', $stats['pending'], 'ti-checklist', 'orange'],
-        ['Rata-rata Hadir', is_null($stats['attendance']) ? '—' : $stats['attendance'].'%', 'ti-qrcode', 'green'],
-        ['Notif Baru', $stats['unread'], 'ti-bell', 'azure'],
-    ] as [$label, $value, $icon, $color])
-        <div class="col-sm-6 col-lg-3">
-            <div class="card card-sm"><div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-auto"><span class="bg-{{ $color }} text-white avatar"><i class="ti {{ $icon }} fs-2"></i></span></div>
-                    <div class="col"><div class="font-weight-medium">{{ $value }}</div><div class="text-secondary">{{ $label }}</div></div>
+        ['Kelas Diikuti', $stats['courses'], 'ti-school', 'primary', route('courses.index')],
+        ['Tugas Pending', $stats['pending'], 'ti-checklist', 'orange', $pending->isNotEmpty() ? route('assignments.show', $pending->first()) : null],
+        ['Rata-rata Hadir', is_null($stats['attendance']) ? '—' : $stats['attendance'].'%', 'ti-qrcode', 'green', null],
+        ['Notif Baru', $stats['unread'], 'ti-bell', 'azure', route('notifications.index')],
+    ] as [$label, $value, $icon, $color, $href])
+        <div class="col-6 col-lg-3">
+            @if ($href)<a href="{{ $href }}" class="card card-sm card-link card-link-pop">@else<div class="card card-sm">@endif
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto"><span class="bg-{{ $color }} text-white avatar"><i class="ti {{ $icon }} fs-2"></i></span></div>
+                        <div class="col"><div class="font-weight-medium">{{ $value }}</div><div class="text-secondary">{{ $label }}</div></div>
+                    </div>
                 </div>
-            </div></div>
+            @if ($href)</a>@else</div>@endif
         </div>
     @endforeach
 

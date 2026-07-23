@@ -1,5 +1,6 @@
 @php($subnav = [
     ['courses.show', 'ti-folder', 'Pertemuan & Materi', [$course], ['courses.show']],
+    ['assignments.index', 'ti-checklist', 'Tugas & Kuis', [$course], ['assignments.*', 'quizzes.*']],
     ['attendance.index', 'ti-qrcode', 'Absensi', [$course], ['attendance.*']],
     ['grades.index', 'ti-clipboard-check', 'Penilaian', [$course], ['grades.*']],
     ['forum.index', 'ti-messages', 'Forum', [$course], ['forum.*']],
