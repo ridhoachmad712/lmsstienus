@@ -78,27 +78,25 @@
                 @forelse ($course->meetings as $meeting)
                     <div class="card mb-3 overflow-hidden">
                         <div class="card-header d-flex flex-wrap align-items-center gap-2">
-                            <a class="me-auto d-flex align-items-center text-reset text-decoration-none collapsed" role="button"
+                            <a class="me-auto d-flex align-items-start text-reset text-decoration-none collapsed gap-2" role="button" style="min-width:0"
                                data-bs-toggle="collapse" href="#meeting-{{ $meeting->id }}" aria-expanded="false" aria-controls="meeting-{{ $meeting->id }}">
-                                <i class="ti ti-chevron-down meeting-chevron me-2 text-secondary"></i>
-                                <span>
-                                    <span class="badge bg-blue-lt me-2">Pertemuan {{ $meeting->number }}</span>
-                                    @if ($meeting->isMandiri())
-                                        <span class="badge bg-purple-lt me-2" title="Mandiri (Full LMS)"><i class="ti ti-device-laptop me-1"></i>Mandiri</span>
-                                    @else
-                                        <span class="badge bg-azure-lt me-2" title="Tatap Muka"><i class="ti ti-users me-1"></i>Tatap Muka</span>
-                                    @endif
-                                    <strong>{{ $meeting->topic }}</strong>
-                                    @if ($meeting->date)
-                                        <span class="text-secondary ms-2 small text-nowrap"><i class="ti ti-calendar-event"></i> {{ $meeting->date->translatedFormat('d M Y') }}</span>
-                                    @endif
-                                    @if ($meeting->isTatapMuka() && $meeting->location)
-                                        <span class="text-secondary ms-2 small text-nowrap"><i class="ti ti-map-pin"></i> {{ $meeting->location }}</span>
-                                    @endif
-                                    <span class="badge bg-secondary-lt ms-2">{{ $meeting->materials->count() }} materi</span>
-                                    @if ($meeting->assignments->count())
-                                        <span class="badge bg-secondary-lt ms-1">{{ $meeting->assignments->count() }} tugas/kuis</span>
-                                    @endif
+                                <i class="ti ti-chevron-down meeting-chevron text-secondary mt-1 flex-shrink-0"></i>
+                                <span class="d-block" style="min-width:0">
+                                    <span class="d-flex flex-wrap align-items-center gap-1 mb-1">
+                                        <span class="badge bg-blue-lt">Pertemuan {{ $meeting->number }}</span>
+                                        @if ($meeting->isMandiri())
+                                            <span class="badge bg-purple-lt" title="Mandiri (Full LMS)"><i class="ti ti-device-laptop me-1"></i>Mandiri</span>
+                                        @else
+                                            <span class="badge bg-azure-lt" title="Tatap Muka"><i class="ti ti-users me-1"></i>Tatap Muka</span>
+                                        @endif
+                                    </span>
+                                    <span class="d-block fw-bold">{{ $meeting->topic }}</span>
+                                    <span class="d-flex flex-wrap text-secondary small mt-1" style="gap:.15rem .75rem">
+                                        @if ($meeting->date)<span class="text-nowrap"><i class="ti ti-calendar-event me-1"></i>{{ $meeting->date->translatedFormat('d M Y') }}</span>@endif
+                                        @if ($meeting->isTatapMuka() && $meeting->location)<span class="text-nowrap"><i class="ti ti-map-pin me-1"></i>{{ $meeting->location }}</span>@endif
+                                        <span class="text-nowrap"><i class="ti ti-file-text me-1"></i>{{ $meeting->materials->count() }} materi</span>
+                                        @if ($meeting->assignments->count())<span class="text-nowrap"><i class="ti ti-checklist me-1"></i>{{ $meeting->assignments->count() }} tugas/kuis</span>@endif
+                                    </span>
                                 </span>
                             </a>
                             @if ($isDosen && ! $course->isCompleted())
