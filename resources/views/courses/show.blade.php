@@ -135,7 +135,7 @@
                                             <button class="btn btn-sm btn-outline-green"><i class="ti ti-user-check me-1"></i>Tandai hadir</button>
                                         </form>
                                     @else
-                                        <span class="badge bg-secondary-lt py-2" title="Dosen belum membuka presensi"><i class="ti ti-clock me-1"></i>Belum dibuka</span>
+                                        <span class="badge bg-secondary-lt py-2" title="Dosen belum membuka presensi"><i class="ti ti-clock me-1"></i>Absensi Belum Dibuka</span>
                                     @endif
                                 </div>
                             @endif
