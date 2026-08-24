@@ -22,6 +22,9 @@
         <div class="d-md-none">
             <div class="text-secondary small mb-2">Pilih bagian mata kuliah</div>
             <div class="course-mobile-menu">
+                <a class="course-mobile-menu__item" href="#materi-mobile">
+                    <i class="ti ti-folder"></i><span>Materi</span>
+                </a>
                 @foreach (array_slice($subnav, 1) as [$route, $icon, $label, $params, $patterns])
                     <a class="course-mobile-menu__item" href="{{ route($route, $params) }}">
                         <i class="ti {{ $icon }}"></i><span>{{ $label }}</span>

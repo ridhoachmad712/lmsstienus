@@ -5,7 +5,7 @@
 @section('page-title', $assignment->title)
 
 @section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('courses.index') }}">Kelas Saya</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('courses.index') }}">Mata Kuliah</a></li>
     <li class="breadcrumb-item"><a href="{{ route('courses.show', $assignment->course) }}">{{ $assignment->course->name }}</a></li>
     <li class="breadcrumb-item"><a href="{{ route('assignments.index', $assignment->course) }}">Tugas & Kuis</a></li>
     <li class="breadcrumb-item active" aria-current="page">{{ \Illuminate\Support\Str::limit($assignment->title, 24) }}</li>
@@ -16,8 +16,9 @@
 @include('courses._subnav')
 
 <div class="row row-cards">
-    <div class="col-lg-7">
+    <div class="col-lg-7 order-2 order-lg-1">
         <div class="card">
+            <div class="card-header"><h3 class="card-title"><i class="ti ti-file-description me-1"></i>Petunjuk Tugas</h3></div>
             <div class="card-body">
                 <div class="d-flex mb-3">
                     <div>
@@ -100,7 +101,7 @@
         @endif
     </div>
 
-    <div class="col-lg-5">
+    <div class="col-lg-5 order-1 order-lg-2">
         <div class="card">
             <div class="card-header"><h3 class="card-title">{{ $assignment->isGroup() ? 'Pengumpulan Kelompok' : 'Pengumpulan Anda' }}</h3></div>
             <div class="card-body">
@@ -112,9 +113,11 @@
             @else
                 @php($mode = $assignment->submission_mode)
                 @if ($submission)
-                    <div class="mb-3">
-                        <span class="badge bg-{{ $submission->isLate() ? 'red' : 'green' }}-lt">{{ $submission->isLate() ? 'Terlambat' : 'Tepat waktu' }}</span>
-                        <span class="text-secondary small ms-1">{{ $submission->submitted_at?->translatedFormat('d M Y H:i') }}</span>
+                    <div class="alert alert-{{ $submission->isLate() ? 'warning' : 'success' }} mb-3">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="ti ti-{{ $submission->isLate() ? 'alert-triangle' : 'circle-check-filled' }} fs-2"></i>
+                            <div><div class="fw-bold">Tugas sudah dikumpulkan</div><div class="small">{{ $submission->isLate() ? 'Terlambat' : 'Tepat waktu' }} · {{ $submission->submitted_at?->translatedFormat('d M Y H:i') }}</div></div>
+                        </div>
                         @if ($assignment->isGroup() && $submission->student)
                             <div class="text-secondary small mt-1"><i class="ti ti-upload me-1"></i>Diunggah oleh {{ $submission->student->id === auth()->id() ? 'Anda' : $submission->student->name }}</div>
                         @endif
@@ -168,7 +171,11 @@
                                     {{ $submission && $submission->file_path ? 'Ganti berkas' : 'Unggah berkas' }}
                                 </label>
                                 @if ($submission && $submission->file_path)
-                                    <div class="mb-1"><a href="{{ route('submissions.download', $submission) }}" class="btn btn-sm btn-outline-secondary"><i class="ti ti-download me-1"></i>Berkas saat ini</a></div>
+                                    <a href="{{ route('submissions.download', $submission) }}" class="d-flex align-items-center gap-2 border rounded p-2 mb-2 text-reset text-decoration-none">
+                                        <span class="avatar avatar-sm bg-blue-lt"><i class="ti ti-file-text"></i></span>
+                                        <span class="flex-fill"><span class="d-block fw-bold">Berkas yang sudah dikirim</span><span class="d-block text-secondary small">Ketuk untuk mengunduh</span></span>
+                                        <i class="ti ti-download text-secondary"></i>
+                                    </a>
                                 @endif
                                 <input type="file" name="file" accept=".pdf,.doc,.docx,.zip,.ppt,.pptx,.xls,.xlsx"
                                        class="form-control @error('file') is-invalid @enderror"
@@ -182,7 +189,7 @@
                             <small class="form-hint mb-2 d-block">Isi jawaban teks atau unggah berkas — minimal salah satu.</small>
                         @endif
 
-                        <button class="btn btn-primary w-100">
+                        <button class="btn btn-primary w-100 student-submit-action" data-loading="Mengirim tugas…">
                             <i class="ti ti-{{ $submission ? 'refresh' : 'upload' }} me-1"></i>{{ $submission ? 'Perbarui Jawaban' : 'Kumpulkan Tugas' }}
                         </button>
                         <small class="form-hint d-block mt-1 text-center">Bisa diperbarui selama belum dinilai dosen.</small>

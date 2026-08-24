@@ -25,7 +25,48 @@
         </x-empty-state>
     </div></div>
 @else
-    <div class="row row-cards">
+    @if (auth()->user()->isMahasiswa())
+        @php($todoAssignments = $assignments->filter(fn($a) => !($mySubs[$a->id] ?? null)?->submitted_at))
+        @php($submittedAssignments = $assignments->filter(fn($a) => ($mySubs[$a->id] ?? null)?->submitted_at && !($mySubs[$a->id] ?? null)?->isGraded()))
+        @php($gradedAssignments = $assignments->filter(fn($a) => ($mySubs[$a->id] ?? null)?->isGraded()))
+        <div class="d-md-none assignment-mobile-sections">
+            @foreach ([
+                ['Perlu dikerjakan', $todoAssignments, 'orange', 'ti-clock'],
+                ['Menunggu penilaian', $submittedAssignments, 'azure', 'ti-hourglass'],
+                ['Sudah dinilai', $gradedAssignments, 'green', 'ti-circle-check'],
+            ] as [$sectionTitle, $items, $sectionColor, $sectionIcon])
+                @if ($items->isNotEmpty())
+                    <section class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="ti {{ $sectionIcon }} text-{{ $sectionColor }} me-2"></i>
+                            <h2 class="h3 mb-0">{{ $sectionTitle }}</h2>
+                            <span class="badge bg-{{ $sectionColor }}-lt ms-auto">{{ $items->count() }}</span>
+                        </div>
+                        <div class="card overflow-hidden">
+                            <div class="list-group list-group-flush">
+                                @foreach ($items as $a)
+                                    @php($sub = $mySubs[$a->id] ?? null)
+                                    <a href="{{ route('assignments.show', $a) }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
+                                        <span class="avatar bg-{{ $a->isQuiz() ? 'purple' : 'blue' }}-lt flex-shrink-0"><i class="ti {{ $a->isQuiz() ? 'ti-help-circle' : 'ti-file-text' }}"></i></span>
+                                        <div class="min-w-0 flex-fill">
+                                            <div class="d-flex align-items-center gap-1"><span class="fw-bold text-truncate">{{ $a->title }}</span>@if($a->isGroup())<i class="ti ti-users text-secondary" title="Tugas kelompok"></i>@endif</div>
+                                            <div class="d-flex align-items-center gap-2 mt-1">
+                                                <span class="text-secondary small">{{ $a->isQuiz() ? 'Kuis' : 'Tugas' }}</span>
+                                                @if ($sub?->isGraded())<span class="badge bg-green-lt">Nilai {{ \App\Support\Grades::num($sub->score) }}</span>@else<x-due :date="$a->deadline" />@endif
+                                            </div>
+                                        </div>
+                                        <i class="ti ti-chevron-right text-secondary flex-shrink-0"></i>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    </section>
+                @endif
+            @endforeach
+        </div>
+    @endif
+
+    <div @class(['row row-cards', 'd-none d-md-flex' => auth()->user()->isMahasiswa()])>
         @foreach ($assignments as $a)
             @php($sub = $mySubs[$a->id] ?? null)
             <div class="col-md-6">

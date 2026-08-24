@@ -19,11 +19,12 @@ class AssignmentController extends Controller
     {
         $this->ensureCourseAccess($request, $course);
 
+        $user = $request->user();
         $assignments = $course->assignments()
+            ->when($user->isMahasiswa(), fn ($query) => $query->where('published', true))
             ->withCount('submissions')
             ->get();
 
-        $user = $request->user();
         $mySubs = $user->isMahasiswa()
             ? $user->submissions()
                 ->whereIn('assignment_id', $assignments->pluck('id'))
