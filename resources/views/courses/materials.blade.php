@@ -29,13 +29,12 @@
                     data-bs-toggle="collapse" data-bs-target="#meeting-materials-{{ $meeting->id }}" aria-expanded="{{ $isLatest ? 'true' : 'false' }}" aria-controls="meeting-materials-{{ $meeting->id }}">
                 <span class="badge bg-blue-lt flex-shrink-0">P{{ $meeting->number }}</span>
                 <span class="min-w-0 flex-fill">
-                    <span class="d-block fw-bold text-truncate">{{ $meeting->topic }}</span>
+                    <span class="d-block fw-bold material-title">{{ $meeting->topic }}</span>
                     <span class="text-secondary small">
                         {{ $meeting->materials->count() }} materi
                         @if ($meeting->date) · {{ $meeting->date->translatedFormat('d M Y') }} @endif
                     </span>
                 </span>
-                @if ($isLatest)<span class="badge bg-green-lt flex-shrink-0">Terbaru</span>@endif
                 <i class="ti ti-chevron-down material-chevron text-secondary flex-shrink-0 mt-1"></i>
             </button>
 
@@ -47,7 +46,7 @@
                             <div class="list-group-item">
                                 <button type="button" class="w-100 border-0 bg-transparent p-0 d-flex align-items-center gap-3 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#material-text-{{ $material->id }}">
                                     <span class="avatar avatar-sm bg-purple-lt"><i class="ti ti-notes"></i></span>
-                                    <span class="min-w-0 flex-fill"><span class="d-block fw-bold text-truncate">{{ $material->title }}</span><span class="text-secondary small">Materi teks · Baca</span></span>
+                                    <span class="min-w-0 flex-fill"><span class="d-block fw-bold material-title">{{ $material->title }}</span><span class="text-secondary small">Materi teks · Baca</span></span>
                                     <i class="ti ti-chevron-down material-chevron text-secondary"></i>
                                 </button>
                                 <div class="collapse" id="material-text-{{ $material->id }}">
@@ -58,7 +57,7 @@
                             <div class="list-group-item d-flex align-items-center gap-3">
                                 <span class="avatar avatar-sm bg-blue-lt"><i class="ti ti-{{ $extension === 'pdf' ? 'file-type-pdf' : 'file-text' }}"></i></span>
                                 <div class="min-w-0 flex-fill">
-                                    <div class="fw-bold text-truncate">{{ $material->title }}</div>
+                                    <div class="fw-bold material-title">{{ $material->title }}</div>
                                     <div class="text-secondary small">
                                         {{ strtoupper($extension ?: 'Berkas') }}
                                         @if ($material->size_for_humans) · {{ $material->size_for_humans }} @endif
@@ -73,7 +72,7 @@
                             @php($isVideo = $material->type === \App\Models\Material::TYPE_VIDEO)
                             <a href="{{ route('materials.preview', $material) }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
                                 <span class="avatar avatar-sm bg-{{ $isVideo ? 'red' : 'azure' }}-lt"><i class="ti ti-{{ $isVideo ? 'player-play' : 'link' }}"></i></span>
-                                <span class="min-w-0 flex-fill"><span class="d-block fw-bold text-truncate">{{ $material->title }}</span><span class="text-secondary small">{{ $isVideo ? 'Video · Tonton' : 'Tautan · Buka' }}</span></span>
+                                <span class="min-w-0 flex-fill"><span class="d-block fw-bold material-title">{{ $material->title }}</span><span class="text-secondary small">{{ $isVideo ? 'Video · Tonton' : 'Tautan · Buka' }}</span></span>
                                 <i class="ti ti-external-link text-secondary"></i>
                             </a>
                         @endif
@@ -96,6 +95,7 @@
 .material-chevron{transition:transform .2s ease;}
 [aria-expanded="true"] .material-chevron{transform:rotate(180deg);}
 .material-meeting>.card-header:hover{background:rgba(var(--tblr-primary-rgb),.06);}
+.material-title{line-height:1.35;overflow-wrap:anywhere;word-break:break-word;}
 @media (prefers-reduced-motion:reduce){.material-chevron{transition:none;}}
 </style>
 @endpush
