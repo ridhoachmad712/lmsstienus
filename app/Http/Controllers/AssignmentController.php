@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\ChecksCourseAccess;
 use App\Models\Assignment;
 use App\Models\Course;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -18,17 +19,27 @@ class AssignmentController extends Controller
     {
         $this->ensureCourseAccess($request, $course);
 
+        $user = $request->user();
         $assignments = $course->assignments()
+            ->when($user->isMahasiswa(), fn ($query) => $query->where('published', true))
             ->withCount('submissions')
             ->get();
 
-        $user = $request->user();
         $mySubs = $user->isMahasiswa()
             ? $user->submissions()
                 ->whereIn('assignment_id', $assignments->pluck('id'))
                 ->get()
                 ->keyBy('assignment_id')
             : collect();
+
+        // Tugas kelompok: pengumpulan bersama terbaca oleh semua anggota (bukan hanya pengupload).
+        if ($user->isMahasiswa()) {
+            foreach ($assignments->where('mode', Assignment::MODE_KELOMPOK) as $a) {
+                if (! $mySubs->has($a->id) && ($gsub = $a->submissionFor($user))) {
+                    $mySubs->put($a->id, $gsub);
+                }
+            }
+        }
 
         return view('assignments.index', compact('course', 'assignments', 'mySubs'));
     }
@@ -76,34 +87,10 @@ class AssignmentController extends Controller
         }
 
         if ($user->isDosen()) {
-            $assignment->load('course.students', 'rubricCriteria');
-
-            $submissions = $assignment->submissions()
-                ->with('student', 'rubricScores')
-                ->get()
-                ->sortBy('student.name');
-
-            $pending = $assignment->course->students
-                ->whereNotIn('id', $submissions->pluck('user_id'))
-                ->sortBy('name')
-                ->values();
-
-            $total = $assignment->course->students->count();
-            $stats = [
-                'total' => $total,
-                'submitted' => $submissions->count(),
-                'late' => $submissions->filter->isLate()->count(),
-                'graded' => $submissions->filter->isGraded()->count(),
-                'pending' => $pending->count(),
-                'pct' => $total > 0 ? (int) round($submissions->count() / $total * 100) : 0,
-            ];
-
-            return view('assignments.show-dosen', compact('assignment', 'submissions', 'pending', 'stats'));
+            return $this->showDosen($assignment);
         }
 
-        $submission = $assignment->submissionFor($user);
-
-        return view('assignments.show-mahasiswa', compact('assignment', 'submission'));
+        return $this->showMahasiswa($assignment, $user);
     }
 
     public function edit(Request $request, Assignment $assignment): View
@@ -139,6 +126,83 @@ class AssignmentController extends Controller
 
     // --- helpers ---
 
+    /** Halaman tugas untuk dosen — mode individu (per mahasiswa) atau kelompok (per kelompok). */
+    private function showDosen(Assignment $assignment): View
+    {
+        $assignment->load('course.students', 'rubricCriteria');
+
+        if ($assignment->isGroup()) {
+            $assignment->load(['groups.members', 'groups.submission.student', 'groups.submission.rubricScores']);
+            $groups = $assignment->groups->sortBy('name')->values();
+
+            $groupedIds = $groups->pluck('members')->flatten()->pluck('id')->unique();
+            $ungrouped = $assignment->course->students->whereNotIn('id', $groupedIds)->sortBy('name')->values();
+
+            $submittedGroups = $groups->filter(fn ($g) => $g->submission && $g->submission->submitted_at);
+            $stats = [
+                'total' => $groups->count(),
+                'submitted' => $submittedGroups->count(),
+                'late' => $groups->filter(fn ($g) => $g->submission?->isLate())->count(),
+                'graded' => $groups->filter(fn ($g) => $g->submission?->isGraded())->count(),
+                'pending' => $ungrouped->count(),
+                'pct' => $groups->count() > 0 ? (int) round($submittedGroups->count() / $groups->count() * 100) : 0,
+            ];
+
+            // Untuk modal nilai/preview & tombol unduh (dipakai bersama layout): pengumpulan kelompok.
+            $submissions = $groups->map(fn ($g) => $g->submission)->filter()->values();
+            $pending = $ungrouped; // "belum mengumpulkan" = mahasiswa belum berkelompok
+
+            return view('assignments.show-dosen', compact('assignment', 'groups', 'ungrouped', 'stats', 'submissions', 'pending'));
+        }
+
+        $submissions = $assignment->submissions()
+            ->with('student', 'rubricScores')
+            ->get()
+            ->sortBy('student.name');
+
+        $pending = $assignment->course->students
+            ->whereNotIn('id', $submissions->pluck('user_id'))
+            ->sortBy('name')
+            ->values();
+
+        $total = $assignment->course->students->count();
+        $stats = [
+            'total' => $total,
+            'submitted' => $submissions->count(),
+            'late' => $submissions->filter->isLate()->count(),
+            'graded' => $submissions->filter->isGraded()->count(),
+            'pending' => $pending->count(),
+            'pct' => $total > 0 ? (int) round($submissions->count() / $total * 100) : 0,
+        ];
+
+        return view('assignments.show-dosen', compact('assignment', 'submissions', 'pending', 'stats'));
+    }
+
+    /** Halaman tugas untuk mahasiswa — sertakan konteks kelompok bila tugas kelompok. */
+    private function showMahasiswa(Assignment $assignment, User $user): View
+    {
+        $submission = $assignment->submissionFor($user);
+        $myGroup = null;
+        $groupmateCandidates = collect();
+
+        if ($assignment->isGroup()) {
+            $assignment->load('course.students');
+            $myGroup = $assignment->groupFor($user);
+            $myGroup?->load('members', 'submission');
+
+            // Calon anggota = peserta kelas yang belum masuk kelompok mana pun pada tugas ini.
+            $groupedIds = $assignment->groups()->with('members:id')->get()
+                ->pluck('members')->flatten()->pluck('id')->unique();
+            $groupmateCandidates = $assignment->course->students
+                ->whereNotIn('id', $groupedIds)
+                ->where('id', '!=', $user->id)
+                ->sortBy('name')
+                ->values();
+        }
+
+        return view('assignments.show-mahasiswa', compact('assignment', 'submission', 'myGroup', 'groupmateCandidates'));
+    }
+
     private function showQuiz(Request $request, Assignment $assignment): View
     {
         $user = $request->user();
@@ -168,15 +232,22 @@ class AssignmentController extends Controller
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:600'],
         ];
 
-        // Bentuk jawaban hanya untuk tugas (kuis punya alur soal sendiri).
+        // Bentuk jawaban & bentuk pengerjaan hanya untuk tugas (kuis punya alur soal sendiri).
         if ($request->input('type') !== Assignment::TYPE_KUIS) {
             $rules['submission_mode'] = ['required', Rule::in(array_keys(Assignment::SUBMISSION_MODES))];
+            $rules['mode'] = ['required', 'in:individu,kelompok'];
+            $rules['group_max'] = ['nullable', 'integer', 'min:2', 'max:20', 'required_if:mode,kelompok'];
         }
 
         $data = $request->validate($rules);
 
         if (($data['type'] ?? null) === Assignment::TYPE_KUIS) {
             $data['submission_mode'] = Assignment::SUBMISSION_FILE;
+            $data['mode'] = Assignment::MODE_INDIVIDU; // kuis selalu individu
+        }
+
+        if (($data['mode'] ?? Assignment::MODE_INDIVIDU) !== Assignment::MODE_KELOMPOK) {
+            $data['group_max'] = null;
         }
 
         return $data;

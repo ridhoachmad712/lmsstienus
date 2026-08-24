@@ -37,6 +37,28 @@
         @error('submission_mode')<div class="invalid-feedback">{{ $message }}</div>@enderror
         <small class="form-hint">Cara mahasiswa mengumpulkan: unggah berkas, mengetik teks langsung, atau keduanya.</small>
     </div>
+
+    <div class="mb-3" x-data="{ mode: '{{ old('mode', $assignment->mode ?? 'individu') }}' }">
+        <label class="form-label required">Bentuk Tugas</label>
+        <div class="row g-2">
+            <div class="col-md-6">
+                <select name="mode" class="form-select" x-model="mode">
+                    <option value="individu">Individu</option>
+                    <option value="kelompok">Kelompok</option>
+                </select>
+            </div>
+            <div class="col-md-6" x-show="mode === 'kelompok'" x-cloak>
+                <div class="input-group">
+                    <span class="input-group-text">Maks</span>
+                    <input type="number" name="group_max" class="form-control @error('group_max') is-invalid @enderror" min="2" max="20"
+                           value="{{ old('group_max', $assignment->group_max ?? 5) }}" placeholder="anggota / kelompok">
+                    <span class="input-group-text">anggota</span>
+                </div>
+                @error('group_max')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+            </div>
+        </div>
+        <small class="form-hint">Kelompok: mahasiswa memilih anggota sendiri dari peserta kelas; cukup 1 orang mengumpulkan untuk seluruh anggota.</small>
+    </div>
 @endif
 
 <div class="row">

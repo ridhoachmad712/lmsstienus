@@ -30,18 +30,25 @@
             .alert{border-radius:var(--tblr-border-radius) !important;}
         }
         body{transition:background-color .2s ease, color .2s ease;}
+        .navbar .nav-link,.dropdown-item,.mobile-more-link{transition:color .15s ease,background-color .15s ease,transform .15s ease;}
+        .navbar .nav-link:hover{color:var(--tblr-primary);background:rgba(var(--tblr-primary-rgb),.08);text-decoration:none;}
+        .dropdown-item:hover,.dropdown-item:focus{color:var(--tblr-primary);background:rgba(var(--tblr-primary-rgb),.08);text-decoration:none;transform:translateX(2px);}
         .card-lift{transition:transform .15s ease, box-shadow .15s ease;}
         .card-lift:hover{transform:translateY(-3px);box-shadow:0 .5rem 1.25rem rgba(0,0,0,.13);}
         /* Kartu kelas diarsipkan: redupkan isi tapi tombol tetap bisa diklik */
         .course-archived .card-body{opacity:.6;}
         /* Token panjang dalam <code> jangan memaksa lebar (overflow horizontal di HP) */
         code{overflow-wrap:anywhere;word-break:break-word;}
+        .card,.card-body,.card-header,.card-footer,.list-group-item{min-width:0;}
+        .card-title,.page-title,.fw-bold,.fw-semibold{overflow-wrap:anywhere;}
         /* Sub-nav kelas: 1 baris yang bisa digeser di layar kecil */
         .lms-subnav{scrollbar-width:thin;-ms-overflow-style:none;}
         .lms-subnav::-webkit-scrollbar{height:4px;}
         .lms-subnav::-webkit-scrollbar-thumb{background:var(--tblr-border-color);border-radius:4px;}
         /* Judul hero kelas: lebih kecil di HP */
         .course-hero-title{font-size:1.4rem;line-height:1.2;overflow-wrap:anywhere;}
+        @media (min-width:576px){.w-sm-auto{width:auto !important;}}
+        @media (min-width:768px){.w-md-auto{width:auto !important;}}
         @media (min-width:768px){.course-hero-title{font-size:1.9rem;}}
         /* Skeleton loading (shimmer) */
         .skeleton{position:relative;overflow:hidden;background:var(--tblr-border-color,#e6e7e9);border-radius:var(--tblr-border-radius,4px);}
@@ -55,10 +62,83 @@
             --tblr-primary-rgb: {{ $themeColorRgb }};
             --tblr-primary-darken: color-mix(in srgb, {{ $themeColor }}, #000 12%);
         }
+        /* ============ Penghalusan tampilan mobile (≤575px) ============ */
+        @media (max-width: 575.98px) {
+            body.student-mobile-ui{background:var(--tblr-bg-surface-secondary,#f6f8fb);}
+            body.student-mobile-ui .page{min-height:100dvh;padding-bottom:calc(4.75rem + env(safe-area-inset-bottom));}
+            body.student-mobile-ui .navbar{display:none !important;}
+            body.student-mobile-ui .navbar .container-xl{padding-left:1rem;padding-right:.75rem;}
+            body.student-mobile-ui .navbar-toggler,
+            body.student-mobile-ui #navbar-menu{display:none !important;}
+            body.student-mobile-ui .navbar-brand{max-width:58%;margin:0;}
+            body.student-mobile-ui .navbar-brand .brand-logo{max-width:2rem;object-fit:contain;}
+            body.student-mobile-ui .navbar-brand .fs-2{font-size:1rem !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+            body.student-mobile-ui .navbar-nav .nav-link{min-width:2.75rem;min-height:2.75rem;justify-content:center;}
+            body.student-mobile-ui .page-wrapper{min-height:0;flex:1 1 auto;}
+            body.student-mobile-ui .page-body{margin-top:.75rem;}
+            body.student-mobile-ui .page-body>.container-xl,
+            body.student-mobile-ui .page-header .container-xl{padding-left:1rem;padding-right:1rem;}
+            body.student-mobile-ui .page-header{padding-top:1rem;padding-bottom:0;}
+            body.student-mobile-ui .page-pretitle{font-size:.7rem;letter-spacing:.04em;}
+            body.student-mobile-ui .page-title{font-size:1.35rem;line-height:1.25;}
+            body.student-mobile-ui .footer{display:none;}
+            body.student-mobile-ui .card{border-radius:.875rem !important;box-shadow:0 1px 3px rgba(35,46,60,.06);}
+            body.student-mobile-ui .card-body,
+            body.student-mobile-ui .list-group-item{overflow-wrap:anywhere;}
+            body.student-mobile-ui .badge{max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;}
+            body.student-mobile-ui .btn:not(.btn-icon){max-width:100%;white-space:normal;}
+            body.student-mobile-ui input,
+            body.student-mobile-ui select,
+            body.student-mobile-ui textarea{max-width:100%;}
+            body.student-mobile-ui .alert,
+            body.student-mobile-ui .form-hint,
+            body.student-mobile-ui .dropdown-item{overflow-wrap:anywhere;}
+            body.student-mobile-ui .d-flex>div,
+            body.student-mobile-ui .d-flex>span{min-width:0;}
+            body.student-mobile-ui .empty{padding:1rem .5rem;}
+            body.student-mobile-ui .empty .empty-icon{margin-bottom:.5rem !important;}
+            body.student-mobile-ui .empty .empty-icon .avatar{width:2.75rem;height:2.75rem;}
+            body.student-mobile-ui .empty .empty-icon i{font-size:1.4rem !important;}
+            body.student-mobile-ui .empty .empty-title{margin-bottom:.25rem;font-size:.95rem;}
+            body.student-mobile-ui .empty .empty-subtitle{margin-bottom:.75rem;font-size:.78rem;}
+            body.student-mobile-ui .list-group-item{min-height:4rem;padding:.8rem 1rem;}
+            body.student-mobile-ui .btn:not(.btn-sm):not(.btn-link){min-height:2.75rem;}
+            body.student-mobile-ui .toast-container{bottom:calc(4.75rem + env(safe-area-inset-bottom)) !important;padding:.75rem !important;width:100%;}
+            .page-title{font-size:1.2rem;}
+            .page-header{padding-top:.75rem;padding-bottom:.25rem;}
+            /* Aksi halaman: turun penuh & boleh membungkus rapi di bawah judul */
+            .page-header .btn-list{width:100%;flex-wrap:wrap;}
+            /* Hero kelas rapi saat elemen menumpuk */
+            .course-hero .card-body{gap:.75rem;}
+            /* Target sentuh tombol ikon lebih nyaman */
+            .btn-icon{min-width:2.25rem;min-height:2.25rem;}
+        }
+        .mobile-bottom-nav{display:none;}
+        @media (max-width:575.98px){
+            .mobile-bottom-nav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;z-index:1080;left:0;right:0;bottom:0;min-height:4.25rem;padding:.35rem .35rem calc(.35rem + env(safe-area-inset-bottom));background:var(--tblr-bg-surface);border-top:1px solid var(--tblr-border-color);box-shadow:0 -.25rem 1rem rgba(35,46,60,.08);}
+            .mobile-bottom-nav__item{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1rem;min-height:3.55rem;border:0;background:transparent;color:var(--tblr-secondary-color);font-size:.68rem;font-weight:600;text-decoration:none;border-radius:.75rem;}
+            .mobile-bottom-nav__item i{font-size:1.45rem;line-height:1;}
+            .mobile-bottom-nav__item.active{color:var(--tblr-primary);}
+            .mobile-bottom-nav__item{transition:color .15s ease,background-color .15s ease,transform .15s ease;}
+            .mobile-bottom-nav__item:hover{color:var(--tblr-primary);background:rgba(var(--tblr-primary-rgb),.08);text-decoration:none;transform:translateY(-1px);}
+            .mobile-bottom-nav__badge{position:absolute;top:.15rem;left:calc(50% + .45rem);min-width:1rem;padding:.05rem .25rem;border-radius:2rem;background:var(--tblr-danger);color:#fff;font-size:.58rem;text-align:center;}
+            .mobile-more-sheet{z-index:1090;height:auto !important;max-height:82vh;border-radius:1.25rem 1.25rem 0 0;}
+            .mobile-more-sheet .offcanvas-header{padding:1rem 1.25rem .5rem;}
+            .mobile-more-profile{display:flex;align-items:center;gap:.75rem;padding:.85rem;border-radius:.875rem;background:var(--tblr-bg-surface-secondary);}
+            .mobile-more-section-title{margin:.9rem 0 .4rem;color:var(--tblr-secondary-color);font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;}
+            .mobile-more-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;}
+            .mobile-more-link{display:flex;min-width:0;min-height:5.25rem;padding:.75rem .35rem;flex-direction:column;align-items:center;justify-content:center;gap:.45rem;border:1px solid var(--tblr-border-color);border-radius:.875rem;color:inherit;text-decoration:none;text-align:center;font-size:.75rem;font-weight:600;}
+            .mobile-more-link i{font-size:1.5rem;color:var(--tblr-primary);}
+            .mobile-more-link:hover,.mobile-more-link:focus{color:var(--tblr-primary);background:rgba(var(--tblr-primary-rgb),.08);border-color:rgba(var(--tblr-primary-rgb),.35);text-decoration:none;transform:translateY(-2px);}
+            .mobile-more-logout{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;min-height:2.75rem;margin-top:1rem;border:1px solid rgba(var(--tblr-danger-rgb),.25);border-radius:.875rem;background:transparent;color:var(--tblr-danger);font-weight:600;}
+        }
+        @media (prefers-reduced-motion:reduce){
+            .navbar .nav-link,.dropdown-item,.mobile-bottom-nav__item,.mobile-more-link{transition:none !important;transform:none !important;}
+        }
     </style>
     @stack('styles')
 </head>
-<body>
+<body @class(['student-mobile-ui' => auth()->user()?->isMahasiswa()])>
 <div id="nprogress"></div>
 <div class="page">
     @php($user = auth()->user())
@@ -359,6 +439,57 @@
         </footer>
     </div>
 </div>
+
+@if ($user->isMahasiswa())
+    @php($mobileHomeActive = request()->routeIs('dashboard*'))
+    @php($mobileCoursesActive = request()->routeIs('courses.*', 'materials.*', 'assignments.*', 'quizzes.*', 'submissions.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*'))
+    @php($mobileCalendarActive = request()->routeIs('calendar'))
+    <nav class="mobile-bottom-nav d-print-none" aria-label="Navigasi utama">
+        <a href="{{ route('dashboard') }}" class="mobile-bottom-nav__item {{ $mobileHomeActive ? 'active' : '' }}" aria-current="{{ $mobileHomeActive ? 'page' : 'false' }}">
+            <i class="ti ti-home"></i><span>Beranda</span>
+        </a>
+        <a href="{{ route('courses.index') }}" class="mobile-bottom-nav__item {{ $mobileCoursesActive ? 'active' : '' }}" aria-current="{{ $mobileCoursesActive ? 'page' : 'false' }}">
+            <i class="ti ti-books"></i><span>Kelas</span>
+        </a>
+        <a href="{{ route('calendar') }}" class="mobile-bottom-nav__item {{ $mobileCalendarActive ? 'active' : '' }}" aria-current="{{ $mobileCalendarActive ? 'page' : 'false' }}">
+            <i class="ti ti-calendar"></i><span>Kalender</span>
+        </a>
+        @php($mobileUnread = $user->notifications()->unread()->count())
+        <button class="mobile-bottom-nav__item" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobile-more-menu" aria-controls="mobile-more-menu">
+            <i class="ti ti-menu-2"></i><span>Lainnya</span>
+            @if($mobileUnread)<span class="mobile-bottom-nav__badge">{{ $mobileUnread > 99 ? '99+' : $mobileUnread }}</span>@endif
+        </button>
+    </nav>
+
+    <div class="offcanvas offcanvas-bottom mobile-more-sheet d-print-none" tabindex="-1" id="mobile-more-menu" aria-labelledby="mobile-more-title">
+        <div class="offcanvas-header">
+            <div>
+                <div class="text-secondary small">Menu mahasiswa</div>
+                <h2 class="offcanvas-title" id="mobile-more-title">Lainnya</h2>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Tutup"></button>
+        </div>
+        <div class="offcanvas-body pt-2 pb-4">
+            <div class="mobile-more-profile">
+                <x-avatar :name="$user->name" :url="$user->avatarUrl()" size="md" />
+                <div class="min-w-0"><div class="fw-bold text-truncate">{{ $user->name }}</div><div class="small text-secondary text-truncate">{{ $user->nim_nip ?: 'Mahasiswa' }}</div></div>
+            </div>
+            <div class="mobile-more-section-title">Akademik</div>
+            <div class="mobile-more-grid">
+                <a href="{{ route('dashboard.mahasiswa') }}#pengingat" class="mobile-more-link"><i class="ti ti-checklist"></i><span>Pengingat</span></a>
+                <a href="{{ route('notifications.index') }}" class="mobile-more-link position-relative"><i class="ti ti-bell"></i><span>Notifikasi</span>@if($mobileUnread)<span class="badge bg-red text-white position-absolute top-0 end-0 m-2">{{ $mobileUnread }}</span>@endif</a>
+                <a href="{{ route('enrollments.join.show') }}" class="mobile-more-link"><i class="ti ti-key"></i><span>Gabung Kelas</span></a>
+            </div>
+            <div class="mobile-more-section-title">Akun & Bantuan</div>
+            <div class="mobile-more-grid">
+                <a href="{{ route('profile.edit') }}" class="mobile-more-link"><i class="ti ti-user"></i><span>Profil</span></a>
+                <a href="{{ route('panduan') }}" class="mobile-more-link"><i class="ti ti-help-circle"></i><span>Panduan</span></a>
+            </div>
+            <button type="submit" form="mobile-logout-form" class="mobile-more-logout"><i class="ti ti-logout"></i><span>Keluar dari akun</span></button>
+            <form id="mobile-logout-form" method="POST" action="{{ route('logout') }}" class="d-none">@csrf</form>
+        </div>
+    </div>
+@endif
 
 {{-- Toast container (untuk flash message) --}}
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1090;">

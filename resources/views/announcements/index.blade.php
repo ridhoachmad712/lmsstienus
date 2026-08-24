@@ -16,9 +16,9 @@
         @forelse ($announcements as $a)
             <div class="card mb-3">
                 <div class="card-body">
-                    <div class="d-flex">
-                        <span class="avatar bg-orange-lt me-3"><i class="ti ti-speakerphone"></i></span>
-                        <div class="flex-fill">
+                    <div class="d-flex align-items-start gap-3">
+                        <span class="avatar avatar-sm bg-orange-lt flex-shrink-0"><i class="ti ti-speakerphone"></i></span>
+                        <div class="flex-fill min-w-0">
                             <div class="d-flex">
                                 <h3 class="card-title mb-0">{{ $a->title }}</h3>
                                 @if (auth()->user()->isDosen())
@@ -28,8 +28,9 @@
                                     </form>
                                 @endif
                             </div>
-                            <div class="text-secondary small mb-2">{{ $a->author->name }} · {{ $a->created_at->translatedFormat('d M Y H:i') }}</div>
-                            <div style="white-space:pre-line">{{ $a->content }}</div>
+                            <div class="text-secondary small mt-1">{{ $a->author->name }}</div>
+                            <time class="d-block text-secondary small mb-2" datetime="{{ $a->created_at->toIso8601String() }}">{{ $a->created_at->translatedFormat('d M Y, H:i') }}</time>
+                            <div class="announcement-content" style="white-space:pre-line">{{ $a->content }}</div>
                         </div>
                     </div>
                 </div>

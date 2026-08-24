@@ -39,6 +39,22 @@ class GradeCalculator
             ->get()
             ->groupBy('user_id');
 
+        // Tugas kelompok: pengumpulan bersama dipetakan ke SEMUA anggota → [assignment_id][user_id] => submission.
+        $groupSubs = [];
+        $groupAssignmentIds = $assignments->where('mode', \App\Models\Assignment::MODE_KELOMPOK)->pluck('id');
+        if ($groupAssignmentIds->isNotEmpty()) {
+            $groups = \App\Models\AssignmentGroup::whereIn('assignment_id', $groupAssignmentIds)
+                ->with(['members:id', 'submission'])
+                ->get();
+            foreach ($groups as $g) {
+                if ($g->submission && ! is_null($g->submission->score)) {
+                    foreach ($g->members as $m) {
+                        $groupSubs[$g->assignment_id][$m->id] = $g->submission;
+                    }
+                }
+            }
+        }
+
         // Nilai manual (untuk komponen tanpa tugas online) → [component_id][user_id]
         $manual = \App\Models\GradeScore::whereIn('grade_component_id', $components->pluck('id'))
             ->whereNotNull('score')
@@ -46,38 +62,42 @@ class GradeCalculator
             ->groupBy('grade_component_id')
             ->map(fn ($g) => $g->keyBy('user_id'));
 
-        $rows = $students->map(function (User $student) use ($components, $assignmentsByComponent, $submissions, $manual, $attendancePercents) {
+        $rows = $students->map(function (User $student) use ($components, $assignmentsByComponent, $submissions, $groupSubs, $manual, $attendancePercents) {
             $studentSubs = ($submissions->get($student->id) ?? collect())->keyBy('assignment_id');
             $componentScores = [];
+            $overrides = [];
             $final = 0.0;
 
             foreach ($components as $component) {
                 $compAssignments = $assignmentsByComponent->get($component->id) ?? collect();
+                $override = $manual->get($component->id)?->get($student->id);
+                $isOverride = false;
 
-                if ($component->isAttendance()) {
+                if ($override) {
+                    // Nilai manual dosen SELALU diutamakan — termasuk override atas
+                    // komponen otomatis (dosen tetap berkuasa mengedit).
+                    $score = (float) $override->score;
+                    $isOverride = true;
+                } elseif ($component->isAttendance()) {
                     // Otomatis dari persentase kehadiran; 0 bila belum ada sesi.
                     $percent = $attendancePercents[$student->id] ?? null;
                     $score = round((float) ($percent ?? 0), 2);
                 } elseif ($compAssignments->isNotEmpty()) {
-                    // Otomatis dari tugas/kuis yang ditautkan.
-                    // Setiap tugas dihitung: yang belum dikumpulkan atau belum
-                    // dinilai dianggap 0 (sementara), otomatis berubah setelah
-                    // mahasiswa mengumpulkan dan diberi nilai.
+                    // Otomatis dari tugas/kuis yang ditautkan (belum dikumpulkan = 0).
                     $percents = [];
                     foreach ($compAssignments as $a) {
-                        $sub = $studentSubs->get($a->id);
+                        $sub = $studentSubs->get($a->id) ?? ($groupSubs[$a->id][$student->id] ?? null);
                         $percents[] = ($sub && $a->max_score > 0)
                             ? (float) $sub->score / $a->max_score * 100
                             : 0.0;
                     }
                     $score = round(array_sum($percents) / count($percents), 2);
                 } else {
-                    // Nilai manual (skala 0–100)
-                    $entry = $manual->get($component->id)?->get($student->id);
-                    $score = $entry ? (float) $entry->score : null;
+                    $score = null; // komponen manual, belum diisi
                 }
 
                 $componentScores[$component->id] = $score;
+                $overrides[$component->id] = $isOverride;
                 $final += ($score ?? 0) * $component->weight / 100;
             }
 
@@ -86,6 +106,7 @@ class GradeCalculator
             return [
                 'student' => $student,
                 'components' => $componentScores,
+                'overrides' => $overrides,
                 'final' => $final,
                 'letter' => Grades::letter($final),
             ];

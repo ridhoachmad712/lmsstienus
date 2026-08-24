@@ -43,8 +43,45 @@
 @section('content')
 @include('courses._hero')
 
+@unless ($isDosen)
+<div class="course-student-home">
+    @if ($nextAssignment)
+        <div class="card border-primary mb-3">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <span class="avatar bg-orange-lt"><i class="ti ti-checklist fs-2"></i></span>
+                    <div class="min-w-0 flex-fill">
+                        <div class="text-uppercase text-primary fw-bold" style="font-size:.68rem;letter-spacing:.05em">Tugas berikutnya</div>
+                        <div class="fw-bold text-truncate">{{ $nextAssignment->title }}</div>
+                        <div class="d-flex align-items-center gap-2 mt-1"><x-due :date="$nextAssignment->deadline" />@if($nextAssignment->deadline)<span class="text-secondary small">{{ $nextAssignment->deadline->format('H:i') }}</span>@endif</div>
+                    </div>
+                </div>
+                <a href="{{ route('assignments.show', $nextAssignment) }}" class="btn btn-primary w-100 mt-3">Buka Tugas</a>
+            </div>
+        </div>
+    @endif
+
+    @if ($nextMeeting)
+        <div class="mb-4">
+            <h2 class="h3 mb-2">Pertemuan Berikutnya</h2>
+            <div class="card"><div class="card-body d-flex align-items-center gap-3 py-2 px-3">
+                <time datetime="{{ $nextMeeting->date->format('Y-m-d') }}" class="text-center flex-shrink-0" style="width:2.5rem">
+                    <span class="d-block fw-bold fs-3 lh-1">{{ $nextMeeting->date->format('d') }}</span>
+                    <span class="d-block text-secondary text-uppercase" style="font-size:.68rem">{{ $nextMeeting->date->translatedFormat('M') }}</span>
+                </time>
+                <div class="min-w-0 flex-fill">
+                    <div class="fw-semibold text-truncate">{{ $nextMeeting->topic }}</div>
+                    <div class="text-secondary small text-truncate">Pertemuan {{ $nextMeeting->number }}@if($nextMeeting->location) · {{ $nextMeeting->location }}@endif</div>
+                </div>
+            </div></div>
+        </div>
+    @endif
+
+</div>
+@endunless
+
 {{-- ============ PERTEMUAN & MATERI ============ --}}
-<div>
+<div @class(['d-none' => ! $isDosen])>
                 @if ($isDosen && ! $course->isCompleted())
                     @php($maxMeetings = \App\Http\Controllers\MeetingController::MAX_MEETINGS)
                     <div class="mb-3 d-flex align-items-center">
@@ -61,30 +98,36 @@
                     </div>
                 @endif
 
+                @if ($course->meetings->isNotEmpty())
+                    <div class="mb-3 d-flex align-items-center gap-2">
+                        <span class="text-secondary small me-auto"><i class="ti ti-folder me-1"></i>{{ $course->meetings->count() }} pertemuan</span>
+                        <button type="button" class="btn btn-sm" id="expand-all-meetings"><i class="ti ti-chevrons-down me-1"></i>Buka semua</button>
+                        <button type="button" class="btn btn-sm" id="collapse-all-meetings"><i class="ti ti-chevrons-up me-1"></i>Tutup semua</button>
+                    </div>
+                @endif
+
                 @forelse ($course->meetings as $meeting)
                     <div class="card mb-3 overflow-hidden">
-                        <div class="card-header d-flex flex-wrap align-items-center gap-2">
-                            <a class="me-auto d-flex align-items-center text-reset text-decoration-none collapsed" role="button"
+                        <div class="card-header d-flex flex-wrap align-items-start gap-2">
+                            <a class="me-auto d-flex align-items-start text-reset text-decoration-none collapsed gap-2" role="button" style="min-width:0"
                                data-bs-toggle="collapse" href="#meeting-{{ $meeting->id }}" aria-expanded="false" aria-controls="meeting-{{ $meeting->id }}">
-                                <i class="ti ti-chevron-down meeting-chevron me-2 text-secondary"></i>
-                                <span>
-                                    <span class="badge bg-blue-lt me-2">Pertemuan {{ $meeting->number }}</span>
-                                    @if ($meeting->isMandiri())
-                                        <span class="badge bg-purple-lt me-2" title="Mandiri (Full LMS)"><i class="ti ti-device-laptop me-1"></i>Mandiri</span>
-                                    @else
-                                        <span class="badge bg-azure-lt me-2" title="Tatap Muka"><i class="ti ti-users me-1"></i>Tatap Muka</span>
-                                    @endif
-                                    <strong>{{ $meeting->topic }}</strong>
-                                    @if ($meeting->date)
-                                        <span class="text-secondary ms-2 small text-nowrap"><i class="ti ti-calendar-event"></i> {{ $meeting->date->translatedFormat('d M Y') }}</span>
-                                    @endif
-                                    @if ($meeting->isTatapMuka() && $meeting->location)
-                                        <span class="text-secondary ms-2 small text-nowrap"><i class="ti ti-map-pin"></i> {{ $meeting->location }}</span>
-                                    @endif
-                                    <span class="badge bg-secondary-lt ms-2">{{ $meeting->materials->count() }} materi</span>
-                                    @if ($meeting->assignments->count())
-                                        <span class="badge bg-secondary-lt ms-1">{{ $meeting->assignments->count() }} tugas/kuis</span>
-                                    @endif
+                                <i class="ti ti-chevron-down meeting-chevron text-secondary mt-1 flex-shrink-0"></i>
+                                <span class="d-block" style="min-width:0">
+                                    <span class="d-flex flex-wrap align-items-center gap-1 mb-1">
+                                        <span class="badge bg-blue-lt">Pertemuan {{ $meeting->number }}</span>
+                                        @if ($meeting->isMandiri())
+                                            <span class="badge bg-purple-lt" title="Mandiri (Full LMS)"><i class="ti ti-device-laptop me-1"></i>Mandiri</span>
+                                        @else
+                                            <span class="badge bg-azure-lt" title="Tatap Muka"><i class="ti ti-users me-1"></i>Tatap Muka</span>
+                                        @endif
+                                    </span>
+                                    <span class="d-block fw-bold">{{ $meeting->topic }}</span>
+                                    <span class="d-flex flex-wrap text-secondary small mt-1" style="gap:.15rem .75rem">
+                                        @if ($meeting->date)<span class="text-nowrap"><i class="ti ti-calendar-event me-1"></i>{{ $meeting->date->translatedFormat('d M Y') }}</span>@endif
+                                        @if ($meeting->isTatapMuka() && $meeting->location)<span class="text-nowrap"><i class="ti ti-map-pin me-1"></i>{{ $meeting->location }}</span>@endif
+                                        <span class="text-nowrap"><i class="ti ti-file-text me-1"></i>{{ $meeting->materials->count() }} materi</span>
+                                        @if ($meeting->assignments->count())<span class="text-nowrap"><i class="ti ti-checklist me-1"></i>{{ $meeting->assignments->count() }} tugas/kuis</span>@endif
+                                    </span>
                                 </span>
                             </a>
                             @if ($isDosen && ! $course->isCompleted())
@@ -119,18 +162,21 @@
                                     </form>
                                 </div>
                             @endif
+                            {{-- Presensi mandiri (mahasiswa): chip ringkas & konsisten di kanan-atas kartu --}}
                             @if (! $isDosen && $meeting->isMandiri())
                                 @php($myAtt = $myAttendance[$meeting->id] ?? null)
-                                @if ($myAtt && $myAtt->status === 'hadir')
-                                    <span class="badge bg-green-lt"><i class="ti ti-checks me-1"></i>Hadir</span>
-                                @elseif ($meeting->activeToken())
-                                    <form method="POST" action="{{ route('attendance.selfAttend', $meeting) }}">
-                                        @csrf
-                                        <button class="btn btn-sm btn-primary"><i class="ti ti-user-check me-1"></i>Tandai Hadir</button>
-                                    </form>
-                                @else
-                                    <span class="badge bg-secondary-lt" title="Dosen belum membuka presensi">Presensi belum dibuka</span>
-                                @endif
+                                <div class="flex-shrink-0 ms-auto">
+                                    @if ($myAtt && $myAtt->status === 'hadir')
+                                        <span class="badge bg-green-lt py-2"><i class="ti ti-circle-check-filled me-1"></i>Hadir</span>
+                                    @elseif ($meeting->attendanceOpen())
+                                        <form method="POST" action="{{ route('attendance.selfAttend', $meeting) }}">
+                                            @csrf
+                                            <button class="btn btn-sm btn-outline-green"><i class="ti ti-user-check me-1"></i>Tandai hadir</button>
+                                        </form>
+                                    @else
+                                        <span class="badge bg-secondary-lt py-2" title="Dosen belum membuka presensi"><i class="ti ti-clock me-1"></i>Absensi Belum Dibuka</span>
+                                    @endif
+                                </div>
                             @endif
                         </div>
                         <div class="collapse" id="meeting-{{ $meeting->id }}">
@@ -359,6 +405,14 @@
                                                 <label class="form-label">Tanggal</label>
                                                 <input type="date" name="date" class="form-control" value="{{ $meeting->date?->format('Y-m-d') }}">
                                             </div>
+                                            <div class="col-12 mb-2">
+                                                <label class="form-label">Jadwal absensi otomatis <span class="text-secondary">(opsional)</span></label>
+                                                <div class="row g-2">
+                                                    <div class="col-6"><input type="datetime-local" name="attend_opens_at" class="form-control form-control-sm" value="{{ $meeting->attend_opens_at?->format('Y-m-d\TH:i') }}" aria-label="Absensi buka"></div>
+                                                    <div class="col-6"><input type="datetime-local" name="attend_closes_at" class="form-control form-control-sm" value="{{ $meeting->attend_closes_at?->format('Y-m-d\TH:i') }}" aria-label="Absensi tutup"></div>
+                                                </div>
+                                                <small class="form-hint">Kosongkan = absensi otomatis terbuka sepanjang hari tanggal pertemuan. Isi untuk menentukan jam buka–tutup sendiri.</small>
+                                            </div>
                                             <div class="col-12 mb-3">
                                                 <label class="form-label required">Jenis Pertemuan</label>
                                                 <select name="type" class="form-select" x-model="mtype">
@@ -414,6 +468,14 @@
                         <div class="col-8 mb-3">
                             <label class="form-label">Tanggal</label>
                             <input type="date" name="date" class="form-control">
+                        </div>
+                        <div class="col-12 mb-2">
+                            <label class="form-label">Jadwal absensi otomatis <span class="text-secondary">(opsional)</span></label>
+                            <div class="row g-2">
+                                <div class="col-6"><input type="datetime-local" name="attend_opens_at" class="form-control form-control-sm" aria-label="Absensi buka"></div>
+                                <div class="col-6"><input type="datetime-local" name="attend_closes_at" class="form-control form-control-sm" aria-label="Absensi tutup"></div>
+                            </div>
+                            <small class="form-hint">Kosongkan = absensi otomatis terbuka sepanjang hari tanggal pertemuan. Isi untuk menentukan jam buka–tutup sendiri.</small>
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label required">Jenis Pertemuan</label>
@@ -489,6 +551,23 @@
         });
         // Hentikan pemuatan saat modal ditutup.
         modal.addEventListener('hidden.bs.modal', function () { frame.src = ''; });
+    })();
+
+    // Buka/tutup semua pertemuan sekaligus (memudahkan menelusuri materi).
+    (function () {
+        var bs = window.bootstrap;
+        if (!bs) return;
+        var panels = function () { return document.querySelectorAll('.collapse[id^="meeting-"]'); };
+        function setAll(open) {
+            panels().forEach(function (el) {
+                var c = bs.Collapse.getOrCreateInstance(el, { toggle: false });
+                open ? c.show() : c.hide();
+            });
+        }
+        var e = document.getElementById('expand-all-meetings');
+        var k = document.getElementById('collapse-all-meetings');
+        if (e) e.addEventListener('click', function () { setAll(true); });
+        if (k) k.addEventListener('click', function () { setAll(false); });
     })();
 </script>
 @endpush

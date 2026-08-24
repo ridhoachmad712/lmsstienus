@@ -23,6 +23,7 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CampusAnnouncementController;
 use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\AssignmentGroupController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ProfileController;
@@ -126,6 +127,7 @@ Route::middleware('auth')->group(function () {
     // Kelas — index & show untuk kedua role (otorisasi di controller)
     Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
     Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
+    Route::get('/courses/{course}/materials', [CourseController::class, 'materials'])->name('courses.materials');
 
     // Materi — preview (inline) & download untuk kedua role
     Route::get('/materials/{material}/preview', [MaterialController::class, 'preview'])->name('materials.preview');
@@ -146,6 +148,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/submissions/{submission}/download', [SubmissionController::class, 'download'])->name('submissions.download');
     Route::delete('/submissions/{submission}', [SubmissionController::class, 'destroy'])->name('submissions.destroy');
 
+    // Kelompok tugas (mahasiswa membentuk; dosen boleh mengatur — otorisasi di controller)
+    Route::post('/assignments/{assignment}/groups', [AssignmentGroupController::class, 'store'])->name('assignment-groups.store');
+    Route::post('/assignment-groups/{group}/members', [AssignmentGroupController::class, 'addMember'])->name('assignment-groups.addMember');
+    Route::delete('/assignment-groups/{group}/members/{member}', [AssignmentGroupController::class, 'removeMember'])->name('assignment-groups.removeMember');
+    Route::delete('/assignment-groups/{group}', [AssignmentGroupController::class, 'destroy'])->name('assignment-groups.destroy');
+
     // Kuis — kerjakan & review (mahasiswa + dosen review)
     Route::get('/assignments/{assignment}/take', [QuizController::class, 'take'])->name('quizzes.take');
     Route::post('/assignments/{assignment}/take', [QuizController::class, 'submit'])
@@ -163,6 +171,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/courses/{course}/forum', [ForumController::class, 'storeThread'])->name('forum.threads.store');
     Route::get('/forum/{thread}', [ForumController::class, 'show'])->name('forum.show');
     Route::post('/forum/{thread}/replies', [ForumController::class, 'storeReply'])->name('forum.replies.store');
+    Route::put('/forum/{thread}', [ForumController::class, 'updateThread'])->name('forum.threads.update');
+    Route::put('/forum-replies/{reply}', [ForumController::class, 'updateReply'])->name('forum.replies.update');
     Route::delete('/forum/{thread}', [ForumController::class, 'destroyThread'])->name('forum.threads.destroy');
     Route::delete('/forum-replies/{reply}', [ForumController::class, 'destroyReply'])->name('forum.replies.destroy');
 

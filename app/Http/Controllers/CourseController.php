@@ -180,6 +180,10 @@ class CourseController extends Controller
 
         $readiness = [];
         $myAttendance = collect();
+        $studentAssignments = collect();
+        $studentSubmissions = collect();
+        $nextAssignment = null;
+        $nextMeeting = null;
 
         if ($isDosen) {
             $readiness = $this->completionReadiness($course, $calc);
@@ -188,9 +192,41 @@ class CourseController extends Controller
             $myAttendance = \App\Models\Attendance::where('user_id', $request->user()->id)
                 ->whereIn('meeting_id', $course->meetings->pluck('id'))
                 ->get()->keyBy('meeting_id');
+
+            $studentAssignments = $course->assignments()
+                ->where('published', true)
+                ->with('meeting')
+                ->orderByRaw('deadline IS NULL, deadline ASC')
+                ->get();
+            $studentSubmissions = $request->user()->submissions()
+                ->whereIn('assignment_id', $studentAssignments->pluck('id'))
+                ->get()->keyBy('assignment_id');
+
+            foreach ($studentAssignments->where('mode', \App\Models\Assignment::MODE_KELOMPOK) as $assignment) {
+                if (! $studentSubmissions->has($assignment->id) && ($submission = $assignment->submissionFor($request->user()))) {
+                    $studentSubmissions->put($assignment->id, $submission);
+                }
+            }
+
+            $nextAssignment = $studentAssignments->first(fn ($assignment) => ! $studentSubmissions->has($assignment->id));
+            $nextMeeting = $course->meetings->first(fn ($meeting) => $meeting->date && $meeting->date->isToday())
+                ?? $course->meetings->first(fn ($meeting) => $meeting->date && $meeting->date->isFuture());
         }
 
-        return view('courses.show', compact('course', 'isDosen', 'readiness', 'myAttendance'));
+        return view('courses.show', compact(
+            'course', 'isDosen', 'readiness', 'myAttendance',
+            'studentAssignments', 'studentSubmissions', 'nextAssignment', 'nextMeeting'
+        ));
+    }
+
+    /** Halaman materi terpisah agar beranda mata kuliah tetap ringkas. */
+    public function materials(Request $request, Course $course): View
+    {
+        $this->authorizeView($request, $course);
+
+        $course->load(['lecturer', 'meetings.materials'])->loadCount('students');
+
+        return view('courses.materials', compact('course'));
     }
 
     /** Daftar mahasiswa kelas (tab tersendiri, khusus dosen pemilik). */

@@ -25,11 +25,19 @@ class AttendanceController extends Controller
 
         $grid = $service->gridForCourse($course);
 
+        $isDosen = $request->user()->isDosen();
+        $focusMeeting = null;
+        if (! $isDosen) {
+            $focusMeeting = $grid['meetings']->first(fn (Meeting $meeting) => $meeting->attendanceOpen())
+                ?? $grid['meetings']->first(fn (Meeting $meeting) => $meeting->date?->isToday());
+        }
+
         return view('attendance.index', [
             'course' => $course,
             'grid' => $grid,
-            'isDosen' => $request->user()->isDosen(),
+            'isDosen' => $isDosen,
             'me' => $request->user(),
+            'focusMeeting' => $focusMeeting,
         ]);
     }
 
@@ -38,7 +46,8 @@ class AttendanceController extends Controller
     {
         $this->ensureCourseOwner($request, $meeting->course);
 
-        $token = $meeting->activeToken();
+        // Selama jendela terjadwal terbuka, pastikan token otomatis tersedia (QR/kode langsung siap).
+        $token = $meeting->ensureActiveToken();
         $qr = null;
         if ($token && $meeting->isTatapMuka()) {
             $url = route('attendance.attend', $token->token);
@@ -83,7 +92,11 @@ class AttendanceController extends Controller
     {
         $this->ensureCourseOwner($request, $meeting->course);
 
+        // Kedaluwarsakan token manual + tutup jendela terjadwal (bila sedang aktif).
         $meeting->tokens()->where('expires_at', '>', now())->update(['expires_at' => now()]);
+        if ($meeting->scheduledOpen()) {
+            $meeting->update(['attend_closes_at' => now()]);
+        }
 
         return back()->with('status', 'Presensi ditutup.');
     }
@@ -100,7 +113,7 @@ class AttendanceController extends Controller
             403,
         );
 
-        if (! $meeting->activeToken()) {
+        if (! $meeting->attendanceOpen()) {
             return back()->with('error', 'Presensi pertemuan ini sedang tidak dibuka.');
         }
 

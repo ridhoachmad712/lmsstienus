@@ -27,6 +27,15 @@ class SubmissionController extends Controller
         abort_if($user->isDosen(), 403);
         abort_if($assignment->isQuiz(), 404);
 
+        // Tugas kelompok: pengumpulan ditautkan ke kelompok si mahasiswa (dipakai bersama).
+        $group = null;
+        if ($assignment->isGroup()) {
+            $group = $assignment->groupFor($user);
+            if (! $group) {
+                return back()->with('error', 'Buat atau gabung kelompok dulu sebelum mengumpulkan tugas.');
+            }
+        }
+
         $existing = $assignment->submissionFor($user);
         // Boleh ganti selama belum dinilai. Kalau sudah dinilai, tidak boleh.
         abort_if($existing && $existing->isGraded(), 403, 'Tugas sudah dinilai, tidak bisa diubah.');
@@ -81,9 +90,12 @@ class SubmissionController extends Controller
         }
 
         $payload['user_id'] = $user->id;
+        if ($group) {
+            $payload['assignment_group_id'] = $group->id;
+        }
         $assignment->submissions()->create($payload);
 
-        return back()->with('status', 'Tugas berhasil dikumpulkan.');
+        return back()->with('status', $group ? 'Tugas kelompok dikumpulkan — terlihat oleh semua anggota.' : 'Tugas berhasil dikumpulkan.');
     }
 
     /** Mahasiswa menghapus/membatalkan pengumpulannya sendiri (selama belum dinilai). */
@@ -93,7 +105,7 @@ class SubmissionController extends Controller
         $this->ensureCourseAccess($request, $submission->assignment->course);
 
         $user = $request->user();
-        abort_unless($submission->user_id === $user->id, 403);
+        abort_unless($this->studentOwns($submission, $user), 403);
         abort_if($submission->assignment->isQuiz(), 404);
         abort_if($submission->isGraded(), 403, 'Tugas sudah dinilai, tidak bisa dihapus.');
 
@@ -185,15 +197,22 @@ class SubmissionController extends Controller
             $submission->update($data);
         }
 
-        Notifier::toUser(
-            $submission->user_id,
-            'grade',
-            'Nilai tugas tersedia',
-            $submission->assignment->title.' telah dinilai: '.\App\Support\Grades::num($data['score']),
-            route('assignments.show', $submission->assignment),
-        );
+        // Tugas kelompok → beri tahu semua anggota; individu → hanya pengumpul.
+        $recipients = $assignment->isGroup() && $submission->assignment_group_id
+            ? $submission->group()->first()?->members()->pluck('users.id')->all() ?? []
+            : [$submission->user_id];
 
-        return back()->with('status', 'Nilai tersimpan.');
+        foreach ($recipients as $uid) {
+            Notifier::toUser(
+                $uid,
+                'grade',
+                'Nilai tugas tersedia',
+                $submission->assignment->title.' telah dinilai: '.\App\Support\Grades::num($data['score']),
+                route('assignments.show', $submission->assignment),
+            );
+        }
+
+        return back()->with('status', 'Nilai tersimpan.'.($assignment->isGroup() ? ' Berlaku untuk semua anggota kelompok.' : ''));
     }
 
     /** Sajikan berkas pengumpulan secara inline agar bisa dipreview (dosen pemilik / mahasiswa pemilik). */
@@ -202,7 +221,7 @@ class SubmissionController extends Controller
         $submission->load('assignment.course');
         $user = $request->user();
         $isOwnerDosen = $user->isDosen() && $submission->assignment->course->user_id === $user->id;
-        $isOwnerStudent = $submission->user_id === $user->id;
+        $isOwnerStudent = $this->studentOwns($submission, $user);
         abort_unless($isOwnerDosen || $isOwnerStudent, 403);
 
         $disk = Storage::disk('public');
@@ -218,7 +237,7 @@ class SubmissionController extends Controller
         // Dosen pemilik atau mahasiswa pemilik submission
         $user = $request->user();
         $isOwnerDosen = $user->isDosen() && $submission->assignment->course->user_id === $user->id;
-        $isOwnerStudent = $submission->user_id === $user->id;
+        $isOwnerStudent = $this->studentOwns($submission, $user);
         abort_unless($isOwnerDosen || $isOwnerStudent, 403);
 
         $disk = Storage::disk('public');
@@ -228,5 +247,16 @@ class SubmissionController extends Controller
         $name = Str::slug($submission->assignment->title.'-'.$submission->student->name).($ext ? '.'.$ext : '');
 
         return $disk->download($submission->file_path, $name);
+    }
+
+    /** Mahasiswa berhak atas pengumpulan: pengumpul itu sendiri, atau (tugas kelompok) sesama anggota. */
+    private function studentOwns(Submission $submission, \App\Models\User $user): bool
+    {
+        if ($submission->user_id === $user->id) {
+            return true;
+        }
+
+        return $submission->assignment_group_id
+            && $submission->group()->first()?->hasMember($user->id);
     }
 }

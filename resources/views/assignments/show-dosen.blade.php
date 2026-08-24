@@ -30,6 +30,7 @@
 
 @section('content')
 @php($course = $assignment->course)
+@php($isGroup = $assignment->isGroup())
 @include('courses._subnav')
 
 {{-- Statistik pengumpulan --}}
@@ -37,7 +38,7 @@
     <div class="col-6 col-md-3">
         <div class="card card-sm"><div class="card-body text-center">
             <div class="h1 m-0">{{ $stats['submitted'] }}<small class="text-secondary fs-4">/{{ $stats['total'] }}</small></div>
-            <div class="text-secondary">Mengumpulkan</div>
+            <div class="text-secondary">{{ $isGroup ? 'Kelompok kumpul' : 'Mengumpulkan' }}</div>
         </div></div>
     </div>
     <div class="col-6 col-md-3">
@@ -58,7 +59,7 @@
              @if ($pending->isNotEmpty()) role="button" data-bs-toggle="modal" data-bs-target="#modal-pending" @endif>
             <div class="card-body text-center">
                 <div class="h1 m-0 text-orange">{{ $stats['pending'] }}</div>
-                <div class="text-secondary">Belum mengumpulkan @if ($pending->isNotEmpty())<i class="ti ti-eye ms-1"></i>@endif</div>
+                <div class="text-secondary">{{ $isGroup ? 'Belum berkelompok' : 'Belum mengumpulkan' }} @if ($pending->isNotEmpty())<i class="ti ti-eye ms-1"></i>@endif</div>
             </div>
         </div>
     </div>
@@ -81,8 +82,12 @@
                 <div class="fw-bold">{{ $assignment->max_score }}</div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="text-secondary small">Bentuk jawaban</div>
-                <div class="fw-bold">{{ \App\Models\Assignment::SUBMISSION_MODES[$assignment->submission_mode] ?? 'Unggah berkas' }}</div>
+                <div class="text-secondary small">Bentuk tugas</div>
+                <div class="fw-bold">
+                    {{ $isGroup ? 'Kelompok' : 'Individu' }}
+                    @if ($isGroup && $assignment->group_max)<span class="text-secondary fw-normal">· maks {{ $assignment->group_max }}</span>@endif
+                    <div class="small fw-normal text-secondary">{{ \App\Models\Assignment::SUBMISSION_MODES[$assignment->submission_mode] ?? 'Unggah berkas' }}</div>
+                </div>
             </div>
             <div class="col-6 col-md-3">
                 <div class="text-secondary small">Penilaian</div>
@@ -96,6 +101,90 @@
     </div>
 </div>
 
+{{-- ============ MODE KELOMPOK: daftar per kelompok ============ --}}
+@if ($isGroup)
+<div class="card">
+    <div class="card-header"><h3 class="card-title">Kelompok ({{ $groups->count() }})</h3></div>
+    @if ($groups->isEmpty())
+        <div class="card-body"><x-empty-state icon="ti-users-group" title="Belum ada kelompok"
+            description="Mahasiswa membentuk kelompok sendiri. Anda juga bisa membentuk dari daftar 'Belum berkelompok' di bawah." /></div>
+    @else
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead><tr><th>Kelompok</th><th>Anggota</th><th>Status</th><th>Nilai</th><th></th></tr></thead>
+                <tbody>
+                    @foreach ($groups as $g)
+                        @php($sub = $g->submission)
+                        <tr>
+                            <td class="fw-bold">{{ $g->name }}</td>
+                            <td class="small text-secondary">{{ $g->members->pluck('name')->join(', ') }}</td>
+                            <td>
+                                @if ($sub)
+                                    <span class="badge bg-{{ $sub->isLate() ? 'red' : 'green' }}-lt">{{ $sub->isLate() ? 'Terlambat' : 'Tepat waktu' }}</span>
+                                @else
+                                    <span class="badge bg-secondary-lt">Belum kumpul</span>
+                                @endif
+                            </td>
+                            <td>{!! $sub && $sub->isGraded() ? '<span class="fw-bold">'.\App\Support\Grades::num($sub->score).'</span>' : '<span class="text-secondary">—</span>' !!}</td>
+                            <td class="text-end">
+                                <div class="btn-list justify-content-end">
+                                    @if ($sub && $sub->file_path)
+                                        @php($sext = strtolower(pathinfo($sub->file_path, PATHINFO_EXTENSION)))
+                                        @php($spreview = $sext === 'pdf'
+                                            ? route('submissions.preview', $sub)
+                                            : (in_array($sext, ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'])
+                                                ? 'https://view.officeapps.live.com/op/embed.aspx?src='.urlencode(asset('storage/'.$sub->file_path))
+                                                : null))
+                                        @if ($spreview)
+                                            <button type="button" class="btn btn-sm" title="Lihat berkas" data-bs-toggle="modal" data-bs-target="#modal-preview"
+                                                    data-preview-url="{{ $spreview }}" data-download-url="{{ route('submissions.download', $sub) }}" data-preview-title="{{ $g->name }}"><i class="ti ti-eye"></i></button>
+                                        @else
+                                            <a href="{{ route('submissions.download', $sub) }}" class="btn btn-sm" title="Unduh berkas"><i class="ti ti-download"></i></a>
+                                        @endif
+                                    @endif
+                                    @if ($sub)
+                                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#grade-{{ $sub->id }}">Nilai</button>
+                                        <form method="POST" action="{{ route('submissions.reopen', $sub) }}" data-confirm="Buka kembali pengumpulan {{ $g->name }}? Berkas dihapus dan kelompok bisa mengumpulkan ulang.">
+                                            @csrf
+                                            <button class="btn btn-sm" title="Buka kembali" data-bs-toggle="tooltip"><i class="ti ti-lock-open"></i></button>
+                                        </form>
+                                    @endif
+                                    @unless ($course->isCompleted())
+                                        <form method="POST" action="{{ route('assignment-groups.destroy', $g) }}" data-confirm="Bubarkan {{ $g->name }}?@if ($sub) Pengumpulan kelompok ikut terhapus.@endif">
+                                            @csrf @method('DELETE')
+                                            <button class="btn btn-sm btn-ghost-danger" title="Bubarkan kelompok"><i class="ti ti-users-minus"></i></button>
+                                        </form>
+                                    @endunless
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+    @unless ($course->isCompleted())
+        @if ($ungrouped->isNotEmpty())
+            <div class="card-footer">
+                <form method="POST" action="{{ route('assignment-groups.store', $assignment) }}">
+                    @csrf
+                    <div class="text-secondary small mb-2"><i class="ti ti-users-plus me-1"></i>Bentuk kelompok dari mahasiswa yang belum berkelompok ({{ $ungrouped->count() }}):</div>
+                    <div class="row">
+                        @foreach ($ungrouped as $u)
+                            <div class="col-md-4"><label class="form-check">
+                                <input type="checkbox" name="members[]" value="{{ $u->id }}" class="form-check-input">
+                                <span class="form-check-label">{{ $u->name }}</span>
+                            </label></div>
+                        @endforeach
+                    </div>
+                    <button class="btn btn-sm btn-primary mt-2">Buat Kelompok</button>
+                    @if ($assignment->group_max)<small class="form-hint d-inline ms-2">Maks {{ $assignment->group_max }} anggota.</small>@endif
+                </form>
+            </div>
+        @endif
+    @endunless
+</div>
+@else
 {{-- Pengumpulan: lebar penuh --}}
 <div class="card">
     <div class="card-header">
@@ -160,6 +249,7 @@
         </div>
     @endif
 </div>
+@endif
 
 {{-- ===================== MODAL RUBRIK ===================== --}}
 <div class="modal modal-blur fade" id="modal-rubrik" tabindex="-1">
@@ -217,7 +307,7 @@
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Belum mengumpulkan ({{ $stats['pending'] }})</h5>
+                    <h5 class="modal-title">{{ $isGroup ? 'Belum berkelompok' : 'Belum mengumpulkan' }} ({{ $stats['pending'] }})</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -258,7 +348,7 @@
             <form class="modal-content" method="POST" action="{{ route('submissions.grade', $sub) }}">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title">Nilai — {{ $sub->student->name }}</h5>
+                    <h5 class="modal-title">Nilai — {{ $isGroup ? ($sub->group?->name ?? 'Kelompok') : $sub->student->name }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">

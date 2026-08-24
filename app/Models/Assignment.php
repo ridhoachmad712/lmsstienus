@@ -9,12 +9,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'course_id', 'meeting_id', 'grade_component_id', 'title', 'description',
-    'type', 'submission_mode', 'deadline', 'max_score', 'duration_minutes', 'published',
+    'type', 'mode', 'group_max', 'submission_mode', 'deadline', 'max_score', 'duration_minutes', 'published',
 ])]
 class Assignment extends Model
 {
     public const TYPE_TUGAS = 'tugas';
     public const TYPE_KUIS = 'kuis';
+
+    /** Bentuk pengerjaan tugas. */
+    public const MODE_INDIVIDU = 'individu';
+    public const MODE_KELOMPOK = 'kelompok';
 
     /** Bentuk jawaban tugas. */
     public const SUBMISSION_FILE = 'file';
@@ -44,7 +48,22 @@ class Assignment extends Model
         return [
             'deadline' => 'datetime',
             'published' => 'boolean',
+            'group_max' => 'integer',
         ];
+    }
+
+    /** Tanpa FK level-DB → hapus kelompok (beserta anggota & pengumpulan) saat tugas dihapus. */
+    protected static function booted(): void
+    {
+        static::deleting(function (Assignment $assignment) {
+            $assignment->groups()->get()->each->delete();
+        });
+    }
+
+    /** Tugas dikerjakan berkelompok (bukan individu). */
+    public function isGroup(): bool
+    {
+        return $this->mode === self::MODE_KELOMPOK;
     }
 
     public function course(): BelongsTo
@@ -65,6 +84,20 @@ class Assignment extends Model
     public function submissions(): HasMany
     {
         return $this->hasMany(Submission::class);
+    }
+
+    /** Kelompok-kelompok pada tugas ini (bentuk kelompok). */
+    public function groups(): HasMany
+    {
+        return $this->hasMany(AssignmentGroup::class);
+    }
+
+    /** Kelompok tempat $user berada pada tugas ini (atau null). */
+    public function groupFor(User $user): ?AssignmentGroup
+    {
+        return $this->groups()
+            ->whereHas('members', fn ($q) => $q->whereKey($user->id))
+            ->first();
     }
 
     public function questions(): HasMany
@@ -101,6 +134,11 @@ class Assignment extends Model
 
     public function submissionFor(User $user): ?Submission
     {
+        // Tugas kelompok: pengumpulan bersama diambil dari kelompok si mahasiswa.
+        if ($this->isGroup()) {
+            return $this->groupFor($user)?->submission()->first();
+        }
+
         return $this->submissions()->where('user_id', $user->id)->first();
     }
 }
