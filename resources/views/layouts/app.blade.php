@@ -30,6 +30,9 @@
             .alert{border-radius:var(--tblr-border-radius) !important;}
         }
         body{transition:background-color .2s ease, color .2s ease;}
+        .navbar .nav-link,.dropdown-item,.mobile-more-link{transition:color .15s ease,background-color .15s ease,transform .15s ease;}
+        .navbar .nav-link:hover{color:var(--tblr-primary);background:rgba(var(--tblr-primary-rgb),.08);text-decoration:none;}
+        .dropdown-item:hover,.dropdown-item:focus{color:var(--tblr-primary);background:rgba(var(--tblr-primary-rgb),.08);text-decoration:none;transform:translateX(2px);}
         .card-lift{transition:transform .15s ease, box-shadow .15s ease;}
         .card-lift:hover{transform:translateY(-3px);box-shadow:0 .5rem 1.25rem rgba(0,0,0,.13);}
         /* Kartu kelas diarsipkan: redupkan isi tapi tombol tetap bisa diklik */
@@ -102,6 +105,10 @@
             .mobile-more-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;}
             .mobile-more-link{display:flex;min-width:0;min-height:5.25rem;padding:.75rem .35rem;flex-direction:column;align-items:center;justify-content:center;gap:.45rem;border:1px solid var(--tblr-border-color);border-radius:.875rem;color:inherit;text-decoration:none;text-align:center;font-size:.75rem;font-weight:600;}
             .mobile-more-link i{font-size:1.5rem;color:var(--tblr-primary);}
+            .mobile-more-link:hover,.mobile-more-link:focus{color:var(--tblr-primary);background:rgba(var(--tblr-primary-rgb),.08);border-color:rgba(var(--tblr-primary-rgb),.35);text-decoration:none;transform:translateY(-2px);}
+        }
+        @media (prefers-reduced-motion:reduce){
+            .navbar .nav-link,.dropdown-item,.mobile-bottom-nav__item,.mobile-more-link{transition:none !important;transform:none !important;}
         }
     </style>
     @stack('styles')
