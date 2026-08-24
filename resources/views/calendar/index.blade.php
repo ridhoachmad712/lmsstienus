@@ -5,11 +5,11 @@
 @section('page-title', 'Kalender')
 
 @section('page-actions')
-    <div class="btn-list align-items-center">
+    <div class="btn-list align-items-center calendar-toolbar">
         <a href="{{ route('calendar', ['month' => $prevMonth]) }}" class="btn btn-icon" title="Bulan sebelumnya" aria-label="Bulan sebelumnya" data-bs-toggle="tooltip"><i class="ti ti-chevron-left"></i></a>
-        <span class="fw-bold px-1" style="min-width:9rem;text-align:center">{{ $cursor->translatedFormat('F Y') }}</span>
+        <span class="fw-bold px-1 calendar-current-month">{{ $cursor->translatedFormat('F Y') }}</span>
         <a href="{{ route('calendar', ['month' => $nextMonth]) }}" class="btn btn-icon" title="Bulan berikutnya" aria-label="Bulan berikutnya" data-bs-toggle="tooltip"><i class="ti ti-chevron-right"></i></a>
-        <a href="{{ route('calendar') }}" class="btn">Hari ini</a>
+        <a href="{{ route('calendar') }}" class="btn calendar-today">Hari ini</a>
     </div>
 @endsection
 
@@ -46,8 +46,8 @@
                                     <div class="agenda-time">{{ $item['has_time'] ? $item['at']->format('H.i') : 'Seharian' }}</div>
                                     <span class="agenda-marker bg-{{ $item['type'] === 'deadline' ? 'red' : 'blue' }}"></span>
                                     <div class="min-w-0 flex-fill">
-                                        <div class="fw-semibold text-truncate">{{ $item['title'] }}</div>
-                                        <div class="small text-secondary text-truncate">{{ $item['subtitle'] }}</div>
+                                    <div class="fw-semibold agenda-title">{{ $item['title'] }}</div>
+                                    <div class="small text-secondary agenda-subtitle">{{ $item['subtitle'] }}</div>
                                     </div>
                                     <i class="ti ti-chevron-right text-secondary"></i>
                                 </a>
@@ -176,10 +176,18 @@
         width:1.55rem;height:1.55rem;border-radius:50%;background:var(--tblr-primary);
         color:#fff;font-weight:600;font-size:.8rem;}
     .agenda-item{display:flex;align-items:center;gap:.75rem;}
-    .agenda-time{width:3.25rem;flex:0 0 3.25rem;font-size:.78rem;font-weight:600;color:var(--tblr-secondary-color);}
+    .agenda-time{width:4.25rem;flex:0 0 4.25rem;font-size:.75rem;font-weight:600;color:var(--tblr-secondary-color);white-space:nowrap;}
     .agenda-marker{width:.5rem;height:.5rem;flex:0 0 .5rem;border-radius:50%;}
+    .agenda-title,.agenda-subtitle{max-width:100%;overflow-wrap:anywhere;}
+    .agenda-title{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;}
+    .calendar-current-month{min-width:9rem;text-align:center;}
     @media (max-width:767.98px){
+        .calendar-toolbar{display:grid;width:100%;grid-template-columns:2.75rem minmax(0,1fr) 2.75rem;gap:.5rem;}
+        .calendar-current-month{min-width:0;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        .calendar-today{grid-column:1/-1;width:100%;}
         #calendar-month-panel.mobile-visible{display:block !important;}
+        #calendar-month-panel .card-header{flex-wrap:wrap;gap:.5rem;}
+        #calendar-month-panel .card-actions{width:100%;margin-left:0 !important;justify-content:flex-start;}
         .calendar-grid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
         .calendar-grid-inner{min-width:44rem;}
     }

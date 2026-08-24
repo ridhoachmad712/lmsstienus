@@ -39,6 +39,8 @@
         .course-archived .card-body{opacity:.6;}
         /* Token panjang dalam <code> jangan memaksa lebar (overflow horizontal di HP) */
         code{overflow-wrap:anywhere;word-break:break-word;}
+        .card,.card-body,.card-header,.card-footer,.list-group-item{min-width:0;}
+        .card-title,.page-title,.fw-bold,.fw-semibold{overflow-wrap:anywhere;}
         /* Sub-nav kelas: 1 baris yang bisa digeser di layar kecil */
         .lms-subnav{scrollbar-width:thin;-ms-overflow-style:none;}
         .lms-subnav::-webkit-scrollbar{height:4px;}
@@ -81,6 +83,18 @@
             body.student-mobile-ui .page-title{font-size:1.35rem;line-height:1.25;}
             body.student-mobile-ui .footer{display:none;}
             body.student-mobile-ui .card{border-radius:.875rem !important;box-shadow:0 1px 3px rgba(35,46,60,.06);}
+            body.student-mobile-ui .card-body,
+            body.student-mobile-ui .list-group-item{overflow-wrap:anywhere;}
+            body.student-mobile-ui .badge{max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;}
+            body.student-mobile-ui .btn:not(.btn-icon){max-width:100%;white-space:normal;}
+            body.student-mobile-ui input,
+            body.student-mobile-ui select,
+            body.student-mobile-ui textarea{max-width:100%;}
+            body.student-mobile-ui .alert,
+            body.student-mobile-ui .form-hint,
+            body.student-mobile-ui .dropdown-item{overflow-wrap:anywhere;}
+            body.student-mobile-ui .d-flex>div,
+            body.student-mobile-ui .d-flex>span{min-width:0;}
             body.student-mobile-ui .empty{padding:1rem .5rem;}
             body.student-mobile-ui .empty .empty-icon{margin-bottom:.5rem !important;}
             body.student-mobile-ui .empty .empty-icon .avatar{width:2.75rem;height:2.75rem;}
