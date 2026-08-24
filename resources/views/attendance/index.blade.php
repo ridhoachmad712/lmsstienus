@@ -60,30 +60,40 @@
 @else
     {{-- Mahasiswa: kehadiran pribadi --}}
     @php($pct = $grid['summary'][$me->id]['percent'] ?? null)
+    @php($focusStatus = $focusMeeting ? ($grid['matrix'][$me->id][$focusMeeting->id] ?? null) : null)
 
-    {{-- Cara absen + input kode manual --}}
-    <div class="card mb-3">
+    {{-- Prioritas utama: status dan aksi absensi yang relevan sekarang --}}
+    <div class="card mb-3 border-primary">
         <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-7">
-                    <h3 class="card-title mb-1"><i class="ti ti-qrcode me-1"></i>Cara melakukan absen</h3>
-                    <ol class="text-secondary mb-0 ps-3">
-                        <li>Saat dosen membuka sesi, <strong>scan QR</strong> yang ditampilkan dengan kamera HP.</li>
-                        <li>Halaman absen terbuka otomatis dan kehadiran Anda tercatat.</li>
-                        <li>QR hanya aktif <strong>15 menit</strong> — pastikan absen tepat waktu.</li>
-                    </ol>
-                </div>
-                <div class="col-md-5">
-                    <label class="form-label">QR tidak bisa di-scan? Masukkan kode absen</label>
-                    <form onsubmit="if(this.code.value.trim()){location.href='{{ url('/attend') }}/'+encodeURIComponent(this.code.value.trim());}return false;">
-                        <div class="input-group">
-                            <input type="text" name="code" class="form-control text-uppercase font-monospace" maxlength="6"
-                                   placeholder="mis. K7P2QX" style="letter-spacing:.15em"
-                                   oninput="this.value=this.value.toUpperCase()">
-                            <button class="btn btn-primary" type="submit"><i class="ti ti-check me-1"></i>Absen</button>
+            <div class="d-flex align-items-start gap-3">
+                <span class="avatar bg-primary-lt text-primary"><i class="ti ti-calendar-check fs-2"></i></span>
+                <div class="flex-fill min-w-0">
+                    <div class="text-secondary small fw-semibold text-uppercase">{{ $focusMeeting?->attendanceOpen() ? 'Absensi aktif' : 'Absensi hari ini' }}</div>
+                    @if ($focusMeeting)
+                        <h2 class="h3 mt-1 mb-1">Pertemuan {{ $focusMeeting->number }} · {{ $focusMeeting->topic }}</h2>
+                        <div class="text-secondary mb-3">
+                            {{ $focusMeeting->typeLabel() }}
+                            @if ($focusMeeting->attendanceOpen() && $focusMeeting->attendClosesAt())
+                                · Dibuka sampai {{ $focusMeeting->attendClosesAt()->translatedFormat('d M, H.i') }}
+                            @elseif (! $focusMeeting->attendanceOpen())
+                                · Sesi absensi belum dibuka
+                            @endif
                         </div>
-                        <small class="form-hint">Kode 6 karakter yang ditampilkan dosen di layar saat sesi absensi dibuka.</small>
-                    </form>
+
+                        @if ($focusStatus)
+                            <span class="badge bg-{{ $letter[$focusStatus][1] }}-lt px-3 py-2"><i class="ti ti-circle-check me-1"></i>{{ ucfirst($focusStatus) }}</span>
+                        @elseif ($focusMeeting->attendanceOpen() && $focusMeeting->isMandiri())
+                            <form method="POST" action="{{ route('attendance.selfAttend', $focusMeeting) }}">
+                                @csrf
+                                <button class="btn btn-primary w-100 w-sm-auto" type="submit"><i class="ti ti-hand-click me-1"></i>Tandai Saya Hadir</button>
+                            </form>
+                        @elseif ($focusMeeting->attendanceOpen())
+                            <div class="alert alert-info mb-0 py-2"><i class="ti ti-qrcode me-1"></i>Scan QR atau masukkan kode yang ditampilkan dosen.</div>
+                        @endif
+                    @else
+                        <h2 class="h3 mt-1 mb-1">Tidak ada absensi aktif</h2>
+                        <div class="text-secondary">Absensi akan muncul di sini saat dosen membuka sesi.</div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -91,16 +101,34 @@
 
     <div class="row row-cards">
         <div class="col-md-4">
-            <div class="card"><div class="card-body text-center">
-                <div class="text-secondary">Persentase Kehadiran</div>
-                <div class="h1 display-6 mb-0 {{ ! is_null($pct) && $pct < 75 ? 'text-red' : 'text-green' }}">{{ is_null($pct) ? '—' : $pct.'%' }}</div>
-                @if (! is_null($pct) && $pct < 75)<span class="badge bg-red-lt">Di bawah 75%</span>@endif
+            <div class="card h-100"><div class="card-body">
+                <div class="text-secondary">Kehadiran keseluruhan</div>
+                <div class="d-flex align-items-end gap-2 mt-1">
+                    <div class="h1 display-6 mb-0 {{ ! is_null($pct) && $pct < 75 ? 'text-red' : 'text-green' }}">{{ is_null($pct) ? '—' : $pct.'%' }}</div>
+                    <div class="text-secondary mb-2">{{ $grid['summary'][$me->id]['hadir'] ?? 0 }} dari {{ $grid['sessions'] }} sesi</div>
+                </div>
+                @if (! is_null($pct) && $pct < 75)<span class="badge bg-red-lt mt-2">Di bawah batas 75%</span>@endif
             </div></div>
         </div>
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header"><h3 class="card-title">Riwayat per Pertemuan</h3></div>
-                <div class="table-responsive">
+                <div class="list-group list-group-flush d-md-none">
+                    @foreach ($grid['meetings']->sortByDesc('number') as $m)
+                        @php($st = $grid['matrix'][$me->id][$m->id] ?? null)
+                        <div class="list-group-item py-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="avatar avatar-sm bg-{{ $st ? $letter[$st][1] : 'secondary' }}-lt">P{{ $m->number }}</span>
+                                <div class="flex-fill min-w-0">
+                                    <div class="fw-semibold text-truncate">{{ $m->topic }}</div>
+                                    <div class="small text-secondary">{{ $m->date?->translatedFormat('d M Y') ?? 'Tanggal belum ditentukan' }}</div>
+                                </div>
+                                @if ($st)<span class="badge bg-{{ $letter[$st][1] }}-lt">{{ ucfirst($st) }}</span>@else<span class="small text-secondary">Belum ada sesi</span>@endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="table-responsive d-none d-md-block">
                     <table class="table table-vcenter card-table">
                         <thead><tr><th>Pertemuan</th><th>Tanggal</th><th>Status</th></tr></thead>
                         <tbody>
@@ -118,5 +146,22 @@
             </div>
         </div>
     </div>
+
+    <details class="card mt-3">
+        <summary class="card-body d-flex align-items-center gap-2 fw-semibold" style="cursor:pointer">
+            <i class="ti ti-keyboard"></i>Masukkan kode absensi
+        </summary>
+        <div class="card-body border-top pt-3">
+            <form onsubmit="if(this.code.value.trim()){location.href='{{ url('/attend') }}/'+encodeURIComponent(this.code.value.trim());}return false;">
+                <div class="input-group">
+                    <input type="text" name="code" class="form-control text-uppercase font-monospace" maxlength="6"
+                           aria-label="Kode absensi" placeholder="Contoh: K7P2QX" style="letter-spacing:.15em"
+                           oninput="this.value=this.value.toUpperCase()">
+                    <button class="btn btn-primary" type="submit">Absen</button>
+                </div>
+                <small class="form-hint">Gunakan kode 6 karakter yang ditampilkan dosen.</small>
+            </form>
+        </div>
+    </details>
 @endif
 @endsection

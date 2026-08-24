@@ -16,8 +16,52 @@
 @section('content')
 @php($cap = 3)
 
+<div class="d-md-none mb-3">
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+        <div class="btn-group flex-fill" role="group" aria-label="Pilih tampilan kalender">
+            <button type="button" class="btn btn-primary" id="show-agenda" aria-pressed="true"><i class="ti ti-list me-1"></i>Agenda</button>
+            <button type="button" class="btn" id="show-month" aria-pressed="false"><i class="ti ti-calendar me-1"></i>Bulanan</button>
+        </div>
+    </div>
+
+    <section id="calendar-agenda-panel" aria-label="Agenda {{ $cursor->translatedFormat('F Y') }}">
+        @if ($agendaGroups->isEmpty())
+            <div class="card"><div class="card-body py-4">
+                <x-empty-state icon="ti-calendar-off" title="Tidak ada agenda" description="Belum ada pertemuan atau deadline pada bulan ini." />
+            </div></div>
+        @else
+            @foreach ($agendaGroups as $date => $items)
+                @php($agendaDate = \Illuminate\Support\Carbon::parse($date))
+                <div class="agenda-day mb-3">
+                    <h2 class="h4 mb-2">
+                        @if ($agendaDate->isToday()) Hari ini
+                        @elseif ($agendaDate->isTomorrow()) Besok
+                        @else {{ $agendaDate->translatedFormat('d F') }}
+                        @endif
+                    </h2>
+                    <div class="card">
+                        <div class="list-group list-group-flush">
+                            @foreach ($items as $item)
+                                <a href="{{ $item['url'] }}" class="list-group-item list-group-item-action agenda-item">
+                                    <div class="agenda-time">{{ $item['has_time'] ? $item['at']->format('H.i') : 'Seharian' }}</div>
+                                    <span class="agenda-marker bg-{{ $item['type'] === 'deadline' ? 'red' : 'blue' }}"></span>
+                                    <div class="min-w-0 flex-fill">
+                                        <div class="fw-semibold text-truncate">{{ $item['title'] }}</div>
+                                        <div class="small text-secondary text-truncate">{{ $item['subtitle'] }}</div>
+                                    </div>
+                                    <i class="ti ti-chevron-right text-secondary"></i>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        @endif
+    </section>
+</div>
+
 {{-- Grid kalender — disembunyikan di layar kecil (pakai daftar di bawah) --}}
-<div class="card mb-3 d-none d-md-block">
+<div class="card mb-3 d-none d-md-block" id="calendar-month-panel">
     <div class="card-header py-2">
         <h3 class="card-title">{{ $cursor->translatedFormat('F Y') }}</h3>
         <div class="card-actions small text-secondary d-flex gap-3">
@@ -25,7 +69,8 @@
             <span><i class="ti ti-square-rounded-filled text-red"></i> Deadline</span>
         </div>
     </div>
-    <div class="card-body p-2">
+    <div class="card-body p-2 calendar-grid-scroll">
+        <div class="calendar-grid-inner">
         <div class="row g-1 text-center fw-bold small mb-1">
             @foreach (['Min','Sen','Sel','Rab','Kam','Jum','Sab'] as $dn)
                 <div class="col {{ $dn === 'Min' ? 'text-red' : 'text-secondary' }}">{{ $dn }}</div>
@@ -78,10 +123,11 @@
                 @endforeach
             </div>
         @endforeach
+        </div>
     </div>
 </div>
 
-<div class="row row-cards">
+<div class="row row-cards d-none d-md-flex">
     <div class="col-md-6">
         <div class="card">
             <div class="card-header"><h3 class="card-title"><i class="ti ti-calendar-event text-blue me-1"></i>Pertemuan bulan ini</h3></div>
@@ -129,5 +175,37 @@
     .cal-today-num{display:inline-flex;align-items:center;justify-content:center;
         width:1.55rem;height:1.55rem;border-radius:50%;background:var(--tblr-primary);
         color:#fff;font-weight:600;font-size:.8rem;}
+    .agenda-item{display:flex;align-items:center;gap:.75rem;}
+    .agenda-time{width:3.25rem;flex:0 0 3.25rem;font-size:.78rem;font-weight:600;color:var(--tblr-secondary-color);}
+    .agenda-marker{width:.5rem;height:.5rem;flex:0 0 .5rem;border-radius:50%;}
+    @media (max-width:767.98px){
+        #calendar-month-panel.mobile-visible{display:block !important;}
+        .calendar-grid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+        .calendar-grid-inner{min-width:44rem;}
+    }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const agendaButton = document.getElementById('show-agenda');
+    const monthButton = document.getElementById('show-month');
+    const agendaPanel = document.getElementById('calendar-agenda-panel');
+    const monthPanel = document.getElementById('calendar-month-panel');
+    if (!agendaButton || !monthButton || !agendaPanel || !monthPanel) return;
+
+    const show = (mode) => {
+        const agendaActive = mode === 'agenda';
+        agendaPanel.classList.toggle('d-none', !agendaActive);
+        monthPanel.classList.toggle('mobile-visible', !agendaActive);
+        agendaButton.classList.toggle('btn-primary', agendaActive);
+        monthButton.classList.toggle('btn-primary', !agendaActive);
+        agendaButton.setAttribute('aria-pressed', String(agendaActive));
+        monthButton.setAttribute('aria-pressed', String(!agendaActive));
+    };
+    agendaButton.addEventListener('click', () => show('agenda'));
+    monthButton.addEventListener('click', () => show('month'));
+});
+</script>
 @endpush

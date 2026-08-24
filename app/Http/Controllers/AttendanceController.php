@@ -25,11 +25,19 @@ class AttendanceController extends Controller
 
         $grid = $service->gridForCourse($course);
 
+        $isDosen = $request->user()->isDosen();
+        $focusMeeting = null;
+        if (! $isDosen) {
+            $focusMeeting = $grid['meetings']->first(fn (Meeting $meeting) => $meeting->attendanceOpen())
+                ?? $grid['meetings']->first(fn (Meeting $meeting) => $meeting->date?->isToday());
+        }
+
         return view('attendance.index', [
             'course' => $course,
             'grid' => $grid,
-            'isDosen' => $request->user()->isDosen(),
+            'isDosen' => $isDosen,
             'me' => $request->user(),
+            'focusMeeting' => $focusMeeting,
         ]);
     }
 
