@@ -7,6 +7,9 @@
         <span class="avatar avatar-lg bg-white text-primary flex-shrink-0"><i class="ti ti-school fs-1"></i></span>
         <div class="me-auto" style="min-width:0">
             <div class="course-hero-title fw-bold mb-0 text-white">{{ $course->name }}</div>
+            @unless (auth()->user()->isDosen())
+                <div class="text-white-50 small mt-1 course-hero-lecturer"><i class="ti ti-user me-1"></i>{{ $course->lecturer->name }}</div>
+            @endunless
             <div @class(['text-white-50 small course-hero-meta', 'd-none' => auth()->user()->isMahasiswa()])>
                 {{ $course->code }}@if ($course->class_name) · {{ $course->class_name }}@endif · {{ $course->semester }} {{ $course->year }}
                 @unless (auth()->user()->isDosen()) · {{ $course->lecturer->name }} @endunless

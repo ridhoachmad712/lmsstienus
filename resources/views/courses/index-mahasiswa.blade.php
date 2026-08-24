@@ -4,10 +4,6 @@
 @section('page-pretitle', 'Perkuliahan')
 @section('page-title', 'Mata Kuliah Saya')
 
-@section('page-actions')
-    <a href="{{ route('enrollments.join.show') }}" class="btn btn-primary"><i class="ti ti-key me-1"></i>Gabung Kelas</a>
-@endsection
-
 @section('content')
 @if ($courses->isEmpty())
     <div class="card">
@@ -27,6 +23,7 @@
                     <span class="avatar avatar-md bg-{{ $course->color() }}-lt flex-shrink-0"><i class="ti ti-book-2 fs-2"></i></span>
                     <div class="min-w-0 flex-fill">
                         <div class="fw-bold text-truncate">{{ $course->name }}</div>
+                        <div class="text-secondary small text-truncate">{{ $course->lecturer->name }}</div>
                     </div>
                     <i class="ti ti-chevron-right text-secondary flex-shrink-0"></i>
                 </a>
@@ -42,7 +39,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-1">
                             <span class="avatar bg-{{ $course->color() }}-lt me-2"><i class="ti ti-school"></i></span>
-                            <h3 class="card-title mb-0">{{ $course->name }}</h3>
+                            <div class="min-w-0"><h3 class="card-title mb-0 text-truncate">{{ $course->name }}</h3><div class="text-secondary small text-truncate">{{ $course->lecturer->name }}</div></div>
                         </div>
                     </div>
                     <div class="card-footer">
@@ -53,6 +50,12 @@
                 </div>
             </div>
         @endforeach
+    </div>
+@endif
+
+@if ($courses->isNotEmpty())
+    <div class="mt-4 pb-2">
+        <a href="{{ route('enrollments.join.show') }}" class="btn btn-primary w-100"><i class="ti ti-key me-1"></i>Gabung Kelas</a>
     </div>
 @endif
 @endsection
