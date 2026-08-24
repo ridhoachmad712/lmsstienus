@@ -26,22 +26,25 @@
     </div></div>
 @else
     @if (auth()->user()->isMahasiswa())
-        @php($todoAssignments = $assignments->filter(fn($a) => !($mySubs[$a->id] ?? null)?->submitted_at))
-        @php($submittedAssignments = $assignments->filter(fn($a) => ($mySubs[$a->id] ?? null)?->submitted_at && !($mySubs[$a->id] ?? null)?->isGraded()))
-        @php($gradedAssignments = $assignments->filter(fn($a) => ($mySubs[$a->id] ?? null)?->isGraded()))
-        <div class="d-md-none assignment-mobile-sections">
-            @foreach ([
-                ['Perlu dikerjakan', $todoAssignments, 'orange', 'ti-clock'],
-                ['Menunggu penilaian', $submittedAssignments, 'azure', 'ti-hourglass'],
-                ['Sudah dinilai', $gradedAssignments, 'green', 'ti-circle-check'],
-            ] as [$sectionTitle, $items, $sectionColor, $sectionIcon])
+        @php($todoAssignments = $assignments->filter(fn($a) => !($mySubs[$a->id] ?? null)?->submitted_at)->sortBy(fn($a) => ($a->isPastDeadline() ? '0-' : '1-').str_pad((string) ($a->deadline?->timestamp ?? 9999999999), 10, '0', STR_PAD_LEFT)))
+        @php($submittedAssignments = $assignments->filter(fn($a) => ($mySubs[$a->id] ?? null)?->submitted_at && !($mySubs[$a->id] ?? null)?->isGraded())->sortByDesc(fn($a) => ($mySubs[$a->id] ?? null)?->submitted_at))
+        @php($gradedAssignments = $assignments->filter(fn($a) => ($mySubs[$a->id] ?? null)?->isGraded())->sortByDesc(fn($a) => ($mySubs[$a->id] ?? null)?->updated_at))
+        @php($defaultAssignmentTab = $todoAssignments->isNotEmpty() ? 'todo' : ($submittedAssignments->isNotEmpty() ? 'submitted' : 'graded'))
+        @php($assignmentTabs = [['todo', 'Perlu dikerjakan', $todoAssignments, 'orange', 'ti-clock'], ['submitted', 'Menunggu nilai', $submittedAssignments, 'azure', 'ti-hourglass'], ['graded', 'Selesai', $gradedAssignments, 'green', 'ti-circle-check']])
+        <div class="d-md-none assignment-mobile-sections" x-data="{ tab: '{{ $defaultAssignmentTab }}' }">
+            <div class="assignment-tabs mb-3" role="tablist" aria-label="Status tugas">
+                @foreach ($assignmentTabs as [$tabKey, $tabLabel, $items, $tabColor, $tabIcon])
+                    @if ($items->isNotEmpty())
+                        <button type="button" class="assignment-tab" :class="tab === '{{ $tabKey }}' ? 'active' : ''" @click="tab = '{{ $tabKey }}'" role="tab" :aria-selected="tab === '{{ $tabKey }}'">
+                            <i class="ti {{ $tabIcon }}"></i><span>{{ $tabLabel }}</span><span class="badge bg-{{ $tabColor }}-lt">{{ $items->count() }}</span>
+                        </button>
+                    @endif
+                @endforeach
+            </div>
+
+            @foreach ($assignmentTabs as [$tabKey, $tabLabel, $items, $tabColor, $tabIcon])
                 @if ($items->isNotEmpty())
-                    <section class="mb-4">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="ti {{ $sectionIcon }} text-{{ $sectionColor }} me-2"></i>
-                            <h2 class="h3 mb-0">{{ $sectionTitle }}</h2>
-                            <span class="badge bg-{{ $sectionColor }}-lt ms-auto">{{ $items->count() }}</span>
-                        </div>
+                    <section x-show="tab === '{{ $tabKey }}'" x-cloak role="tabpanel">
                         <div class="card overflow-hidden">
                             <div class="list-group list-group-flush">
                                 @foreach ($items as $a)
@@ -50,9 +53,16 @@
                                         <span class="avatar bg-{{ $a->isQuiz() ? 'purple' : 'blue' }}-lt flex-shrink-0"><i class="ti {{ $a->isQuiz() ? 'ti-help-circle' : 'ti-file-text' }}"></i></span>
                                         <div class="min-w-0 flex-fill">
                                             <div class="d-flex align-items-center gap-1"><span class="fw-bold text-truncate">{{ $a->title }}</span>@if($a->isGroup())<i class="ti ti-users text-secondary" title="Tugas kelompok"></i>@endif</div>
-                                            <div class="d-flex align-items-center gap-2 mt-1">
-                                                <span class="text-secondary small">{{ $a->isQuiz() ? 'Kuis' : 'Tugas' }}</span>
+                                            <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
+                                                <span class="badge bg-{{ $a->isQuiz() ? 'purple' : 'blue' }}-lt">{{ $a->isQuiz() ? 'Kuis' : 'Tugas' }}</span>
                                                 @if ($sub?->isGraded())<span class="badge bg-green-lt">Nilai {{ \App\Support\Grades::num($sub->score) }}</span>@else<x-due :date="$a->deadline" />@endif
+                                            </div>
+                                            <div class="text-secondary small mt-1">
+                                                @if ($a->deadline)
+                                                    <i class="ti ti-calendar-event me-1"></i>{{ $a->deadline->translatedFormat('d M Y, H:i') }}
+                                                @else
+                                                    <i class="ti ti-calendar-off me-1"></i>Tanpa deadline
+                                                @endif
                                             </div>
                                         </div>
                                         <i class="ti ti-chevron-right text-secondary flex-shrink-0"></i>
@@ -110,3 +120,15 @@
     </div>
 @endif
 @endsection
+
+@push('styles')
+<style>
+@media (max-width:575.98px){
+    .assignment-tabs{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.2rem;scrollbar-width:none;}
+    .assignment-tabs::-webkit-scrollbar{display:none;}
+    .assignment-tab{display:inline-flex;align-items:center;gap:.35rem;min-height:2.65rem;padding:.45rem .7rem;flex:0 0 auto;border:1px solid var(--tblr-border-color);border-radius:.75rem;background:var(--tblr-bg-surface);color:var(--tblr-secondary-color);font-size:.75rem;font-weight:600;transition:color .15s ease,background-color .15s ease,border-color .15s ease;}
+    .assignment-tab:hover,.assignment-tab:focus{color:var(--tblr-primary);border-color:rgba(var(--tblr-primary-rgb),.35);background:rgba(var(--tblr-primary-rgb),.06);}
+    .assignment-tab.active{color:var(--tblr-primary);border-color:rgba(var(--tblr-primary-rgb),.45);background:rgba(var(--tblr-primary-rgb),.1);}
+}
+</style>
+@endpush

@@ -20,6 +20,11 @@
         <div class="card">
             <div class="card-header"><h3 class="card-title"><i class="ti ti-file-description me-1"></i>Petunjuk Tugas</h3></div>
             <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="badge bg-blue-lt"><i class="ti ti-file-text me-1"></i>Tugas</span>
+                    <span class="badge bg-{{ $assignment->isGroup() ? 'purple' : 'azure' }}-lt"><i class="ti ti-{{ $assignment->isGroup() ? 'users-group' : 'user' }} me-1"></i>{{ $assignment->isGroup() ? 'Kelompok' : 'Individu' }}</span>
+                    <span class="badge bg-secondary-lt">Nilai maks. {{ $assignment->max_score }}</span>
+                </div>
                 <div class="d-flex mb-3">
                     <div>
                         <span class="text-secondary">Deadline</span>
@@ -31,7 +36,10 @@
                 </div>
                 @if ($assignment->description)
                     <hr>
-                    <div style="white-space:pre-line">{{ $assignment->description }}</div>
+                    <div class="text-secondary small mb-1">Instruksi</div>
+                    <div class="assignment-instructions" style="white-space:pre-line">{{ $assignment->description }}</div>
+                @else
+                    <div class="text-secondary">Tidak ada instruksi tambahan dari dosen.</div>
                 @endif
             </div>
         </div>
@@ -105,6 +113,23 @@
         <div class="card">
             <div class="card-header"><h3 class="card-title">{{ $assignment->isGroup() ? 'Pengumpulan Kelompok' : 'Pengumpulan Anda' }}</h3></div>
             <div class="card-body">
+            @if (! $submission)
+                <div class="alert alert-secondary mb-3">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="ti ti-upload fs-2"></i>
+                        <div>
+                            <div class="fw-bold">Belum dikumpulkan</div>
+                            <div class="small">
+                                @if ($assignment->deadline)
+                                    Batas pengumpulan {{ $assignment->deadline->translatedFormat('d M Y, H:i') }}
+                                @else
+                                    Tugas ini tidak memiliki deadline.
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
             @if ($assignment->isGroup() && ! $myGroup)
                 <div class="text-secondary text-center py-3">
                     <i class="ti ti-users-group" style="font-size:2rem"></i>
@@ -151,7 +176,8 @@
                         <div class="text-secondary mb-3">Menunggu penilaian dosen. Anda masih bisa memperbarui jawaban.</div>
                     @endif
 
-                    <form method="POST" action="{{ route('submissions.store', $assignment) }}" enctype="multipart/form-data" data-warn-unsaved>
+                    <form method="POST" action="{{ route('submissions.store', $assignment) }}" enctype="multipart/form-data" data-warn-unsaved
+                          x-data="{ fileName: '' }" @if($submission) data-confirm="Perbarui pengumpulan ini? Jawaban sebelumnya akan diganti dengan versi terbaru." @endif>
                         @csrf
 
                         @if ($assignment->allowsText())
@@ -179,8 +205,12 @@
                                 @endif
                                 <input type="file" name="file" accept=".pdf,.doc,.docx,.zip,.ppt,.pptx,.xls,.xlsx"
                                        class="form-control @error('file') is-invalid @enderror"
+                                       @change="fileName = $event.target.files[0]?.name || ''"
                                        @if ($mode === 'file' && ! $submission) required @endif>
                                 @error('file')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                <div x-show="fileName" x-cloak class="d-flex align-items-center gap-2 bg-blue-lt rounded p-2 mt-2">
+                                    <i class="ti ti-file-check text-blue fs-2"></i><span class="small fw-bold text-truncate" x-text="fileName"></span>
+                                </div>
                                 <small class="form-hint">PDF/Word/PPT/Excel/ZIP, maks 20 MB.@if ($submission) Kosongkan bila tidak ingin mengganti berkas.@endif</small>
                             </div>
                         @endif
@@ -189,10 +219,12 @@
                             <small class="form-hint mb-2 d-block">Isi jawaban teks atau unggah berkas — minimal salah satu.</small>
                         @endif
 
-                        <button class="btn btn-primary w-100 student-submit-action" data-loading="Mengirim tugas…">
-                            <i class="ti ti-{{ $submission ? 'refresh' : 'upload' }} me-1"></i>{{ $submission ? 'Perbarui Jawaban' : 'Kumpulkan Tugas' }}
-                        </button>
-                        <small class="form-hint d-block mt-1 text-center">Bisa diperbarui selama belum dinilai dosen.</small>
+                        <div class="student-submit-bar">
+                            <button class="btn btn-primary w-100 student-submit-action" @unless($submission) data-loading="Mengirim tugas…" @endunless>
+                                <i class="ti ti-{{ $submission ? 'refresh' : 'upload' }} me-1"></i>{{ $submission ? 'Perbarui Jawaban' : 'Kumpulkan Tugas' }}
+                            </button>
+                            <small class="form-hint d-block mt-1 text-center">Bisa diperbarui selama belum dinilai dosen.</small>
+                        </div>
                     </form>
 
                     @if ($submission)
@@ -209,3 +241,12 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.assignment-instructions{font-size:.95rem;line-height:1.65;overflow-wrap:anywhere;}
+@media (max-width:575.98px){
+    .student-submit-bar{position:sticky;z-index:20;bottom:calc(4.75rem + env(safe-area-inset-bottom));margin:1rem -.25rem -.25rem;padding:.65rem .25rem .25rem;background:linear-gradient(to bottom,transparent,var(--tblr-bg-surface) 20%);}
+}
+</style>
+@endpush
