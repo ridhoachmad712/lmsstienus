@@ -69,12 +69,15 @@
 
     @if ($nextMeeting)
         <div class="mb-4">
-            <div class="text-secondary small mb-2">Pertemuan berikutnya</div>
-            <div class="card"><div class="card-body d-flex align-items-center gap-3 py-3">
-                <span class="avatar bg-azure-lt"><i class="ti ti-calendar-event fs-2"></i></span>
+            <h2 class="h3 mb-2">Pertemuan Berikutnya</h2>
+            <div class="card"><div class="card-body d-flex align-items-center gap-3 py-2 px-3">
+                <time datetime="{{ $nextMeeting->date->format('Y-m-d') }}" class="text-center flex-shrink-0" style="width:2.5rem">
+                    <span class="d-block fw-bold fs-3 lh-1">{{ $nextMeeting->date->format('d') }}</span>
+                    <span class="d-block text-secondary text-uppercase" style="font-size:.68rem">{{ $nextMeeting->date->translatedFormat('M') }}</span>
+                </time>
                 <div class="min-w-0 flex-fill">
-                    <div class="fw-bold text-truncate">Pertemuan {{ $nextMeeting->number }} · {{ $nextMeeting->topic }}</div>
-                    <div class="text-secondary small">{{ $nextMeeting->date->translatedFormat('l, d M Y') }}@if($nextMeeting->location) · {{ $nextMeeting->location }}@endif</div>
+                    <div class="fw-semibold text-truncate">{{ $nextMeeting->topic }}</div>
+                    <div class="text-secondary small text-truncate">Pertemuan {{ $nextMeeting->number }}@if($nextMeeting->location) · {{ $nextMeeting->location }}@endif</div>
                 </div>
             </div></div>
         </div>

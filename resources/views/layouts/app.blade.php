@@ -45,6 +45,8 @@
         .lms-subnav::-webkit-scrollbar-thumb{background:var(--tblr-border-color);border-radius:4px;}
         /* Judul hero kelas: lebih kecil di HP */
         .course-hero-title{font-size:1.4rem;line-height:1.2;overflow-wrap:anywhere;}
+        @media (min-width:576px){.w-sm-auto{width:auto !important;}}
+        @media (min-width:768px){.w-md-auto{width:auto !important;}}
         @media (min-width:768px){.course-hero-title{font-size:1.9rem;}}
         /* Skeleton loading (shimmer) */
         .skeleton{position:relative;overflow:hidden;background:var(--tblr-border-color,#e6e7e9);border-radius:var(--tblr-border-radius,4px);}
@@ -79,6 +81,12 @@
             body.student-mobile-ui .page-title{font-size:1.35rem;line-height:1.25;}
             body.student-mobile-ui .footer{display:none;}
             body.student-mobile-ui .card{border-radius:.875rem !important;box-shadow:0 1px 3px rgba(35,46,60,.06);}
+            body.student-mobile-ui .empty{padding:1rem .5rem;}
+            body.student-mobile-ui .empty .empty-icon{margin-bottom:.5rem !important;}
+            body.student-mobile-ui .empty .empty-icon .avatar{width:2.75rem;height:2.75rem;}
+            body.student-mobile-ui .empty .empty-icon i{font-size:1.4rem !important;}
+            body.student-mobile-ui .empty .empty-title{margin-bottom:.25rem;font-size:.95rem;}
+            body.student-mobile-ui .empty .empty-subtitle{margin-bottom:.75rem;font-size:.78rem;}
             body.student-mobile-ui .list-group-item{min-height:4rem;padding:.8rem 1rem;}
             body.student-mobile-ui .btn:not(.btn-sm):not(.btn-link){min-height:2.75rem;}
             body.student-mobile-ui .toast-container{bottom:calc(4.75rem + env(safe-area-inset-bottom)) !important;padding:.75rem !important;width:100%;}
@@ -102,10 +110,13 @@
             .mobile-bottom-nav__badge{position:absolute;top:.15rem;left:calc(50% + .45rem);min-width:1rem;padding:.05rem .25rem;border-radius:2rem;background:var(--tblr-danger);color:#fff;font-size:.58rem;text-align:center;}
             .mobile-more-sheet{z-index:1090;height:auto !important;max-height:82vh;border-radius:1.25rem 1.25rem 0 0;}
             .mobile-more-sheet .offcanvas-header{padding:1rem 1.25rem .5rem;}
+            .mobile-more-profile{display:flex;align-items:center;gap:.75rem;padding:.85rem;border-radius:.875rem;background:var(--tblr-bg-surface-secondary);}
+            .mobile-more-section-title{margin:.9rem 0 .4rem;color:var(--tblr-secondary-color);font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;}
             .mobile-more-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;}
             .mobile-more-link{display:flex;min-width:0;min-height:5.25rem;padding:.75rem .35rem;flex-direction:column;align-items:center;justify-content:center;gap:.45rem;border:1px solid var(--tblr-border-color);border-radius:.875rem;color:inherit;text-decoration:none;text-align:center;font-size:.75rem;font-weight:600;}
             .mobile-more-link i{font-size:1.5rem;color:var(--tblr-primary);}
             .mobile-more-link:hover,.mobile-more-link:focus{color:var(--tblr-primary);background:rgba(var(--tblr-primary-rgb),.08);border-color:rgba(var(--tblr-primary-rgb),.35);text-decoration:none;transform:translateY(-2px);}
+            .mobile-more-logout{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;min-height:2.75rem;margin-top:1rem;border:1px solid rgba(var(--tblr-danger-rgb),.25);border-radius:.875rem;background:transparent;color:var(--tblr-danger);font-weight:600;}
         }
         @media (prefers-reduced-motion:reduce){
             .navbar .nav-link,.dropdown-item,.mobile-bottom-nav__item,.mobile-more-link{transition:none !important;transform:none !important;}
@@ -322,8 +333,10 @@
         <a href="{{ route('calendar') }}" class="mobile-bottom-nav__item {{ $mobileCalendarActive ? 'active' : '' }}" aria-current="{{ $mobileCalendarActive ? 'page' : 'false' }}">
             <i class="ti ti-calendar"></i><span>Kalender</span>
         </a>
+        @php($mobileUnread = $user->notifications()->unread()->count())
         <button class="mobile-bottom-nav__item" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobile-more-menu" aria-controls="mobile-more-menu">
             <i class="ti ti-menu-2"></i><span>Lainnya</span>
+            @if($mobileUnread)<span class="mobile-bottom-nav__badge">{{ $mobileUnread > 99 ? '99+' : $mobileUnread }}</span>@endif
         </button>
     </nav>
 
@@ -336,14 +349,22 @@
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Tutup"></button>
         </div>
         <div class="offcanvas-body pt-2 pb-4">
+            <div class="mobile-more-profile">
+                <x-avatar :name="$user->name" :url="$user->avatarUrl()" size="md" />
+                <div class="min-w-0"><div class="fw-bold text-truncate">{{ $user->name }}</div><div class="small text-secondary text-truncate">{{ $user->nim_nip ?: 'Mahasiswa' }}</div></div>
+            </div>
+            <div class="mobile-more-section-title">Akademik</div>
             <div class="mobile-more-grid">
                 <a href="{{ route('dashboard.mahasiswa') }}#pengingat" class="mobile-more-link"><i class="ti ti-checklist"></i><span>Pengingat</span></a>
-                <a href="{{ route('notifications.index') }}" class="mobile-more-link"><i class="ti ti-bell"></i><span>Notifikasi</span></a>
+                <a href="{{ route('notifications.index') }}" class="mobile-more-link position-relative"><i class="ti ti-bell"></i><span>Notifikasi</span>@if($mobileUnread)<span class="badge bg-red text-white position-absolute top-0 end-0 m-2">{{ $mobileUnread }}</span>@endif</a>
                 <a href="{{ route('enrollments.join.show') }}" class="mobile-more-link"><i class="ti ti-key"></i><span>Gabung Kelas</span></a>
+            </div>
+            <div class="mobile-more-section-title">Akun & Bantuan</div>
+            <div class="mobile-more-grid">
                 <a href="{{ route('profile.edit') }}" class="mobile-more-link"><i class="ti ti-user"></i><span>Profil</span></a>
                 <a href="{{ route('panduan') }}" class="mobile-more-link"><i class="ti ti-help-circle"></i><span>Panduan</span></a>
-                <button type="submit" form="mobile-logout-form" class="mobile-more-link text-danger bg-transparent"><i class="ti ti-logout text-danger"></i><span>Keluar</span></button>
             </div>
+            <button type="submit" form="mobile-logout-form" class="mobile-more-logout"><i class="ti ti-logout"></i><span>Keluar dari akun</span></button>
             <form id="mobile-logout-form" method="POST" action="{{ route('logout') }}" class="d-none">@csrf</form>
         </div>
     </div>

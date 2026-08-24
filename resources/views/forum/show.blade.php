@@ -11,6 +11,10 @@
     <li class="breadcrumb-item active" aria-current="page">{{ \Illuminate\Support\Str::limit($thread->title, 24) }}</li>
 @endsection
 
+@push('styles')
+<style>@media(max-width:575.98px){body.student-mobile-ui .page-header{display:none;}}</style>
+@endpush
+
 @section('page-actions')
     <div class="btn-list">
         <a href="{{ route('forum.index', $thread->course) }}" class="btn"><i class="ti ti-arrow-left me-1"></i>Forum</a>
@@ -36,6 +40,11 @@
 @php($isOwner = auth()->user()->isDosen() && $thread->course->user_id === auth()->id())
 @include('courses._subnav')
 
+<div class="d-md-none mb-3">
+    <div class="text-secondary small">Diskusi</div>
+    <h1 class="h2 mb-0">{{ $thread->title }}</h1>
+</div>
+
 <div class="row justify-content-center">
     <div class="col-lg-8">
         {{-- Thread utama --}}
@@ -43,7 +52,7 @@
             <div class="card-body">
                 <div class="d-flex mb-2">
                     <x-avatar :name="$thread->author->name" :url="$thread->author->avatarUrl()" size="md" class="me-2" />
-                    <div>
+                    <div class="min-w-0">
                         <div class="fw-bold">{{ $thread->author->name }} {!! $roleBadge($thread->author) !!}</div>
                         <div class="text-secondary small">
                             {{ $thread->created_at->translatedFormat('d M Y H:i') }}
@@ -79,8 +88,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-1">
                         <x-avatar :name="$reply->author->name" :url="$reply->author->avatarUrl()" class="me-2" />
-                        <div class="fw-bold">{{ $reply->author->name }} {!! $roleBadge($reply->author) !!}</div>
-                        <span class="text-secondary small ms-2">{{ $reply->created_at->diffForHumans() }}@if ($reply->updated_at->gt($reply->created_at)) · disunting @endif</span>
+                        <div class="min-w-0 flex-fill"><div class="fw-bold text-truncate">{{ $reply->author->name }} {!! $roleBadge($reply->author) !!}</div><div class="text-secondary small">{{ $reply->created_at->diffForHumans() }}@if ($reply->updated_at->gt($reply->created_at)) · disunting @endif</div></div>
                         @if ($canEditReply)
                             <div class="btn-list ms-auto">
                                 <button type="button" class="btn btn-sm btn-ghost-secondary" @click="edit = ! edit" title="Edit balasan"><i class="ti ti-pencil"></i></button>
@@ -111,7 +119,7 @@
             <div class="card-body">
                 <label class="form-label">Tulis balasan</label>
                 <textarea name="content" class="form-control mb-2" rows="3" required></textarea>
-                <button class="btn btn-primary"><i class="ti ti-send me-1"></i>Kirim Balasan</button>
+                <button class="btn btn-primary w-100 w-md-auto"><i class="ti ti-send me-1"></i>Kirim Balasan</button>
             </div>
         </form>
     </div>

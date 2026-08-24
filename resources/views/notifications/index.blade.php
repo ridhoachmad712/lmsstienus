@@ -4,9 +4,11 @@
 @section('page-title', 'Notifikasi')
 
 @section('page-actions')
+    @if($notifications->isNotEmpty())
     <form method="POST" action="{{ route('notifications.readAll') }}">@csrf
         <button class="btn"><i class="ti ti-checks me-1"></i>Tandai semua dibaca</button>
     </form>
+    @endif
 @endsection
 
 @section('content')

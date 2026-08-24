@@ -2,7 +2,7 @@
     $heroStudents = $course->students_count ?? ($course->relationLoaded('students') ? $course->students->count() : $course->students()->count());
     $heroMeetings = $course->meetings_count ?? ($course->relationLoaded('meetings') ? $course->meetings->count() : $course->meetings()->count());
 @endphp
-<div class="card mb-3 text-white course-hero" style="background: linear-gradient(135deg, #206bc4, #4263eb);">
+<div @class(['card mb-3 text-white course-hero', 'd-none d-md-block' => auth()->user()->isMahasiswa() && ! request()->routeIs('courses.show')]) style="background: linear-gradient(135deg, #206bc4, #4263eb);">
     <div class="card-body d-flex flex-wrap align-items-center gap-3">
         <span class="avatar avatar-lg bg-white text-primary flex-shrink-0"><i class="ti ti-school fs-1"></i></span>
         <div class="me-auto" style="min-width:0">

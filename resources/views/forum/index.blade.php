@@ -9,19 +9,22 @@
 @section('content')
 @include('courses._hero')
 
+<button class="btn btn-primary w-100 mb-3 d-md-none" data-bs-toggle="modal" data-bs-target="#modal-thread"><i class="ti ti-plus me-1"></i>Diskusi Baru</button>
+
 <div class="row justify-content-center">
     <div class="col-lg-9">
         @forelse ($threads as $thread)
-            <div class="card mb-2">
-                <div class="card-body d-flex align-items-center">
+            <div class="card mb-2 overflow-hidden">
+                <a href="{{ route('forum.show', $thread) }}" class="card-body d-flex align-items-center text-reset text-decoration-none">
                     <span class="avatar bg-{{ $thread->pinned ? 'yellow' : 'blue' }}-lt me-3"><i class="ti {{ $thread->pinned ? 'ti-pin' : 'ti-message' }}"></i></span>
                     <div class="me-auto">
-                        <a href="{{ route('forum.show', $thread) }}" class="fw-bold text-reset">{{ $thread->title }}</a>
+                        <div class="fw-bold">{{ $thread->title }}</div>
                         @if ($thread->pinned)<span class="badge bg-yellow-lt ms-1">Disematkan</span>@endif
                         <div class="text-secondary small">{{ $thread->author->name }} · {{ $thread->created_at->diffForHumans() }}</div>
                     </div>
                     <span class="badge bg-secondary-lt"><i class="ti ti-messages me-1"></i>{{ $thread->replies_count }}</span>
-                </div>
+                    <i class="ti ti-chevron-right text-secondary ms-2 d-md-none"></i>
+                </a>
             </div>
         @empty
             <div class="card"><div class="card-body">

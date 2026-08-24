@@ -15,6 +15,11 @@
 @php($course = $assignment->course)
 @include('courses._subnav')
 
+<div class="d-md-none mb-3">
+    <div class="text-secondary small">{{ $assignment->isQuiz() ? 'Kuis' : 'Tugas' }}</div>
+    <h1 class="h2 mb-0">{{ $assignment->title }}</h1>
+</div>
+
 <div class="row row-cards">
     <div class="col-lg-7 order-2 order-lg-1">
         <div class="card">
@@ -241,6 +246,10 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>@media(max-width:575.98px){body.student-mobile-ui .page-header{display:none;}}</style>
+@endpush
 
 @push('styles')
 <style>

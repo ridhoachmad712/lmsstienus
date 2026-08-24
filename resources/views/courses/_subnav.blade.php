@@ -33,13 +33,16 @@
             </div>
         </div>
     @else
-    {{-- HP, halaman bagian: tombol kembali menjaga konteks mata kuliah. --}}
-    <div class="d-md-none d-flex gap-2">
-        <a href="{{ route('courses.show', $course) }}" class="btn btn-icon flex-shrink-0" aria-label="Kembali ke {{ $course->name }}"><i class="ti ti-arrow-left"></i></a>
-        <div class="dropdown flex-fill">
-        <button class="btn w-100 d-flex align-items-center dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="ti {{ $activeItem[1] }} me-2"></i>
-            <span class="me-auto text-truncate">{{ $activeItem[2] }}</span>
+    {{-- HP, halaman bagian: satu app bar untuk konteks, kembali, dan perpindahan menu. --}}
+    <div class="d-md-none course-app-bar">
+        <a href="{{ route('courses.show', $course) }}" class="course-app-bar__back" aria-label="Kembali ke {{ $course->name }}"><i class="ti ti-chevron-left"></i></a>
+        <div class="dropdown flex-fill min-w-0">
+        <button class="course-app-bar__menu dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="course-app-bar__icon"><i class="ti {{ $activeItem[1] }}"></i></span>
+            <span class="min-w-0 me-auto text-start">
+                <span class="course-app-bar__title text-truncate">{{ $activeItem[2] }}</span>
+                <span class="course-app-bar__course text-truncate">{{ $course->name }}</span>
+            </span>
         </button>
         <div class="dropdown-menu w-100">
             @foreach ($subnav as [$route, $icon, $label, $params, $patterns])
@@ -67,6 +70,14 @@
 @push('styles')
 <style>
 @media (max-width:575.98px){
+    .course-app-bar{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;}
+    .course-app-bar__back{display:grid;place-items:center;width:2.75rem;height:2.75rem;flex:0 0 2.75rem;border:1px solid var(--tblr-border-color);border-radius:.8rem;background:var(--tblr-bg-surface);color:inherit;text-decoration:none;box-shadow:0 1px 3px rgba(35,46,60,.05);}
+    .course-app-bar__back i{font-size:1.25rem;}
+    .course-app-bar__menu{display:flex;align-items:center;gap:.65rem;width:100%;min-height:2.75rem;padding:.35rem .75rem;border:1px solid var(--tblr-border-color);border-radius:.8rem;background:var(--tblr-bg-surface);color:inherit;box-shadow:0 1px 3px rgba(35,46,60,.05);}
+    .course-app-bar__icon{display:grid;place-items:center;width:1.75rem;height:1.75rem;flex:0 0 1.75rem;border-radius:.55rem;background:rgba(var(--tblr-primary-rgb),.1);color:var(--tblr-primary);}
+    .course-app-bar__title,.course-app-bar__course{display:block;line-height:1.15;}
+    .course-app-bar__title{font-size:.8rem;font-weight:700;}
+    .course-app-bar__course{margin-top:.15rem;color:var(--tblr-secondary-color);font-size:.68rem;}
     .course-mobile-menu{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;}
     .course-mobile-menu__item{display:flex;min-width:0;min-height:5rem;padding:.65rem .35rem;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;border:1px solid var(--tblr-border-color);border-radius:.875rem;background:var(--tblr-bg-surface);color:inherit;text-decoration:none;text-align:center;font-size:.7rem;font-weight:600;box-shadow:0 1px 3px rgba(35,46,60,.05);transition:color .15s ease,background-color .15s ease,border-color .15s ease,transform .15s ease,box-shadow .15s ease;}
     .course-mobile-menu__item i{font-size:1.4rem;color:var(--tblr-primary);}
