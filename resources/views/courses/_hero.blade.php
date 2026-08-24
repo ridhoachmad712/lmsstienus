@@ -13,8 +13,8 @@
                 @if ($course->isCompleted()) · <span class="badge bg-white text-dark">Selesai</span> @endif
             </div>
         </div>
-        <div class="d-flex gap-4 text-center">
-            <div><div class="h2 mb-0 text-white">{{ $heroStudents }}</div><div class="text-white-50 small">Mahasiswa</div></div>
+        <div class="d-flex gap-4 text-center course-hero-stats">
+            <div class="course-hero-students"><div class="h2 mb-0 text-white">{{ $heroStudents }}</div><div class="text-white-50 small">Mahasiswa</div></div>
             <div><div class="h2 mb-0 text-white">{{ $heroMeetings }}</div><div class="text-white-50 small">Pertemuan</div></div>
         </div>
         @hasSection('hero-actions')
@@ -55,6 +55,12 @@
         --tblr-btn-color: var(--tblr-red);
         --tblr-btn-hover-color: var(--tblr-red);
         --tblr-btn-active-color: var(--tblr-red);
+    }
+    @media (max-width:575.98px) {
+        body.student-mobile-ui .course-hero .course-hero-students { display:none; }
+        body.student-mobile-ui .course-hero .avatar-lg { display:none; }
+        body.student-mobile-ui .course-hero .card-body { padding:1rem; }
+        body.student-mobile-ui .course-hero-stats { margin-left:auto; }
     }
 </style>
 @endpush

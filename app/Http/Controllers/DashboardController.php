@@ -139,14 +139,6 @@ class DashboardController extends Controller
             ->orderByRaw('deadline IS NULL, deadline ASC')
             ->get();
 
-        // Nilai terbaru
-        $recentGrades = $user->submissions()
-            ->whereNotNull('score')
-            ->with('assignment.course')
-            ->latest('updated_at')
-            ->take(5)
-            ->get();
-
         // Pertemuan mendatang
         $upcomingMeetings = Meeting::whereIn('course_id', $courseIds)
             ->whereDate('date', '>=', now()->toDateString())
@@ -176,7 +168,7 @@ class DashboardController extends Controller
         ];
 
         return view('dashboard.mahasiswa', compact(
-            'courses', 'pending', 'recentGrades', 'upcomingMeetings', 'lowAttendance', 'stats'
+            'courses', 'pending', 'upcomingMeetings', 'lowAttendance', 'stats'
         ));
     }
 }

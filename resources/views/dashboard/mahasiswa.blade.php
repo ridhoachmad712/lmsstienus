@@ -7,18 +7,10 @@
 @section('content')
 <div class="d-none d-md-block">@include('partials.welcome-banner')</div>
 
-<div class="d-md-none mb-4">
-    <div class="text-secondary small">{{ now()->translatedFormat('l, d F Y') }}</div>
-    <div class="fw-bold fs-2">Pilih mata kuliah untuk mulai belajar</div>
-</div>
-
 {{-- Di HP, mata kuliah adalah pintu masuk utama. --}}
-<section class="d-md-none mb-4" aria-labelledby="mobile-courses-title">
+<section class="d-md-none mb-3" aria-labelledby="mobile-courses-title">
     <div class="d-flex align-items-end mb-2">
-        <div>
-            <div class="text-secondary small">Semester aktif</div>
-            <h2 class="h3 mb-0" id="mobile-courses-title">Mata Kuliah Saya</h2>
-        </div>
+        <h2 class="h2 mb-0" id="mobile-courses-title">Mata Kuliah Saya</h2>
         <a href="{{ route('courses.index') }}" class="ms-auto small fw-bold text-decoration-none">Lihat semua</a>
     </div>
     @if ($courses->isEmpty())
@@ -29,23 +21,22 @@
             <a href="{{ route('enrollments.join.show') }}" class="btn btn-primary w-100"><i class="ti ti-key me-1"></i>Gabung Kelas</a>
         </div></div>
     @else
-        @foreach ($courses as $course)
-            @php($coursePending = $pending->where('course_id', $course->id)->count())
-            <a href="{{ route('courses.show', $course) }}" class="card text-reset text-decoration-none mb-2">
-                <div class="card-body d-flex align-items-center gap-3 py-3">
-                    <span class="avatar avatar-md bg-{{ $course->color() }}-lt flex-shrink-0"><i class="ti ti-book-2 fs-2"></i></span>
-                    <div class="min-w-0 flex-fill">
-                        <div class="fw-bold text-truncate">{{ $course->name }}</div>
-                        <div class="text-secondary small text-truncate">{{ $course->code }}@if($course->class_name) · Kelas {{ $course->class_name }}@endif</div>
-                        <div class="text-secondary small text-truncate">{{ $course->lecturer->name }}</div>
-                    </div>
-                    <div class="text-end flex-shrink-0">
-                        @if ($coursePending > 0)<span class="badge bg-orange-lt">{{ $coursePending }} tugas</span>@else<span class="badge bg-green-lt">Selesai</span>@endif
-                        <i class="ti ti-chevron-right text-secondary ms-1"></i>
-                    </div>
-                </div>
-            </a>
-        @endforeach
+        <div class="card overflow-hidden">
+            <div class="list-group list-group-flush">
+                @foreach ($courses as $course)
+                    @php($coursePending = $pending->where('course_id', $course->id)->count())
+                    <a href="{{ route('courses.show', $course) }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-3">
+                        <span class="avatar avatar-sm bg-{{ $course->color() }}-lt flex-shrink-0"><i class="ti ti-book-2"></i></span>
+                        <div class="min-w-0 flex-fill">
+                            <div class="fw-bold text-truncate">{{ $course->name }}</div>
+                            <div class="text-secondary small text-truncate">{{ $course->code }}@if($course->class_name) · Kelas {{ $course->class_name }}@endif · {{ $course->lecturer->name }}</div>
+                        </div>
+                        @if ($coursePending > 0)<span class="badge bg-orange-lt flex-shrink-0">{{ $coursePending }}</span>@endif
+                        <i class="ti ti-chevron-right text-secondary flex-shrink-0"></i>
+                    </a>
+                @endforeach
+            </div>
+        </div>
     @endif
 </section>
 
@@ -139,28 +130,6 @@
                                 <div class="text-secondary small">{{ $m->course->name }}</div>
                             </div>
                             <span class="text-secondary small text-end">{{ $m->date->translatedFormat('d M') }}</span>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-        </div>
-    </div>
-
-    {{-- Nilai terbaru --}}
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header"><h3 class="card-title">Nilai Terbaru</h3></div>
-            @if ($recentGrades->isEmpty())
-                <div class="card-body"><x-empty-state icon="ti-clipboard" title="Belum ada nilai" /></div>
-            @else
-                <div class="list-group list-group-flush">
-                    @foreach ($recentGrades as $sub)
-                        <div class="list-group-item d-flex align-items-center">
-                            <div class="me-auto">
-                                <div class="fw-bold">{{ $sub->assignment->title }}</div>
-                                <div class="text-secondary small">{{ $sub->assignment->course->name }}</div>
-                            </div>
-                            <span class="badge bg-green-lt fs-3">{{ \App\Support\Grades::num($sub->score) }}</span>
                         </div>
                     @endforeach
                 </div>
