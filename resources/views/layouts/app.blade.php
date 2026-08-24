@@ -57,6 +57,28 @@
         }
         /* ============ Penghalusan tampilan mobile (≤575px) ============ */
         @media (max-width: 575.98px) {
+            body.student-mobile-ui{background:var(--tblr-bg-surface-secondary,#f6f8fb);}
+            body.student-mobile-ui .page{padding-bottom:calc(4.75rem + env(safe-area-inset-bottom));}
+            body.student-mobile-ui .navbar{min-height:3.75rem;background:var(--tblr-bg-surface);box-shadow:0 1px 0 rgba(98,105,118,.12);}
+            body.student-mobile-ui .navbar .container-xl{padding-left:1rem;padding-right:.75rem;}
+            body.student-mobile-ui .navbar-toggler,
+            body.student-mobile-ui #navbar-menu{display:none !important;}
+            body.student-mobile-ui .navbar-brand{max-width:58%;margin:0;}
+            body.student-mobile-ui .navbar-brand .brand-logo{max-width:2rem;object-fit:contain;}
+            body.student-mobile-ui .navbar-brand .fs-2{font-size:1rem !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+            body.student-mobile-ui .navbar-nav .nav-link{min-width:2.75rem;min-height:2.75rem;justify-content:center;}
+            body.student-mobile-ui .page-wrapper{min-height:calc(100vh - 3.75rem);}
+            body.student-mobile-ui .page-body{margin-top:.75rem;}
+            body.student-mobile-ui .page-body>.container-xl,
+            body.student-mobile-ui .page-header .container-xl{padding-left:1rem;padding-right:1rem;}
+            body.student-mobile-ui .page-header{padding-top:1rem;padding-bottom:0;}
+            body.student-mobile-ui .page-pretitle{font-size:.7rem;letter-spacing:.04em;}
+            body.student-mobile-ui .page-title{font-size:1.35rem;line-height:1.25;}
+            body.student-mobile-ui .footer{display:none;}
+            body.student-mobile-ui .card{border-radius:.875rem !important;box-shadow:0 1px 3px rgba(35,46,60,.06);}
+            body.student-mobile-ui .list-group-item{min-height:4rem;padding:.8rem 1rem;}
+            body.student-mobile-ui .btn:not(.btn-sm):not(.btn-link){min-height:2.75rem;}
+            body.student-mobile-ui .toast-container{bottom:calc(4.75rem + env(safe-area-inset-bottom)) !important;padding:.75rem !important;width:100%;}
             .page-title{font-size:1.2rem;}
             .page-header{padding-top:.75rem;padding-bottom:.25rem;}
             /* Aksi halaman: turun penuh & boleh membungkus rapi di bawah judul */
@@ -66,10 +88,24 @@
             /* Target sentuh tombol ikon lebih nyaman */
             .btn-icon{min-width:2.25rem;min-height:2.25rem;}
         }
+        .mobile-bottom-nav{display:none;}
+        @media (max-width:575.98px){
+            .mobile-bottom-nav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;z-index:1080;left:0;right:0;bottom:0;min-height:4.25rem;padding:.35rem .35rem calc(.35rem + env(safe-area-inset-bottom));background:var(--tblr-bg-surface);border-top:1px solid var(--tblr-border-color);box-shadow:0 -.25rem 1rem rgba(35,46,60,.08);}
+            .mobile-bottom-nav__item{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1rem;min-height:3.55rem;border:0;background:transparent;color:var(--tblr-secondary-color);font-size:.68rem;font-weight:600;text-decoration:none;border-radius:.75rem;}
+            .mobile-bottom-nav__item i{font-size:1.45rem;line-height:1;}
+            .mobile-bottom-nav__item.active{color:var(--tblr-primary);}
+            .mobile-bottom-nav__item.active::before{content:"";position:absolute;top:.1rem;width:1.5rem;height:.18rem;border-radius:1rem;background:var(--tblr-primary);}
+            .mobile-bottom-nav__badge{position:absolute;top:.15rem;left:calc(50% + .45rem);min-width:1rem;padding:.05rem .25rem;border-radius:2rem;background:var(--tblr-danger);color:#fff;font-size:.58rem;text-align:center;}
+            .mobile-more-sheet{z-index:1090;height:auto !important;max-height:82vh;border-radius:1.25rem 1.25rem 0 0;}
+            .mobile-more-sheet .offcanvas-header{padding:1rem 1.25rem .5rem;}
+            .mobile-more-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;}
+            .mobile-more-link{display:flex;min-width:0;min-height:5.25rem;padding:.75rem .35rem;flex-direction:column;align-items:center;justify-content:center;gap:.45rem;border:1px solid var(--tblr-border-color);border-radius:.875rem;color:inherit;text-decoration:none;text-align:center;font-size:.75rem;font-weight:600;}
+            .mobile-more-link i{font-size:1.5rem;color:var(--tblr-primary);}
+        }
     </style>
     @stack('styles')
 </head>
-<body>
+<body @class(['student-mobile-ui' => auth()->user()?->isMahasiswa()])>
 <div id="nprogress"></div>
 <div class="page">
     @php($user = auth()->user())
@@ -263,6 +299,48 @@
         </footer>
     </div>
 </div>
+
+@if ($user->isMahasiswa())
+    @php($mobileHomeActive = request()->routeIs('dashboard*'))
+    @php($mobileCoursesActive = request()->routeIs('courses.*', 'materials.*', 'forum.*', 'announcements.*', 'syllabus.*'))
+    @php($mobileTasksActive = request()->routeIs('assignments.*', 'quizzes.*', 'submissions.*'))
+    <nav class="mobile-bottom-nav d-print-none" aria-label="Navigasi utama">
+        <a href="{{ route('dashboard') }}" class="mobile-bottom-nav__item {{ $mobileHomeActive ? 'active' : '' }}" aria-current="{{ $mobileHomeActive ? 'page' : 'false' }}">
+            <i class="ti ti-home"></i><span>Beranda</span>
+        </a>
+        <a href="{{ route('courses.index') }}" class="mobile-bottom-nav__item {{ $mobileCoursesActive ? 'active' : '' }}" aria-current="{{ $mobileCoursesActive ? 'page' : 'false' }}">
+            <i class="ti ti-school"></i><span>Kelas</span>
+        </a>
+        <a href="{{ route('dashboard.mahasiswa') }}#tugas" class="mobile-bottom-nav__item {{ $mobileTasksActive ? 'active' : '' }}" aria-current="{{ $mobileTasksActive ? 'page' : 'false' }}">
+            <i class="ti ti-checklist"></i><span>Tugas</span>
+            @if (($stats['pending'] ?? 0) > 0)<span class="mobile-bottom-nav__badge">{{ $stats['pending'] > 9 ? '9+' : $stats['pending'] }}</span>@endif
+        </a>
+        <button class="mobile-bottom-nav__item" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobile-more-menu" aria-controls="mobile-more-menu">
+            <i class="ti ti-menu-2"></i><span>Lainnya</span>
+        </button>
+    </nav>
+
+    <div class="offcanvas offcanvas-bottom mobile-more-sheet d-print-none" tabindex="-1" id="mobile-more-menu" aria-labelledby="mobile-more-title">
+        <div class="offcanvas-header">
+            <div>
+                <div class="text-secondary small">Menu mahasiswa</div>
+                <h2 class="offcanvas-title" id="mobile-more-title">Lainnya</h2>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Tutup"></button>
+        </div>
+        <div class="offcanvas-body pt-2 pb-4">
+            <div class="mobile-more-grid">
+                <a href="{{ route('calendar') }}" class="mobile-more-link"><i class="ti ti-calendar"></i><span>Kalender</span></a>
+                <a href="{{ route('notifications.index') }}" class="mobile-more-link"><i class="ti ti-bell"></i><span>Notifikasi</span></a>
+                <a href="{{ route('enrollments.join.show') }}" class="mobile-more-link"><i class="ti ti-key"></i><span>Gabung Kelas</span></a>
+                <a href="{{ route('profile.edit') }}" class="mobile-more-link"><i class="ti ti-user"></i><span>Profil</span></a>
+                <a href="{{ route('panduan') }}" class="mobile-more-link"><i class="ti ti-help-circle"></i><span>Panduan</span></a>
+                <button type="submit" form="mobile-logout-form" class="mobile-more-link text-danger bg-transparent"><i class="ti ti-logout text-danger"></i><span>Keluar</span></button>
+            </div>
+            <form id="mobile-logout-form" method="POST" action="{{ route('logout') }}" class="d-none">@csrf</form>
+        </div>
+    </div>
+@endif
 
 {{-- Toast container (untuk flash message) --}}
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1090;">
