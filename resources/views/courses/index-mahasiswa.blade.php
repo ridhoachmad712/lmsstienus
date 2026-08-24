@@ -27,12 +27,6 @@
                     <span class="avatar avatar-md bg-{{ $course->color() }}-lt flex-shrink-0"><i class="ti ti-book-2 fs-2"></i></span>
                     <div class="min-w-0 flex-fill">
                         <div class="fw-bold text-truncate">{{ $course->name }}</div>
-                        <div class="text-secondary small text-truncate">{{ $course->code }}@if ($course->class_name) · Kelas {{ $course->class_name }}@endif · {{ $course->semester }} {{ $course->year }}</div>
-                        <div class="text-secondary small text-truncate mt-1"><i class="ti ti-user me-1"></i>{{ $course->lecturer->name }}</div>
-                    </div>
-                    <div class="text-end flex-shrink-0">
-                        <div class="small fw-bold">{{ $course->meetings_count }}</div>
-                        <div class="text-secondary" style="font-size:.65rem">pertemuan</div>
                     </div>
                     <i class="ti ti-chevron-right text-secondary flex-shrink-0"></i>
                 </a>
@@ -49,11 +43,6 @@
                         <div class="d-flex align-items-center mb-1">
                             <span class="avatar bg-{{ $course->color() }}-lt me-2"><i class="ti ti-school"></i></span>
                             <h3 class="card-title mb-0">{{ $course->name }}</h3>
-                        </div>
-                        <div class="text-secondary mb-2">{{ $course->code }}@if ($course->class_name) · {{ $course->class_name }}@endif · {{ $course->semester }} {{ $course->year }}</div>
-                        <div class="d-flex align-items-center text-secondary small">
-                            <i class="ti ti-user me-1"></i>{{ $course->lecturer->name }}
-                            <span class="ms-auto"><i class="ti ti-calendar me-1"></i>{{ $course->meetings_count }} pertemuan</span>
                         </div>
                     </div>
                     <div class="card-footer">

@@ -81,6 +81,7 @@ Route::middleware('auth')->group(function () {
     // Kelas — index & show untuk kedua role (otorisasi di controller)
     Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
     Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
+    Route::get('/courses/{course}/materials', [CourseController::class, 'materials'])->name('courses.materials');
 
     // Materi — preview (inline) & download untuk kedua role
     Route::get('/materials/{material}/preview', [MaterialController::class, 'preview'])->name('materials.preview');

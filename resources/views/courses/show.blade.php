@@ -50,7 +50,7 @@
 @include('courses._hero')
 
 @unless ($isDosen)
-<div class="d-md-none course-student-home">
+<div class="course-student-home">
     @if ($nextAssignment)
         <div class="card border-primary mb-3">
             <div class="card-body">
@@ -80,44 +80,11 @@
         </div>
     @endif
 
-    <div id="materi-mobile" style="scroll-margin-top:5rem">
-        <div class="d-flex align-items-end mb-2">
-            <div><div class="text-secondary small">Bahan pembelajaran</div><h2 class="h3 mb-0">Materi Terbaru</h2></div>
-            <span class="badge bg-secondary-lt ms-auto">{{ $course->meetings->count() }} pertemuan</span>
-        </div>
-        @forelse ($course->meetings->sortByDesc('number')->take(3) as $meeting)
-            <div class="card mb-2">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-start gap-2 mb-2">
-                        <span class="badge bg-blue-lt">P{{ $meeting->number }}</span>
-                        <div class="min-w-0"><div class="fw-bold">{{ $meeting->topic }}</div>@if($meeting->date)<div class="text-secondary small">{{ $meeting->date->translatedFormat('d M Y') }}</div>@endif</div>
-                    </div>
-                    @forelse ($meeting->materials as $material)
-                        @if ($material->isText())
-                            <div class="d-flex align-items-center gap-2 border-top py-2">
-                                <i class="ti ti-notes text-primary fs-2"></i><span class="text-truncate flex-fill">{{ $material->title }}</span><span class="badge bg-purple-lt">Teks</span>
-                            </div>
-                            @if ($material->content)<div class="text-secondary small pb-2">{{ \Illuminate\Support\Str::limit(strip_tags(\Illuminate\Support\Str::markdown($material->content)), 140) }}</div>@endif
-                        @else
-                            <a href="{{ route('materials.preview', $material) }}" class="d-flex align-items-center gap-2 border-top py-2 text-reset text-decoration-none">
-                                <i class="ti ti-{{ $material->isFile() ? 'file-text' : 'link' }} text-primary fs-2"></i>
-                                <span class="text-truncate flex-fill">{{ $material->title }}</span><i class="ti ti-chevron-right text-secondary"></i>
-                            </a>
-                        @endif
-                    @empty
-                        <div class="text-secondary small border-top pt-2">Belum ada materi.</div>
-                    @endforelse
-                </div>
-            </div>
-        @empty
-            <div class="card"><div class="card-body text-center text-secondary py-4">Belum ada pertemuan atau materi.</div></div>
-        @endforelse
-    </div>
 </div>
 @endunless
 
 {{-- ============ PERTEMUAN & MATERI ============ --}}
-<div @class(['d-none d-md-block' => ! $isDosen])>
+<div @class(['d-none' => ! $isDosen])>
                 @if ($isDosen && ! $course->isCompleted())
                     @php($maxMeetings = \App\Http\Controllers\MeetingController::MAX_MEETINGS)
                     <div class="mb-3 d-flex align-items-center">

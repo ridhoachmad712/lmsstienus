@@ -94,7 +94,8 @@
             .mobile-bottom-nav__item{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1rem;min-height:3.55rem;border:0;background:transparent;color:var(--tblr-secondary-color);font-size:.68rem;font-weight:600;text-decoration:none;border-radius:.75rem;}
             .mobile-bottom-nav__item i{font-size:1.45rem;line-height:1;}
             .mobile-bottom-nav__item.active{color:var(--tblr-primary);}
-            .mobile-bottom-nav__item.active::before{content:"";position:absolute;top:.1rem;width:1.5rem;height:.18rem;border-radius:1rem;background:var(--tblr-primary);}
+            .mobile-bottom-nav__item{transition:color .15s ease,background-color .15s ease,transform .15s ease;}
+            .mobile-bottom-nav__item:hover{color:var(--tblr-primary);background:rgba(var(--tblr-primary-rgb),.08);text-decoration:none;transform:translateY(-1px);}
             .mobile-bottom-nav__badge{position:absolute;top:.15rem;left:calc(50% + .45rem);min-width:1rem;padding:.05rem .25rem;border-radius:2rem;background:var(--tblr-danger);color:#fff;font-size:.58rem;text-align:center;}
             .mobile-more-sheet{z-index:1090;height:auto !important;max-height:82vh;border-radius:1.25rem 1.25rem 0 0;}
             .mobile-more-sheet .offcanvas-header{padding:1rem 1.25rem .5rem;}
@@ -229,7 +230,7 @@
                         <li class="nav-item {{ request()->routeIs('courses.*', 'assignments.*', 'quizzes.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*', 'analytics.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('courses.index') }}">
                                 <span class="nav-link-icon"><i class="ti ti-school"></i></span>
-                                <span class="nav-link-title">{{ $user->isMahasiswa() ? 'Mata Kuliah' : 'Kelas Saya' }}</span>
+                                <span class="nav-link-title">Kelas</span>
                             </a>
                         </li>
                         <li class="nav-item {{ request()->routeIs('calendar') ? 'active' : '' }}">
@@ -309,7 +310,7 @@
             <i class="ti ti-home"></i><span>Beranda</span>
         </a>
         <a href="{{ route('courses.index') }}" class="mobile-bottom-nav__item {{ $mobileCoursesActive ? 'active' : '' }}" aria-current="{{ $mobileCoursesActive ? 'page' : 'false' }}">
-            <i class="ti ti-books"></i><span>Matkul</span>
+            <i class="ti ti-books"></i><span>Kelas</span>
         </a>
         <a href="{{ route('calendar') }}" class="mobile-bottom-nav__item {{ $mobileCalendarActive ? 'active' : '' }}" aria-current="{{ $mobileCalendarActive ? 'page' : 'false' }}">
             <i class="ti ti-calendar"></i><span>Kalender</span>

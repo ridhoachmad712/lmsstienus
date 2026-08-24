@@ -190,6 +190,16 @@ class CourseController extends Controller
         ));
     }
 
+    /** Halaman materi terpisah agar beranda mata kuliah tetap ringkas. */
+    public function materials(Request $request, Course $course): View
+    {
+        $this->authorizeView($request, $course);
+
+        $course->load(['lecturer', 'meetings.materials'])->loadCount('students');
+
+        return view('courses.materials', compact('course'));
+    }
+
     /** Daftar mahasiswa kelas (tab tersendiri, khusus dosen pemilik). */
     public function students(Request $request, Course $course): View
     {

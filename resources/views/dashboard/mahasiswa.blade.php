@@ -24,14 +24,12 @@
         <div class="card overflow-hidden">
             <div class="list-group list-group-flush">
                 @foreach ($courses as $course)
-                    @php($coursePending = $pending->where('course_id', $course->id)->count())
                     <a href="{{ route('courses.show', $course) }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-3">
                         <span class="avatar avatar-sm bg-{{ $course->color() }}-lt flex-shrink-0"><i class="ti ti-book-2"></i></span>
                         <div class="min-w-0 flex-fill">
                             <div class="fw-bold text-truncate">{{ $course->name }}</div>
-                            <div class="text-secondary small text-truncate">{{ $course->code }}@if($course->class_name) · Kelas {{ $course->class_name }}@endif · {{ $course->lecturer->name }}</div>
+                            <div class="text-secondary small text-truncate">{{ $course->lecturer->name }}</div>
                         </div>
-                        @if ($coursePending > 0)<span class="badge bg-orange-lt flex-shrink-0">{{ $coursePending }}</span>@endif
                         <i class="ti ti-chevron-right text-secondary flex-shrink-0"></i>
                     </a>
                 @endforeach
@@ -149,7 +147,7 @@
                         <a href="{{ route('courses.show', $course) }}" class="list-group-item list-group-item-action d-flex align-items-center">
                             <span class="avatar bg-primary-lt me-2"><i class="ti ti-book"></i></span>
                             <div><div class="fw-bold">{{ $course->name }}</div>
-                                <div class="text-secondary small">{{ $course->code }} · {{ $course->lecturer->name }}</div></div>
+                                <div class="text-secondary small">{{ $course->lecturer->name }}</div></div>
                             <i class="ti ti-chevron-right ms-auto text-secondary"></i>
                         </a>
                     @endforeach

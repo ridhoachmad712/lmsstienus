@@ -7,13 +7,13 @@
         <span class="avatar avatar-lg bg-white text-primary flex-shrink-0"><i class="ti ti-school fs-1"></i></span>
         <div class="me-auto" style="min-width:0">
             <div class="course-hero-title fw-bold mb-0 text-white">{{ $course->name }}</div>
-            <div class="text-white-50 small">
+            <div @class(['text-white-50 small course-hero-meta', 'd-none' => auth()->user()->isMahasiswa()])>
                 {{ $course->code }}@if ($course->class_name) · {{ $course->class_name }}@endif · {{ $course->semester }} {{ $course->year }}
                 @unless (auth()->user()->isDosen()) · {{ $course->lecturer->name }} @endunless
                 @if ($course->isCompleted()) · <span class="badge bg-white text-dark">Selesai</span> @endif
             </div>
         </div>
-        <div class="d-flex gap-4 text-center course-hero-stats">
+        <div @class(['d-flex gap-4 text-center course-hero-stats', 'd-none' => auth()->user()->isMahasiswa()])>
             <div class="course-hero-students"><div class="h2 mb-0 text-white">{{ $heroStudents }}</div><div class="text-white-50 small">Mahasiswa</div></div>
             <div><div class="h2 mb-0 text-white">{{ $heroMeetings }}</div><div class="text-white-50 small">Pertemuan</div></div>
         </div>
@@ -59,6 +59,8 @@
     @media (max-width:575.98px) {
         body.student-mobile-ui .course-hero .course-hero-students { display:none; }
         body.student-mobile-ui .course-hero .avatar-lg { display:none; }
+        body.student-mobile-ui .course-hero .course-hero-meta,
+        body.student-mobile-ui .course-hero .course-hero-stats { display:none !important; }
         body.student-mobile-ui .course-hero .card-body { padding:1rem; }
         body.student-mobile-ui .course-hero-stats { margin-left:auto; }
     }
