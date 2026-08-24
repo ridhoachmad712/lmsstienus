@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Kelas Saya')
+@section('title', 'Mata Kuliah Saya')
 @section('page-pretitle', 'Perkuliahan')
-@section('page-title', 'Kelas Saya')
+@section('page-title', 'Mata Kuliah Saya')
 
 @section('page-actions')
     <a href="{{ route('enrollments.join.show') }}" class="btn btn-primary"><i class="ti ti-key me-1"></i>Gabung Kelas</a>
@@ -12,7 +12,7 @@
 @if ($courses->isEmpty())
     <div class="card">
         <div class="card-body">
-            <x-empty-state icon="ti-school" title="Belum terdaftar di kelas mana pun"
+            <x-empty-state icon="ti-books" title="Belum ada mata kuliah"
                 description="Punya kode dari dosen? Klik Gabung Kelas. Atau tunggu dosen menambahkan Anda.">
                 <a href="{{ route('enrollments.join.show') }}" class="btn btn-primary"><i class="ti ti-key me-1"></i>Gabung Kelas</a>
             </x-empty-state>
@@ -24,10 +24,10 @@
         <div class="list-group list-group-flush">
             @foreach ($courses as $course)
                 <a href="{{ route('courses.show', $course) }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
-                    <span class="avatar avatar-md bg-{{ $course->color() }}-lt flex-shrink-0"><i class="ti ti-school fs-2"></i></span>
+                    <span class="avatar avatar-md bg-{{ $course->color() }}-lt flex-shrink-0"><i class="ti ti-book-2 fs-2"></i></span>
                     <div class="min-w-0 flex-fill">
                         <div class="fw-bold text-truncate">{{ $course->name }}</div>
-                        <div class="text-secondary small text-truncate">{{ $course->code }}@if ($course->class_name) · {{ $course->class_name }}@endif</div>
+                        <div class="text-secondary small text-truncate">{{ $course->code }}@if ($course->class_name) · Kelas {{ $course->class_name }}@endif · {{ $course->semester }} {{ $course->year }}</div>
                         <div class="text-secondary small text-truncate mt-1"><i class="ti ti-user me-1"></i>{{ $course->lecturer->name }}</div>
                     </div>
                     <div class="text-end flex-shrink-0">

@@ -229,7 +229,7 @@
                         <li class="nav-item {{ request()->routeIs('courses.*', 'assignments.*', 'quizzes.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*', 'analytics.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('courses.index') }}">
                                 <span class="nav-link-icon"><i class="ti ti-school"></i></span>
-                                <span class="nav-link-title">Kelas Saya</span>
+                                <span class="nav-link-title">{{ $user->isMahasiswa() ? 'Mata Kuliah' : 'Kelas Saya' }}</span>
                             </a>
                         </li>
                         <li class="nav-item {{ request()->routeIs('calendar') ? 'active' : '' }}">
@@ -302,18 +302,17 @@
 
 @if ($user->isMahasiswa())
     @php($mobileHomeActive = request()->routeIs('dashboard*'))
-    @php($mobileCoursesActive = request()->routeIs('courses.*', 'materials.*', 'forum.*', 'announcements.*', 'syllabus.*'))
-    @php($mobileTasksActive = request()->routeIs('assignments.*', 'quizzes.*', 'submissions.*'))
+    @php($mobileCoursesActive = request()->routeIs('courses.*', 'materials.*', 'assignments.*', 'quizzes.*', 'submissions.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*'))
+    @php($mobileCalendarActive = request()->routeIs('calendar'))
     <nav class="mobile-bottom-nav d-print-none" aria-label="Navigasi utama">
         <a href="{{ route('dashboard') }}" class="mobile-bottom-nav__item {{ $mobileHomeActive ? 'active' : '' }}" aria-current="{{ $mobileHomeActive ? 'page' : 'false' }}">
             <i class="ti ti-home"></i><span>Beranda</span>
         </a>
         <a href="{{ route('courses.index') }}" class="mobile-bottom-nav__item {{ $mobileCoursesActive ? 'active' : '' }}" aria-current="{{ $mobileCoursesActive ? 'page' : 'false' }}">
-            <i class="ti ti-school"></i><span>Kelas</span>
+            <i class="ti ti-books"></i><span>Matkul</span>
         </a>
-        <a href="{{ route('dashboard.mahasiswa') }}#tugas" class="mobile-bottom-nav__item {{ $mobileTasksActive ? 'active' : '' }}" aria-current="{{ $mobileTasksActive ? 'page' : 'false' }}">
-            <i class="ti ti-checklist"></i><span>Tugas</span>
-            @if (($stats['pending'] ?? 0) > 0)<span class="mobile-bottom-nav__badge">{{ $stats['pending'] > 9 ? '9+' : $stats['pending'] }}</span>@endif
+        <a href="{{ route('calendar') }}" class="mobile-bottom-nav__item {{ $mobileCalendarActive ? 'active' : '' }}" aria-current="{{ $mobileCalendarActive ? 'page' : 'false' }}">
+            <i class="ti ti-calendar"></i><span>Kalender</span>
         </a>
         <button class="mobile-bottom-nav__item" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobile-more-menu" aria-controls="mobile-more-menu">
             <i class="ti ti-menu-2"></i><span>Lainnya</span>
@@ -330,7 +329,7 @@
         </div>
         <div class="offcanvas-body pt-2 pb-4">
             <div class="mobile-more-grid">
-                <a href="{{ route('calendar') }}" class="mobile-more-link"><i class="ti ti-calendar"></i><span>Kalender</span></a>
+                <a href="{{ route('dashboard.mahasiswa') }}#pengingat" class="mobile-more-link"><i class="ti ti-checklist"></i><span>Pengingat</span></a>
                 <a href="{{ route('notifications.index') }}" class="mobile-more-link"><i class="ti ti-bell"></i><span>Notifikasi</span></a>
                 <a href="{{ route('enrollments.join.show') }}" class="mobile-more-link"><i class="ti ti-key"></i><span>Gabung Kelas</span></a>
                 <a href="{{ route('profile.edit') }}" class="mobile-more-link"><i class="ti ti-user"></i><span>Profil</span></a>
