@@ -38,14 +38,6 @@
     @endif
 </section>
 
-{{-- Alert kehadiran rendah --}}
-@foreach ($lowAttendance as $low)
-    <div class="alert alert-warning" role="alert">
-        <i class="ti ti-alert-triangle me-1"></i>
-        Kehadiran Anda di <strong>{{ $low['course']->name }}</strong> baru <strong>{{ $low['percent'] }}%</strong> (di bawah 75%).
-    </div>
-@endforeach
-
 {{-- Aksi cepat: tugas terdekat yang belum dikerjakan --}}
 @if ($pending->isNotEmpty())
     @php($next = $pending->first())
@@ -114,7 +106,35 @@
 
     {{-- Pertemuan mendatang --}}
     <div class="col-lg-6">
-        <div class="card">
+        <section class="d-md-none" aria-labelledby="mobile-meetings-title">
+            <div class="d-flex align-items-end mb-2">
+                <h2 class="h2 mb-0" id="mobile-meetings-title">Pertemuan Berikutnya</h2>
+                <a href="{{ route('calendar') }}" class="ms-auto small fw-bold text-decoration-none">Lihat kalender</a>
+            </div>
+            @if ($upcomingMeetings->isEmpty())
+                <div class="card"><div class="card-body py-3"><x-empty-state icon="ti-calendar-off" title="Tidak ada jadwal mendatang" /></div></div>
+            @else
+                <div class="card overflow-hidden">
+                    <div class="list-group list-group-flush">
+                        @foreach ($upcomingMeetings as $m)
+                            <a href="{{ route('courses.show', $m->course) }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2 px-3">
+                                <time datetime="{{ $m->date->format('Y-m-d') }}" class="text-center flex-shrink-0" style="width:2.5rem">
+                                    <span class="d-block fw-bold fs-3 lh-1">{{ $m->date->format('d') }}</span>
+                                    <span class="d-block text-secondary text-uppercase" style="font-size:.68rem">{{ $m->date->translatedFormat('M') }}</span>
+                                </time>
+                                <div class="min-w-0 flex-fill">
+                                    <div class="fw-semibold text-truncate">{{ $m->topic }}</div>
+                                    <div class="small text-secondary text-truncate">{{ $m->course->name }} · P{{ $m->number }}</div>
+                                </div>
+                                <i class="ti ti-chevron-right text-secondary flex-shrink-0"></i>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+        </section>
+
+        <div class="card d-none d-md-block">
             <div class="card-header"><div><div class="text-secondary small">Agenda</div><h3 class="card-title">Jadwal Pertemuan</h3></div></div>
             @if ($upcomingMeetings->isEmpty())
                 <div class="card-body"><x-empty-state icon="ti-calendar-off" title="Tidak ada jadwal mendatang" /></div>
