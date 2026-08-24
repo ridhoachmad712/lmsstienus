@@ -61,7 +61,7 @@
         /* ============ Penghalusan tampilan mobile (≤575px) ============ */
         @media (max-width: 575.98px) {
             body.student-mobile-ui{background:var(--tblr-bg-surface-secondary,#f6f8fb);}
-            body.student-mobile-ui .page{padding-bottom:calc(4.75rem + env(safe-area-inset-bottom));}
+            body.student-mobile-ui .page{min-height:100dvh;padding-bottom:calc(4.75rem + env(safe-area-inset-bottom));}
             body.student-mobile-ui .navbar{display:none !important;}
             body.student-mobile-ui .navbar .container-xl{padding-left:1rem;padding-right:.75rem;}
             body.student-mobile-ui .navbar-toggler,
@@ -70,7 +70,7 @@
             body.student-mobile-ui .navbar-brand .brand-logo{max-width:2rem;object-fit:contain;}
             body.student-mobile-ui .navbar-brand .fs-2{font-size:1rem !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
             body.student-mobile-ui .navbar-nav .nav-link{min-width:2.75rem;min-height:2.75rem;justify-content:center;}
-            body.student-mobile-ui .page-wrapper{min-height:100vh;}
+            body.student-mobile-ui .page-wrapper{min-height:0;flex:1 1 auto;}
             body.student-mobile-ui .page-body{margin-top:.75rem;}
             body.student-mobile-ui .page-body>.container-xl,
             body.student-mobile-ui .page-header .container-xl{padding-left:1rem;padding-right:1rem;}
