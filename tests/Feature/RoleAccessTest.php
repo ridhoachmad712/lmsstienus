@@ -35,6 +35,44 @@ class RoleAccessTest extends TestCase
         $this->get(route('admin.settings.edit'))->assertRedirect(route('login'));
     }
 
+    public function test_login_masuk_ke_pemilih_sistem(): void
+    {
+        $user = User::factory()->create([
+            'role' => User::ROLE_MAHASISWA,
+            'password' => 'password',
+        ]);
+
+        $this->post('/login', ['email' => $user->email, 'password' => 'password'])
+            ->assertRedirect(route('portal.index'));
+    }
+
+    public function test_portal_menampilkan_pilihan_sistem_untuk_semua_user(): void
+    {
+        foreach ([User::ROLE_ADMIN, User::ROLE_KAPRODI, User::ROLE_DOSEN, User::ROLE_MAHASISWA] as $role) {
+            $this->actingAs($this->user($role))->get(route('portal.index'))
+                ->assertOk()->assertSee('SIAKAD')->assertSee('LMS');
+        }
+    }
+
+    public function test_pilihan_sistem_disimpan_dalam_session(): void
+    {
+        $student = $this->user(User::ROLE_MAHASISWA);
+
+        $this->actingAs($student)->get(route('portal.siakad'))
+            ->assertOk()->assertSessionHas('active_system', 'siakad')
+            ->assertSee('Beranda SIAKAD');
+
+        $this->actingAs($student)->get(route('portal.lms'))
+            ->assertRedirect(route('dashboard.mahasiswa'))
+            ->assertSessionHas('active_system', 'lms');
+    }
+
+    public function test_dashboard_tanpa_pilihan_sistem_kembali_ke_portal(): void
+    {
+        $this->actingAs($this->user(User::ROLE_DOSEN))->get(route('dashboard'))
+            ->assertRedirect(route('portal.index'));
+    }
+
     public function test_admin_bisa_akses_area_admin(): void
     {
         $admin = $this->user(User::ROLE_ADMIN);
@@ -127,7 +165,7 @@ class RoleAccessTest extends TestCase
             ->assertDontSee('nav-item dropdown active', false);
 
         // Di halaman Mahasiswa: dropdown Akademik aktif.
-        $this->actingAs($admin)->get(route('admin.students.index'))
+        $this->actingAs($admin)->withSession(['active_system' => 'siakad'])->get(route('admin.students.index'))
             ->assertOk()
             ->assertSee('nav-item dropdown active', false);
     }

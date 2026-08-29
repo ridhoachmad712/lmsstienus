@@ -41,6 +41,7 @@ use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PerwalianController;
+use App\Http\Controllers\PortalController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ScheduleController;
@@ -68,6 +69,11 @@ Route::middleware('guest')->group(function () {
 // --- Authenticated ---
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
+    // Portal tunggal: pilih ruang kerja SIAKAD atau LMS tanpa login ulang.
+    Route::get('/portal', [PortalController::class, 'index'])->name('portal.index');
+    Route::get('/portal/siakad', [PortalController::class, 'siakad'])->name('portal.siakad');
+    Route::get('/portal/lms', [PortalController::class, 'lms'])->name('portal.lms');
 
     // Akhiri mode samaran (dapat diakses oleh sesi yang sedang disamar)
     Route::post('/stop-impersonating', [ImpersonationController::class, 'stop'])->name('impersonate.stop');

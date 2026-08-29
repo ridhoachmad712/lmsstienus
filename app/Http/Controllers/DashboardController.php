@@ -20,8 +20,16 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
+        if (! $request->session()->has('active_system')) {
+            return redirect()->route('portal.index');
+        }
+
+        if ($request->session()->get('active_system') === 'siakad') {
+            return redirect()->route('portal.siakad');
+        }
+
         if ($user->isStaff()) {
-            return redirect()->route('admin.dashboard');
+            return redirect()->route('admin.courses.index');
         }
 
         return redirect()->route($user->isMahasiswa() ? 'dashboard.mahasiswa' : 'dashboard.dosen');

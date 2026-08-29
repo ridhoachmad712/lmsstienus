@@ -139,6 +139,7 @@
     @stack('styles')
 </head>
 <body @class(['student-mobile-ui' => auth()->user()?->isMahasiswa()])>
+@php($activeSystem = session('active_system', 'lms'))
 <div id="nprogress"></div>
 <div class="page">
     @php($user = auth()->user())
@@ -180,6 +181,18 @@
             </a>
 
             <div class="navbar-nav flex-row order-md-last">
+                <div class="nav-item dropdown me-2">
+                    <a href="#" class="nav-link d-flex align-items-center gap-1 px-2" data-bs-toggle="dropdown" aria-label="Ganti sistem">
+                        <i class="ti ti-switch-horizontal fs-2"></i>
+                        <span class="d-none d-lg-inline fw-semibold">{{ strtoupper($activeSystem) }}</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <a href="{{ route('portal.siakad') }}" class="dropdown-item {{ $activeSystem === 'siakad' ? 'active' : '' }}"><i class="ti ti-building-bank me-2"></i>SIAKAD</a>
+                        <a href="{{ route('portal.lms') }}" class="dropdown-item {{ $activeSystem === 'lms' ? 'active' : '' }}"><i class="ti ti-device-laptop me-2"></i>LMS</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{{ route('portal.index') }}" class="dropdown-item"><i class="ti ti-apps me-2"></i>Pilih Sistem</a>
+                    </div>
+                </div>
                 {{-- Theme toggle --}}
                 <div class="nav-item d-none d-md-flex me-2">
                     <a href="#" class="nav-link px-0 hide-theme-dark" title="Mode gelap" aria-label="Aktifkan mode gelap" data-bs-toggle="tooltip" onclick="document.documentElement.setAttribute('data-bs-theme','dark');try{localStorage.setItem('lms-theme','dark');}catch(e){}return false;">
@@ -277,6 +290,7 @@
                             </a>
                         </li>
                         @if ($user->isMahasiswa())
+                            @if ($activeSystem === 'siakad')
                             {{-- Akademik (SIAKAD) --}}
                             <li class="nav-item dropdown {{ request()->routeIs('krs.*', 'transkrip.*', 'schedule.index', 'edom.index') ? 'active' : '' }}">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
@@ -292,6 +306,7 @@
                                     <a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="ti ti-id-badge-2 me-2"></i>Biodata</a>
                                 </div>
                             </li>
+                            @else
                             {{-- Perkuliahan (e-Learning) --}}
                             <li class="nav-item {{ request()->routeIs('courses.*', 'assignments.*', 'quizzes.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*') ? 'active' : '' }}">
                                 <a class="nav-link" href="{{ route('courses.index') }}">
@@ -305,7 +320,9 @@
                                     <span class="nav-link-title">Kalender</span>
                                 </a>
                             </li>
+                            @endif
                         @elseif ($user->isDosen())
+                            @if ($activeSystem === 'siakad')
                             {{-- Akademik (SIAKAD) --}}
                             <li class="nav-item dropdown {{ request()->routeIs('perwalian.*', 'schedule.index') ? 'active' : '' }}">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
@@ -318,6 +335,7 @@
                                     <a class="dropdown-item {{ request()->routeIs('academic.calendar') ? 'active' : '' }}" href="{{ route('academic.calendar') }}"><i class="ti ti-calendar-event me-2"></i>Kalender Akademik</a>
                                 </div>
                             </li>
+                            @else
                             {{-- Perkuliahan (e-Learning) --}}
                             <li class="nav-item {{ request()->routeIs('courses.*', 'assignments.*', 'quizzes.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*', 'analytics.*', 'reports.*') ? 'active' : '' }}">
                                 <a class="nav-link" href="{{ route('courses.index') }}">
@@ -331,8 +349,10 @@
                                     <span class="nav-link-title">Kalender</span>
                                 </a>
                             </li>
+                            @endif
                         @endif
                         @if ($user->isStaff())
+                            @if ($activeSystem === 'siakad')
                             {{-- Data Master --}}
                             <li class="nav-item dropdown {{ request()->routeIs('admin.prodi.*', 'admin.kurikulum.*', 'admin.matakuliah.*', 'admin.staff.*', 'admin.students.*', 'admin.rooms.*', 'admin.timeslots.*', 'admin.gradeScale.*') ? 'active' : '' }}">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
@@ -372,6 +392,7 @@
                                     <a class="dropdown-item {{ request()->routeIs('academic.calendar') ? 'active' : '' }}" href="{{ route('academic.calendar') }}"><i class="ti ti-calendar-event me-2"></i>Kalender Akademik</a>
                                 </div>
                             </li>
+                            @else
                             {{-- LMS --}}
                             <li class="nav-item {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">
                                 <a class="nav-link" href="{{ route('admin.courses.index') }}">
@@ -379,8 +400,9 @@
                                     <span class="nav-link-title">LMS</span>
                                 </a>
                             </li>
+                            @endif
                         @endif
-                        @if ($user->isAdmin())
+                        @if ($user->isAdmin() && $activeSystem === 'siakad')
                             {{-- Sistem (admin saja) --}}
                             <li class="nav-item dropdown {{ request()->routeIs('admin.settings.*', 'admin.ai.*', 'admin.activity.*', 'admin.backups.*') ? 'active' : '' }}">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
@@ -441,18 +463,18 @@
 </div>
 
 @if ($user->isMahasiswa())
-    @php($mobileHomeActive = request()->routeIs('dashboard*'))
-    @php($mobileCoursesActive = request()->routeIs('courses.*', 'materials.*', 'assignments.*', 'quizzes.*', 'submissions.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*'))
-    @php($mobileCalendarActive = request()->routeIs('calendar'))
+    @php($mobileHomeActive = request()->routeIs('dashboard*', 'portal.siakad'))
+    @php($mobileCoursesActive = $activeSystem === 'siakad' ? request()->routeIs('krs.*', 'transkrip.*', 'edom.*') : request()->routeIs('courses.*', 'materials.*', 'assignments.*', 'quizzes.*', 'submissions.*', 'grades.*', 'attendance.*', 'forum.*', 'announcements.*', 'syllabus.*'))
+    @php($mobileCalendarActive = $activeSystem === 'siakad' ? request()->routeIs('schedule.index', 'academic.calendar') : request()->routeIs('calendar'))
     <nav class="mobile-bottom-nav d-print-none" aria-label="Navigasi utama">
         <a href="{{ route('dashboard') }}" class="mobile-bottom-nav__item {{ $mobileHomeActive ? 'active' : '' }}" aria-current="{{ $mobileHomeActive ? 'page' : 'false' }}">
             <i class="ti ti-home"></i><span>Beranda</span>
         </a>
-        <a href="{{ route('courses.index') }}" class="mobile-bottom-nav__item {{ $mobileCoursesActive ? 'active' : '' }}" aria-current="{{ $mobileCoursesActive ? 'page' : 'false' }}">
-            <i class="ti ti-books"></i><span>Kelas</span>
+        <a href="{{ $activeSystem === 'siakad' ? route('krs.index') : route('courses.index') }}" class="mobile-bottom-nav__item {{ $mobileCoursesActive ? 'active' : '' }}" aria-current="{{ $mobileCoursesActive ? 'page' : 'false' }}">
+            <i class="ti {{ $activeSystem === 'siakad' ? 'ti-clipboard-list' : 'ti-books' }}"></i><span>{{ $activeSystem === 'siakad' ? 'KRS' : 'Kelas' }}</span>
         </a>
-        <a href="{{ route('calendar') }}" class="mobile-bottom-nav__item {{ $mobileCalendarActive ? 'active' : '' }}" aria-current="{{ $mobileCalendarActive ? 'page' : 'false' }}">
-            <i class="ti ti-calendar"></i><span>Kalender</span>
+        <a href="{{ $activeSystem === 'siakad' ? route('schedule.index') : route('calendar') }}" class="mobile-bottom-nav__item {{ $mobileCalendarActive ? 'active' : '' }}" aria-current="{{ $mobileCalendarActive ? 'page' : 'false' }}">
+            <i class="ti ti-calendar"></i><span>{{ $activeSystem === 'siakad' ? 'Jadwal' : 'Kalender' }}</span>
         </a>
         @php($mobileUnread = $user->notifications()->unread()->count())
         <button class="mobile-bottom-nav__item" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobile-more-menu" aria-controls="mobile-more-menu">
@@ -476,9 +498,14 @@
             </div>
             <div class="mobile-more-section-title">Akademik</div>
             <div class="mobile-more-grid">
+                @if($activeSystem === 'siakad')
+                <a href="{{ route('transkrip.mine') }}" class="mobile-more-link"><i class="ti ti-certificate"></i><span>KHS & Transkrip</span></a>
+                <a href="{{ route('edom.index') }}" class="mobile-more-link"><i class="ti ti-star"></i><span>EDOM</span></a>
+                @else
                 <a href="{{ route('dashboard.mahasiswa') }}#pengingat" class="mobile-more-link"><i class="ti ti-checklist"></i><span>Pengingat</span></a>
+                @endif
                 <a href="{{ route('notifications.index') }}" class="mobile-more-link position-relative"><i class="ti ti-bell"></i><span>Notifikasi</span>@if($mobileUnread)<span class="badge bg-red text-white position-absolute top-0 end-0 m-2">{{ $mobileUnread }}</span>@endif</a>
-                <a href="{{ route('krs.index') }}" class="mobile-more-link"><i class="ti ti-clipboard-list"></i><span>KRS</span></a>
+                <a href="{{ route('portal.index') }}" class="mobile-more-link"><i class="ti ti-switch-horizontal"></i><span>Ganti Sistem</span></a>
             </div>
             <div class="mobile-more-section-title">Akun & Bantuan</div>
             <div class="mobile-more-grid">

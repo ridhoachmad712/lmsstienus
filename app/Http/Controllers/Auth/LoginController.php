@@ -34,7 +34,7 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->route('portal.index');
     }
 
     /** Akses 1-klik mode demo: login otomatis sebagai dosen/mahasiswa tanpa kata sandi. */
@@ -69,7 +69,7 @@ class LoginController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard');
+        return redirect()->route('portal.index');
     }
 
     public function destroy(Request $request): RedirectResponse
