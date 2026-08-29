@@ -2,10 +2,29 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Admin\BackupController;
+use App\Http\Controllers\EvaluationController;
+use App\Http\Controllers\KrsController;
+use App\Models\AcademicEvent;
 use App\Models\Course;
+use App\Models\CourseEvaluation;
+use App\Models\Enrollment;
+use App\Models\GradeScore;
+use App\Models\Kurikulum;
+use App\Models\MataKuliah;
 use App\Models\Prodi;
+use App\Models\Room;
+use App\Models\Semester;
+use App\Models\Setting;
+use App\Models\TimeSlot;
 use App\Models\User;
+use App\Services\AcademicSummary;
+use App\Services\Transcript;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class RoleAccessTest extends TestCase
@@ -67,10 +86,112 @@ class RoleAccessTest extends TestCase
             ->assertSessionHas('active_system', 'lms');
     }
 
+    public function test_beranda_siakad_mahasiswa_menampilkan_status_akademik_dan_krs(): void
+    {
+        $student = $this->user(User::ROLE_MAHASISWA);
+
+        $this->actingAs($student)->get(route('portal.siakad'))
+            ->assertOk()
+            ->assertSee('Status Rencana Studi')
+            ->assertSee('Status KRS')
+            ->assertSee('Dosen Wali')
+            ->assertSee('Jatah semester ini');
+    }
+
+    public function test_beranda_siakad_dosen_menonjolkan_pengajuan_krs_yang_menunggu(): void
+    {
+        $lecturer = $this->user(User::ROLE_DOSEN);
+        $student = User::factory()->create([
+            'role' => User::ROLE_MAHASISWA,
+            'advisor_id' => $lecturer->id,
+        ]);
+        $course = $this->course($lecturer);
+        Enrollment::create([
+            'course_id' => $course->id,
+            'user_id' => $student->id,
+            'status' => Enrollment::STATUS_SUBMITTED,
+        ]);
+
+        $this->actingAs($lecturer)->get(route('portal.siakad'))
+            ->assertOk()
+            ->assertSee('Tindakan perwalian diperlukan')
+            ->assertSee('mahasiswa menunggu keputusan KRS');
+    }
+
+    public function test_beranda_lms_admin_menampilkan_monitoring_kelas(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+        $lecturer = $this->user(User::ROLE_DOSEN);
+        $this->course($lecturer)->update(['name' => 'Kelas Monitoring LMS']);
+
+        $this->actingAs($admin)->get(route('portal.lms'))
+            ->assertOk()
+            ->assertSessionHas('active_system', 'lms')
+            ->assertSee('Beranda LMS')
+            ->assertSee('Kelas Perlu Perhatian')
+            ->assertSee('Kelas Monitoring LMS');
+    }
+
+    public function test_beranda_siakad_admin_menampilkan_pusat_tindakan_akademik(): void
+    {
+        $admin = $this->user(User::ROLE_ADMIN);
+        $this->user(User::ROLE_MAHASISWA);
+
+        $this->actingAs($admin)->get(route('portal.siakad'))
+            ->assertOk()
+            ->assertSessionHas('active_system', 'siakad')
+            ->assertSee('Pusat Tindakan Akademik')
+            ->assertSee('Kelengkapan data mahasiswa')
+            ->assertSee('Status Layanan');
+    }
+
+    public function test_monitoring_lms_kaprodi_hanya_menampilkan_kelas_prodinya(): void
+    {
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $kaprodi = User::factory()->create(['role' => User::ROLE_KAPRODI, 'prodi_id' => $ak->id]);
+        $lecturer = $this->user(User::ROLE_DOSEN);
+        $this->course($lecturer)->update(['name' => 'Kelas Akuntansi Prioritas', 'prodi_id' => $ak->id]);
+        $this->course($lecturer)->update(['name' => 'Kelas Manajemen Rahasia', 'prodi_id' => $mn->id]);
+
+        $this->actingAs($kaprodi)->get(route('portal.lms'))
+            ->assertOk()
+            ->assertSee('Kelas Akuntansi Prioritas')
+            ->assertDontSee('Kelas Manajemen Rahasia');
+    }
+
     public function test_dashboard_tanpa_pilihan_sistem_kembali_ke_portal(): void
     {
         $this->actingAs($this->user(User::ROLE_DOSEN))->get(route('dashboard'))
             ->assertRedirect(route('portal.index'));
+    }
+
+    public function test_route_siakad_dan_lms_memiliki_prefix_yang_tegas(): void
+    {
+        $this->assertStringContainsString('/siakad/krs', route('krs.index'));
+        $this->assertStringContainsString('/siakad/perwalian', route('perwalian.index'));
+        $this->assertStringContainsString('/siakad/admin/students', route('admin.students.index'));
+        $this->assertStringContainsString('/lms/courses', route('courses.index'));
+        $this->assertStringContainsString('/lms/admin/courses', route('admin.courses.index'));
+    }
+
+    public function test_bookmark_langsung_mengaktifkan_konteks_sistem_yang_benar(): void
+    {
+        $student = $this->user(User::ROLE_MAHASISWA);
+
+        $this->actingAs($student)->withSession(['active_system' => 'lms'])
+            ->get(route('krs.index'))->assertOk()->assertSessionHas('active_system', 'siakad');
+
+        $this->actingAs($student)->withSession(['active_system' => 'siakad'])
+            ->get(route('courses.index'))->assertOk()->assertSessionHas('active_system', 'lms');
+    }
+
+    public function test_bookmark_lama_dialihkan_ke_prefix_baru(): void
+    {
+        $student = $this->user(User::ROLE_MAHASISWA);
+
+        $this->actingAs($student)->get('/krs')->assertRedirect('/siakad/krs');
+        $this->actingAs($student)->get('/courses')->assertRedirect('/lms/courses');
     }
 
     public function test_admin_bisa_akses_area_admin(): void
@@ -101,7 +222,7 @@ class RoleAccessTest extends TestCase
         $admin = $this->user(User::ROLE_ADMIN);
 
         $this->actingAs($admin)->post(route('admin.backups.upload'), [
-            'file' => \Illuminate\Http\UploadedFile::fake()->create('dump.txt', 4),
+            'file' => UploadedFile::fake()->create('dump.txt', 4),
         ])->assertRedirect()->assertSessionHas('error');
     }
 
@@ -109,11 +230,11 @@ class RoleAccessTest extends TestCase
     {
         $admin = $this->user(User::ROLE_ADMIN);
         $dir = storage_path('app/backups');
-        \Illuminate\Support\Facades\File::ensureDirectoryExists($dir);
+        File::ensureDirectoryExists($dir);
         $before = glob($dir.'/upload_*.sql') ?: [];
 
         $this->actingAs($admin)->post(route('admin.backups.upload'), [
-            'file' => \Illuminate\Http\UploadedFile::fake()->create('dump.sql', 4),
+            'file' => UploadedFile::fake()->create('dump.sql', 4),
         ])->assertRedirect()->assertSessionHas('status');
 
         $after = glob($dir.'/upload_*.sql') ?: [];
@@ -128,7 +249,7 @@ class RoleAccessTest extends TestCase
     {
         $admin = $this->user(User::ROLE_ADMIN);
         $dir = storage_path('app/backups');
-        \Illuminate\Support\Facades\File::ensureDirectoryExists($dir);
+        File::ensureDirectoryExists($dir);
         // Koneksi test = sqlite; backup .sql (MySQL) harus ditolak, DB tak tersentuh.
         $name = 'test_dummy_'.uniqid().'.sql';
         file_put_contents($dir.'/'.$name, "-- dummy\nSELECT 1;\n");
@@ -148,7 +269,7 @@ class RoleAccessTest extends TestCase
             "INSERT INTO `t` (`a`) VALUES ('ada;titik-koma\ndan newline');\n".
             "INSERT INTO `t` (`a`) VALUES ('x');\n";
 
-        $stmts = \App\Http\Controllers\Admin\BackupController::splitStatements($sql);
+        $stmts = BackupController::splitStatements($sql);
 
         $this->assertCount(3, $stmts); // komentar diabaikan; SET + 2 INSERT
         $this->assertStringContainsString('ada;titik-koma', $stmts[1]);
@@ -233,8 +354,8 @@ class RoleAccessTest extends TestCase
         $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
         $kaprodiAk = User::factory()->create(['role' => User::ROLE_KAPRODI, 'prodi_id' => $ak->id]);
-        \App\Models\MataKuliah::create(['prodi_id' => $ak->id, 'code' => 'AK101', 'name' => 'Akuntansi Dasar', 'sks' => 3]);
-        \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN101', 'name' => 'Pengantar Manajemen', 'sks' => 3]);
+        MataKuliah::create(['prodi_id' => $ak->id, 'code' => 'AK101', 'name' => 'Akuntansi Dasar', 'sks' => 3]);
+        MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN101', 'name' => 'Pengantar Manajemen', 'sks' => 3]);
 
         $res = $this->actingAs($kaprodiAk)->get(route('admin.matakuliah.index'));
         $res->assertOk();
@@ -247,7 +368,7 @@ class RoleAccessTest extends TestCase
         $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
         $kaprodiAk = User::factory()->create(['role' => User::ROLE_KAPRODI, 'prodi_id' => $ak->id]);
-        $mkMn = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN101', 'name' => 'X', 'sks' => 3]);
+        $mkMn = MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN101', 'name' => 'X', 'sks' => 3]);
 
         $this->actingAs($kaprodiAk)->get(route('admin.matakuliah.edit', $mkMn))->assertForbidden();
     }
@@ -278,7 +399,7 @@ class RoleAccessTest extends TestCase
         $this->assertNotNull($u);
         $this->assertSame('dosen', $u->role);
         $this->assertSame($mn->id, $u->prodi_id);
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('rahasia123', $u->password));
+        $this->assertTrue(Hash::check('rahasia123', $u->password));
     }
 
     public function test_registrasi_mandiri_dihapus(): void
@@ -332,8 +453,8 @@ class RoleAccessTest extends TestCase
         $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
         $kaprodiAk = User::factory()->create(['role' => User::ROLE_KAPRODI, 'prodi_id' => $ak->id]);
-        \App\Models\Kurikulum::create(['prodi_id' => $ak->id, 'name' => 'Kurikulum Akun', 'year' => 2021, 'is_active' => true]);
-        \App\Models\Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'Kurikulum Manaj', 'year' => 2021, 'is_active' => true]);
+        Kurikulum::create(['prodi_id' => $ak->id, 'name' => 'Kurikulum Akun', 'year' => 2021, 'is_active' => true]);
+        Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'Kurikulum Manaj', 'year' => 2021, 'is_active' => true]);
 
         $res = $this->actingAs($kaprodiAk)->get(route('admin.kurikulum.index'));
         $res->assertOk();
@@ -344,8 +465,8 @@ class RoleAccessTest extends TestCase
     public function test_admin_buat_mk_dengan_kurikulum_dan_prasyarat(): void
     {
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
-        $kur = \App\Models\Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'K2021', 'year' => 2021, 'is_active' => true]);
-        $prereq = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN101', 'name' => 'Dasar', 'sks' => 3]);
+        $kur = Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'K2021', 'year' => 2021, 'is_active' => true]);
+        $prereq = MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN101', 'name' => 'Dasar', 'sks' => 3]);
         $admin = $this->user(User::ROLE_ADMIN);
 
         $this->actingAs($admin)->post(route('admin.matakuliah.store'), [
@@ -353,7 +474,7 @@ class RoleAccessTest extends TestCase
             'semester_no' => 3, 'jenis' => 'wajib', 'prasyarat' => [$prereq->id],
         ])->assertRedirect(route('admin.matakuliah.index'));
 
-        $mk = \App\Models\MataKuliah::where('code', 'MN201')->first();
+        $mk = MataKuliah::where('code', 'MN201')->first();
         $this->assertSame($kur->id, $mk->kurikulum_id);
         $this->assertSame(3, $mk->semester_no);
         $this->assertSame('wajib', $mk->jenis);
@@ -364,7 +485,7 @@ class RoleAccessTest extends TestCase
     {
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
         $admin = $this->user(User::ROLE_ADMIN);
-        $k1 = \App\Models\Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'K2018', 'year' => 2018, 'is_active' => true]);
+        $k1 = Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'K2018', 'year' => 2018, 'is_active' => true]);
 
         $this->actingAs($admin)->post(route('admin.kurikulum.store'), [
             'name' => 'K2023', 'year' => 2023, 'prodi_id' => $mn->id, 'is_active' => '1',
@@ -376,7 +497,7 @@ class RoleAccessTest extends TestCase
     public function test_transkrip_ipk_dihitung_benar(): void
     {
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
-        $mk = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN301', 'name' => 'Statistik', 'sks' => 3]);
+        $mk = MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN301', 'name' => 'Statistik', 'sks' => 3]);
         $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
         $student = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id]);
         $course = Course::create([
@@ -386,9 +507,9 @@ class RoleAccessTest extends TestCase
         ]);
         $course->students()->attach($student->id, ['enrolled_at' => now()]);
         $comp = $course->gradeComponents()->create(['name' => 'Nilai', 'type' => 'uas', 'weight' => 100]);
-        \App\Models\GradeScore::create(['grade_component_id' => $comp->id, 'user_id' => $student->id, 'score' => 80]);
+        GradeScore::create(['grade_component_id' => $comp->id, 'user_id' => $student->id, 'score' => 80]);
 
-        $t = (new \App\Services\Transcript())->forStudent($student->fresh());
+        $t = (new Transcript)->forStudent($student->fresh());
         $this->assertSame(3, $t['total_sks']);
         $this->assertEqualsWithDelta(3.5, $t['ipk'], 0.01); // nilai 80 → B+ → 3.5
     }
@@ -400,9 +521,9 @@ class RoleAccessTest extends TestCase
 
     public function test_ringkasan_akademik_mahasiswa(): void
     {
-        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        Semester::setActiveKeys(['2026-Ganjil']);
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
-        $mk = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN301', 'name' => 'Statistik', 'sks' => 3]);
+        $mk = MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN301', 'name' => 'Statistik', 'sks' => 3]);
         $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
         $student = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id, 'entry_year' => 2025]);
         $course = Course::create([
@@ -412,9 +533,9 @@ class RoleAccessTest extends TestCase
         ]);
         $course->students()->attach($student->id, ['enrolled_at' => now()]);
         $comp = $course->gradeComponents()->create(['name' => 'Nilai', 'type' => 'uas', 'weight' => 100]);
-        \App\Models\GradeScore::create(['grade_component_id' => $comp->id, 'user_id' => $student->id, 'score' => 80]);
+        GradeScore::create(['grade_component_id' => $comp->id, 'user_id' => $student->id, 'score' => 80]);
 
-        $a = (new \App\Services\AcademicSummary())->forStudent($student->fresh());
+        $a = (new AcademicSummary)->forStudent($student->fresh());
         $this->assertEqualsWithDelta(3.5, $a['ipk'], 0.01);   // 80 → B+ → 3.5
         $this->assertSame(3, $a['sks_kumulatif']);
         $this->assertSame(3, $a['semester_ke']);              // (2026-2025)*2 + Ganjil(1)
@@ -441,8 +562,8 @@ class RoleAccessTest extends TestCase
         $dosen = $this->user(User::ROLE_DOSEN);
         $admin = $this->user(User::ROLE_ADMIN);
         $course = $this->course($dosen);
-        $slot = \App\Models\TimeSlot::create(['name' => 'Sesi 1', 'start_time' => '08:00', 'end_time' => '10:00', 'sort' => 1]);
-        $room = \App\Models\Room::create(['code' => 'R201', 'name' => 'Ruang 201']);
+        $slot = TimeSlot::create(['name' => 'Sesi 1', 'start_time' => '08:00', 'end_time' => '10:00', 'sort' => 1]);
+        $room = Room::create(['code' => 'R201', 'name' => 'Ruang 201']);
 
         $this->actingAs($admin)->post(route('schedule.store', $course), [
             'day' => 1, 'time_slot_id' => $slot->id, 'room_id' => $room->id,
@@ -498,8 +619,8 @@ class RoleAccessTest extends TestCase
         $admin = $this->user(User::ROLE_ADMIN);
         $courseA = $this->course($this->user(User::ROLE_DOSEN));
         $courseB = $this->course($this->user(User::ROLE_DOSEN)); // dosen beda, periode sama (2026 Ganjil)
-        $slot = \App\Models\TimeSlot::create(['name' => 'Sesi 1', 'start_time' => '08:00', 'end_time' => '10:00', 'sort' => 1]);
-        $room = \App\Models\Room::create(['name' => 'Ruang 201']);
+        $slot = TimeSlot::create(['name' => 'Sesi 1', 'start_time' => '08:00', 'end_time' => '10:00', 'sort' => 1]);
+        $room = Room::create(['name' => 'Ruang 201']);
 
         $this->actingAs($admin)->post(route('schedule.store', $courseA), ['day' => 1, 'time_slot_id' => $slot->id, 'room_id' => $room->id])->assertRedirect();
 
@@ -513,7 +634,7 @@ class RoleAccessTest extends TestCase
     {
         $wali = $this->user(User::ROLE_DOSEN);
         $course = $this->krsCourse();
-        \App\Models\Setting::put('krs_open', '1');
+        Setting::put('krs_open', '1');
         $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'advisor_id' => $wali->id]);
 
         $this->actingAs($mhs)->post(route('krs.add', $course));
@@ -528,8 +649,8 @@ class RoleAccessTest extends TestCase
 
     public function test_approve_krs_lewati_kelas_penuh(): void
     {
-        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
-        \App\Models\Setting::put('krs_open', '1');
+        Semester::setActiveKeys(['2026-Ganjil']);
+        Setting::put('krs_open', '1');
         $wali = $this->user(User::ROLE_DOSEN);
         $course = $this->krsCourse();
         $course->update(['quota' => 1]);
@@ -546,8 +667,8 @@ class RoleAccessTest extends TestCase
         $this->actingAs($wali)->post(route('perwalian.krs.approve', $m2))->assertSessionHas('error');
 
         // m1 disetujui, m2 tetap diajukan (kelas penuh)
-        $this->assertDatabaseHas('enrollments', ['course_id' => $course->id, 'user_id' => $m1->id, 'status' => \App\Models\Enrollment::STATUS_APPROVED]);
-        $this->assertDatabaseHas('enrollments', ['course_id' => $course->id, 'user_id' => $m2->id, 'status' => \App\Models\Enrollment::STATUS_SUBMITTED]);
+        $this->assertDatabaseHas('enrollments', ['course_id' => $course->id, 'user_id' => $m1->id, 'status' => Enrollment::STATUS_APPROVED]);
+        $this->assertDatabaseHas('enrollments', ['course_id' => $course->id, 'user_id' => $m2->id, 'status' => Enrollment::STATUS_SUBMITTED]);
     }
 
     public function test_dosen_tak_bisa_atur_jadwal(): void
@@ -577,7 +698,7 @@ class RoleAccessTest extends TestCase
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
         $admin = $this->user(User::ROLE_ADMIN);
         $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
-        $mk = \App\Models\MataKuliah::create([
+        $mk = MataKuliah::create([
             'prodi_id' => $mn->id, 'code' => 'MN401', 'name' => 'Manajemen Strategik', 'sks' => 3,
         ]);
 
@@ -615,7 +736,7 @@ class RoleAccessTest extends TestCase
     public function test_kalender_akademik_lihat_dan_kelola(): void
     {
         $admin = $this->user(User::ROLE_ADMIN);
-        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        Semester::setActiveKeys(['2026-Ganjil']);
 
         // Halaman tetap OK saat belum ada agenda sama sekali (regresi: merge koleksi kosong).
         $this->actingAs($admin)->get(route('academic.calendar'))->assertOk();
@@ -641,7 +762,7 @@ class RoleAccessTest extends TestCase
 
     public function test_kalender_tampil_agenda_akademik(): void
     {
-        \App\Models\AcademicEvent::create([
+        AcademicEvent::create([
             'title' => 'Pekan UTS', 'type' => 'uts',
             'start_date' => '2026-08-03', 'end_date' => '2026-08-08',
             'year' => 2026, 'semester' => 'Ganjil',
@@ -655,9 +776,9 @@ class RoleAccessTest extends TestCase
 
     public function test_cache_ipk_dihitung_dan_dipakai_rekap(): void
     {
-        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        Semester::setActiveKeys(['2026-Ganjil']);
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
-        $mk = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN301', 'name' => 'Statistik', 'sks' => 3]);
+        $mk = MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN301', 'name' => 'Statistik', 'sks' => 3]);
         $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
         $student = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id, 'name' => 'Mhs Cache']);
         $course = Course::create([
@@ -667,7 +788,7 @@ class RoleAccessTest extends TestCase
         ]);
         $course->students()->attach($student->id, ['enrolled_at' => now()]);
         $comp = $course->gradeComponents()->create(['name' => 'Nilai', 'type' => 'uas', 'weight' => 100]);
-        \App\Models\GradeScore::create(['grade_component_id' => $comp->id, 'user_id' => $student->id, 'score' => 80]);
+        GradeScore::create(['grade_component_id' => $comp->id, 'user_id' => $student->id, 'score' => 80]);
 
         $this->assertNull($student->fresh()->ipk_cache);
 
@@ -799,7 +920,7 @@ class RoleAccessTest extends TestCase
     public function test_edom_isi_mahasiswa_dan_rekap(): void
     {
         $course = $this->krsCourse();
-        \App\Models\Setting::put('edom_open', '1');
+        Setting::put('edom_open', '1');
         $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
         $course->students()->attach($student->id, ['enrolled_at' => now()]);
 
@@ -820,15 +941,15 @@ class RoleAccessTest extends TestCase
         $course->students()->attach($student->id, ['enrolled_at' => now()]);
 
         // Tutup → 403
-        \App\Models\Setting::put('edom_open', '0');
+        Setting::put('edom_open', '0');
         $this->actingAs($student)->post(route('edom.store', $course), ['answers' => [4, 4, 4, 4, 4]])->assertForbidden();
 
         // Buka → isi sekali, isi kedua ditolak (dobel)
-        \App\Models\Setting::put('edom_open', '1');
+        Setting::put('edom_open', '1');
         $this->actingAs($student)->post(route('edom.store', $course), ['answers' => [3, 3, 3, 3, 3]])->assertRedirect();
         $this->actingAs($student)->post(route('edom.store', $course), ['answers' => [4, 4, 4, 4, 4]])
             ->assertRedirect()->assertSessionHas('error');
-        $this->assertSame(1, \App\Models\CourseEvaluation::where('course_id', $course->id)->where('user_id', $student->id)->count());
+        $this->assertSame(1, CourseEvaluation::where('course_id', $course->id)->where('user_id', $student->id)->count());
     }
 
     public function test_pencarian_global_staf_scoped(): void
@@ -848,8 +969,8 @@ class RoleAccessTest extends TestCase
         $course = $this->krsCourse();
         $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
         $course->students()->attach($student->id, ['enrolled_at' => now()]);
-        \App\Models\Setting::put('edom_open', '1');
-        \App\Models\Setting::put('edom_required', '1');
+        Setting::put('edom_open', '1');
+        Setting::put('edom_required', '1');
 
         // Terkunci: diarahkan ke EDOM
         $this->actingAs($student)->get(route('grades.index', $course))->assertRedirect(route('edom.index'));
@@ -868,8 +989,8 @@ class RoleAccessTest extends TestCase
         $course = $this->krsCourse();
         $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
         $course->students()->attach($student->id, ['enrolled_at' => now()]);
-        \App\Models\Setting::put('edom_open', '1');
-        \App\Models\Setting::put('edom_required', '0'); // hanya sukarela
+        Setting::put('edom_open', '1');
+        Setting::put('edom_required', '0'); // hanya sukarela
 
         $this->actingAs($student)->get(route('grades.index', $course))->assertOk();
         $this->actingAs($student)->get(route('transkrip.mine'))->assertOk();
@@ -879,7 +1000,7 @@ class RoleAccessTest extends TestCase
     {
         $admin = $this->user(User::ROLE_ADMIN);
         $this->actingAs($admin)->put(route('admin.semesters.edom'), ['edom_open' => '1'])->assertRedirect();
-        $this->assertTrue(\App\Http\Controllers\EvaluationController::edomOpen());
+        $this->assertTrue(EvaluationController::edomOpen());
     }
 
     public function test_dosen_tidak_bisa_akses_kelas_dosen_lain(): void
@@ -897,9 +1018,9 @@ class RoleAccessTest extends TestCase
     /** Siapkan periode aktif + kelas ber-SKS untuk skenario KRS. */
     private function krsCourse(int $sks = 3, ?User $dosen = null): Course
     {
-        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        Semester::setActiveKeys(['2026-Ganjil']);
         $prodi = Prodi::firstOrCreate(['code' => 'MN'], ['name' => 'Manajemen']);
-        $mk = \App\Models\MataKuliah::create(['prodi_id' => $prodi->id, 'code' => 'MN'.rand(100, 999), 'name' => 'MK Uji', 'sks' => $sks]);
+        $mk = MataKuliah::create(['prodi_id' => $prodi->id, 'code' => 'MN'.rand(100, 999), 'name' => 'MK Uji', 'sks' => $sks]);
         $dosen ??= User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $prodi->id]);
 
         return Course::create([
@@ -920,14 +1041,14 @@ class RoleAccessTest extends TestCase
         $this->actingAs($admin)->put(route('admin.semesters.krs'), ['krs_open' => '1', 'krs_max_sks' => 22])
             ->assertRedirect();
 
-        $this->assertTrue(\App\Http\Controllers\KrsController::krsOpen());
-        $this->assertSame(22, \App\Http\Controllers\KrsController::maxSks());
+        $this->assertTrue(KrsController::krsOpen());
+        $this->assertSame(22, KrsController::maxSks());
     }
 
     public function test_mahasiswa_susun_dan_ajukan_krs(): void
     {
         $course = $this->krsCourse();
-        \App\Models\Setting::put('krs_open', '1');
+        Setting::put('krs_open', '1');
         $wali = $this->user(User::ROLE_DOSEN);
         $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'advisor_id' => $wali->id]);
 
@@ -937,7 +1058,7 @@ class RoleAccessTest extends TestCase
         // Tambah ke KRS (draft)
         $this->actingAs($mhs)->post(route('krs.add', $course))->assertRedirect();
         $this->assertDatabaseHas('enrollments', [
-            'course_id' => $course->id, 'user_id' => $mhs->id, 'status' => \App\Models\Enrollment::STATUS_DRAFT,
+            'course_id' => $course->id, 'user_id' => $mhs->id, 'status' => Enrollment::STATUS_DRAFT,
         ]);
 
         // Belum disetujui → tak boleh masuk kelas
@@ -946,14 +1067,14 @@ class RoleAccessTest extends TestCase
         // Ajukan ke wali
         $this->actingAs($mhs)->post(route('krs.submit'))->assertRedirect();
         $this->assertDatabaseHas('enrollments', [
-            'course_id' => $course->id, 'user_id' => $mhs->id, 'status' => \App\Models\Enrollment::STATUS_SUBMITTED,
+            'course_id' => $course->id, 'user_id' => $mhs->id, 'status' => Enrollment::STATUS_SUBMITTED,
         ]);
     }
 
     public function test_krs_tutup_tak_bisa_tambah(): void
     {
         $course = $this->krsCourse();
-        \App\Models\Setting::put('krs_open', '0');
+        Setting::put('krs_open', '0');
         $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
 
         $this->actingAs($mhs)->post(route('krs.add', $course))->assertForbidden();
@@ -963,8 +1084,8 @@ class RoleAccessTest extends TestCase
     public function test_krs_batas_sks(): void
     {
         $course = $this->krsCourse(sks: 3);
-        \App\Models\Setting::put('krs_open', '1');
-        \App\Models\Setting::put('krs_max_sks', '2'); // batas < sks kelas
+        Setting::put('krs_open', '1');
+        Setting::put('krs_max_sks', '2'); // batas < sks kelas
         $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
 
         $this->actingAs($mhs)->post(route('krs.add', $course))->assertRedirect();
@@ -976,7 +1097,7 @@ class RoleAccessTest extends TestCase
     {
         $wali = $this->user(User::ROLE_DOSEN);
         $course = $this->krsCourse();
-        \App\Models\Setting::put('krs_open', '1');
+        Setting::put('krs_open', '1');
         $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'advisor_id' => $wali->id]);
 
         $this->actingAs($mhs)->post(route('krs.add', $course));
@@ -990,7 +1111,7 @@ class RoleAccessTest extends TestCase
         $this->actingAs($wali)->post(route('perwalian.krs.approve', $mhs))->assertRedirect();
         $this->assertDatabaseHas('enrollments', [
             'course_id' => $course->id, 'user_id' => $mhs->id,
-            'status' => \App\Models\Enrollment::STATUS_APPROVED, 'approved_by' => $wali->id,
+            'status' => Enrollment::STATUS_APPROVED, 'approved_by' => $wali->id,
         ]);
 
         // Sekarang mahasiswa dapat mengakses kelas & kelas otomatis muncul di LMS
@@ -1001,14 +1122,14 @@ class RoleAccessTest extends TestCase
     public function test_gabung_kelas_manual_dihapus(): void
     {
         // Alur join-by-code sudah tidak ada (enrolmen lewat KRS).
-        $this->assertFalse(\Illuminate\Support\Facades\Route::has('enrollments.join'));
+        $this->assertFalse(Route::has('enrollments.join'));
         $this->actingAs($this->user(User::ROLE_MAHASISWA))->get('/join')->assertNotFound();
     }
 
     public function test_lms_tampil_info_krs_menunggu(): void
     {
         $course = $this->krsCourse();
-        \App\Models\Setting::put('krs_open', '1');
+        Setting::put('krs_open', '1');
         $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
         $this->actingAs($mhs)->post(route('krs.add', $course)); // draft, belum disetujui
 
@@ -1018,7 +1139,7 @@ class RoleAccessTest extends TestCase
 
     public function test_krs_deteksi_bentrok_jadwal(): void
     {
-        \App\Models\Setting::put('krs_open', '1');
+        Setting::put('krs_open', '1');
         $c1 = $this->krsCourse();
         $c2 = $this->krsCourse();
         // Jadwal beririsan: keduanya Senin 08:00–10:00
@@ -1034,11 +1155,11 @@ class RoleAccessTest extends TestCase
 
     public function test_krs_prasyarat_belum_lulus_ditolak(): void
     {
-        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
-        \App\Models\Setting::put('krs_open', '1');
+        Semester::setActiveKeys(['2026-Ganjil']);
+        Setting::put('krs_open', '1');
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
-        $dasar = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN101', 'name' => 'Dasar', 'sks' => 3]);
-        $lanjut = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN201', 'name' => 'Lanjut', 'sks' => 3]);
+        $dasar = MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN101', 'name' => 'Dasar', 'sks' => 3]);
+        $lanjut = MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN201', 'name' => 'Lanjut', 'sks' => 3]);
         $lanjut->prasyarat()->attach($dasar->id);
         $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
         $student = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id]);
@@ -1054,17 +1175,17 @@ class RoleAccessTest extends TestCase
 
     public function test_krs_plafon_sks_ikuti_admin(): void
     {
-        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
-        \App\Models\Setting::put('krs_max_sks', '18');
+        Semester::setActiveKeys(['2026-Ganjil']);
+        Setting::put('krs_max_sks', '18');
         $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]); // baru, tanpa IPS → paket 24
         // Plafon admin (18) memotong jatah.
-        $this->assertSame(18, (new \App\Http\Controllers\KrsController())->quotaFor($student));
+        $this->assertSame(18, (new KrsController)->quotaFor($student));
     }
 
     public function test_cetak_krs_pdf(): void
     {
         $course = $this->krsCourse();
-        \App\Models\Setting::put('krs_open', '1');
+        Setting::put('krs_open', '1');
         $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
         $this->actingAs($student)->post(route('krs.add', $course));
 
@@ -1075,9 +1196,9 @@ class RoleAccessTest extends TestCase
 
     public function test_cetak_khs_pdf(): void
     {
-        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        Semester::setActiveKeys(['2026-Ganjil']);
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
-        $mk = \App\Models\MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN301', 'name' => 'Statistik', 'sks' => 3]);
+        $mk = MataKuliah::create(['prodi_id' => $mn->id, 'code' => 'MN301', 'name' => 'Statistik', 'sks' => 3]);
         $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
         $student = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id]);
         $course = Course::create([
@@ -1087,7 +1208,7 @@ class RoleAccessTest extends TestCase
         ]);
         $course->students()->attach($student->id, ['enrolled_at' => now()]);
         $comp = $course->gradeComponents()->create(['name' => 'Nilai', 'type' => 'uas', 'weight' => 100]);
-        \App\Models\GradeScore::create(['grade_component_id' => $comp->id, 'user_id' => $student->id, 'score' => 80]);
+        GradeScore::create(['grade_component_id' => $comp->id, 'user_id' => $student->id, 'score' => 80]);
 
         $res = $this->actingAs($student)->get(route('khs.mine.pdf', ['period' => '2025-Ganjil']));
         $res->assertOk();
@@ -1118,17 +1239,17 @@ class RoleAccessTest extends TestCase
 
     public function test_krs_mendukung_kelas_lintas_prodi_dan_kurikulum(): void
     {
-        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
-        \App\Models\Setting::put('krs_open', '1');
+        Semester::setActiveKeys(['2026-Ganjil']);
+        Setting::put('krs_open', '1');
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
         $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
-        $kurMn = \App\Models\Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'Kurikulum MN', 'year' => 2026, 'is_active' => true]);
-        $kurLain = \App\Models\Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'Kurikulum Lama', 'year' => 2022, 'is_active' => false]);
+        $kurMn = Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'Kurikulum MN', 'year' => 2026, 'is_active' => true]);
+        $kurLain = Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'Kurikulum Lama', 'year' => 2022, 'is_active' => false]);
         $dosenMn = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
         $dosenAk = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $ak->id]);
 
-        $buatKelas = function (Prodi $prodi, User $dosen, ?\App\Models\Kurikulum $kurikulum, string $code, string $name) {
-            $mk = \App\Models\MataKuliah::create([
+        $buatKelas = function (Prodi $prodi, User $dosen, ?Kurikulum $kurikulum, string $code, string $name) {
+            $mk = MataKuliah::create([
                 'prodi_id' => $prodi->id, 'kurikulum_id' => $kurikulum?->id,
                 'code' => $code, 'name' => $name, 'sks' => 3,
             ]);
@@ -1156,7 +1277,7 @@ class RoleAccessTest extends TestCase
             ->assertRedirect()->assertSessionHas('status');
         $this->assertDatabaseHas('enrollments', [
             'course_id' => $bedaProdi->id, 'user_id' => $student->id,
-            'status' => \App\Models\Enrollment::STATUS_DRAFT,
+            'status' => Enrollment::STATUS_DRAFT,
         ]);
     }
 
@@ -1172,7 +1293,7 @@ class RoleAccessTest extends TestCase
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
         $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
         $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
-        $mk = \App\Models\MataKuliah::create(['prodi_id' => $ak->id, 'code' => 'AK101', 'name' => 'Akuntansi Dasar', 'sks' => 3]);
+        $mk = MataKuliah::create(['prodi_id' => $ak->id, 'code' => 'AK101', 'name' => 'Akuntansi Dasar', 'sks' => 3]);
 
         $this->actingAs($this->user(User::ROLE_ADMIN))->post(route('courses.store'), [
             'user_id' => $dosen->id, 'mata_kuliah_id' => $mk->id,

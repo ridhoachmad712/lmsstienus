@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicEvent;
 use App\Models\Assignment;
 use App\Models\Course;
+use App\Models\CourseEvaluation;
 use App\Models\Enrollment;
-use App\Models\Material;
 use App\Models\Meeting;
-use App\Models\Setting;
+use App\Models\Semester;
+use App\Services\AcademicSummary;
 use App\Services\AttendanceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +31,7 @@ class DashboardController extends Controller
         }
 
         if ($user->isStaff()) {
-            return redirect()->route('admin.courses.index');
+            return redirect()->route('portal.lms');
         }
 
         return redirect()->route($user->isMahasiswa() ? 'dashboard.mahasiswa' : 'dashboard.dosen');
@@ -55,7 +57,7 @@ class DashboardController extends Controller
             'sort' => $c->year * 10 + ($semOrder[$c->semester] ?? 0),
         ])->unique('key')->sortByDesc('sort')->values();
 
-        $activeKeys = \App\Models\Semester::activeKeys();
+        $activeKeys = Semester::activeKeys();
         $periode = (string) $request->query('periode', 'active');
 
         // Semua statistik & daftar kelas mengikuti periode terpilih.
@@ -111,7 +113,7 @@ class DashboardController extends Controller
         ];
 
         $activeLabel = count($activeKeys) === 1
-            ? \App\Models\Semester::keyLabel($activeKeys[0])
+            ? Semester::keyLabel($activeKeys[0])
             : 'Semester aktif ('.count($activeKeys).')';
 
         $agenda = $this->upcomingAcademicEvents();
@@ -125,9 +127,9 @@ class DashboardController extends Controller
     /** Agenda akademik yang akan datang / berlangsung pada periode aktif (maks 4). */
     private function upcomingAcademicEvents()
     {
-        $activeKeys = \App\Models\Semester::activeKeys();
+        $activeKeys = Semester::activeKeys();
 
-        return \App\Models\AcademicEvent::where(function ($q) use ($activeKeys) {
+        return AcademicEvent::where(function ($q) use ($activeKeys) {
             foreach ($activeKeys as $k) {
                 [$y, $s] = explode('-', $k, 2);
                 $q->orWhere(fn ($qq) => $qq->where('year', (int) $y)->where('semester', $s));
@@ -199,15 +201,15 @@ class DashboardController extends Controller
             'unread' => $user->notifications()->unread()->count(),
         ];
 
-        $krsOpen = \App\Http\Controllers\KrsController::krsOpen();
-        $academic = (new \App\Services\AcademicSummary())->forStudent($user);
+        $krsOpen = KrsController::krsOpen();
+        $academic = (new AcademicSummary)->forStudent($user);
         $agenda = $this->upcomingAcademicEvents();
 
         // EDOM: berapa kelas aktif yang belum dievaluasi (saat periode dibuka).
-        $edomOpen = \App\Http\Controllers\EvaluationController::edomOpen();
+        $edomOpen = EvaluationController::edomOpen();
         $edomPending = 0;
         if ($edomOpen && $courseIds->isNotEmpty()) {
-            $evaluated = \App\Models\CourseEvaluation::where('user_id', $user->id)
+            $evaluated = CourseEvaluation::where('user_id', $user->id)
                 ->whereIn('course_id', $courseIds)->count();
             $edomPending = $courseIds->count() - $evaluated;
         }
