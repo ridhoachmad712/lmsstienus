@@ -64,6 +64,36 @@ return [
             ]) : [],
         ],
 
+        /*
+        | Database akademik resmi milik SIAKAD lama.
+        | Koneksi ini hanya dipakai adapter sinkronisasi nilai; migrasi Laravel
+        | tidak pernah dijalankan pada koneksi ini.
+        */
+        'siakad' => [
+            'driver' => env('SIAKAD_DB_CONNECTION', 'mysql'),
+            'url' => env('SIAKAD_DB_URL'),
+            'host' => env('SIAKAD_DB_HOST', '127.0.0.1'),
+            'port' => env('SIAKAD_DB_PORT', '3306'),
+            'database' => env('SIAKAD_DB_DATABASE', ''),
+            'username' => env('SIAKAD_DB_USERNAME', ''),
+            'password' => env('SIAKAD_DB_PASSWORD', ''),
+            'unix_socket' => env('SIAKAD_DB_SOCKET', ''),
+            'charset' => env('SIAKAD_DB_CHARSET', 'utf8mb4'),
+            'collation' => env('SIAKAD_DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'foreign_key_constraints' => true,
+            'busy_timeout' => null,
+            'journal_mode' => null,
+            'synchronous' => null,
+            'transaction_mode' => 'DEFERRED',
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                Mysql::ATTR_SSL_CA => env('SIAKAD_MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

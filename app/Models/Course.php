@@ -12,12 +12,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['user_id', 'prodi_id', 'mata_kuliah_id', 'name', 'code', 'class_name', 'join_code', 'semester', 'year', 'quota', 'description', 'status', 'default_meeting_type'])]
+#[Fillable(['user_id', 'prodi_id', 'mata_kuliah_id', 'siakad_schedule_id', 'name', 'code', 'class_name', 'join_code', 'semester', 'year', 'quota', 'description', 'status', 'default_meeting_type', 'grades_finalized_at', 'grades_finalized_by'])]
 class Course extends Model
 {
     /** @use HasFactory<\Database\Factories\CourseFactory> */
     use HasFactory;
     use SoftDeletes;
+
+    protected function casts(): array
+    {
+        return [
+            'grades_finalized_at' => 'datetime',
+        ];
+    }
 
     public const STATUS_ACTIVE = 'active';
     public const STATUS_COMPLETED = 'completed';
@@ -101,6 +108,16 @@ class Course extends Model
     public function gradeComponents(): HasMany
     {
         return $this->hasMany(GradeComponent::class);
+    }
+
+    public function gradeSyncs(): HasMany
+    {
+        return $this->hasMany(SiakadGradeSync::class);
+    }
+
+    public function gradesFinalizer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'grades_finalized_by');
     }
 
     public function evaluations(): HasMany

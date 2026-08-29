@@ -6,16 +6,26 @@ use App\Http\Controllers\Concerns\ChecksCourseAccess;
 use App\Models\Course;
 use App\Models\GradeComponent;
 use App\Models\GradeScore;
+use App\Services\Activity;
 use App\Services\GradeCalculator;
+use App\Services\SiakadGradeSyncService;
+use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use RuntimeException;
+use Throwable;
 
 class GradeController extends Controller
 {
     use ChecksCourseAccess;
 
-    public function index(Request $request, Course $course, GradeCalculator $calc): View|RedirectResponse
+    public function index(
+        Request $request,
+        Course $course,
+        GradeCalculator $calc,
+        SiakadGradeSyncService $siakadSync,
+    ): View|RedirectResponse
     {
         $this->ensureCourseAccess($request, $course);
         $user = $request->user();
@@ -57,6 +67,8 @@ class GradeController extends Controller
             'summary' => $data['summary'],
             'autoComponentIds' => $data['autoComponentIds'],
             'unlinkedGraded' => $unlinkedGraded,
+            'gradeSyncs' => $course->gradeSyncs()->with('finalizer')->get()->keyBy('user_id'),
+            'syncOverview' => $siakadSync->overview($course),
         ]);
     }
 
@@ -109,5 +121,76 @@ class GradeController extends Controller
         }
 
         return back()->with('status', 'Nilai manual tersimpan.');
+    }
+
+    /** Pilih jadwal resmi SIAKAD yang menjadi tujuan nilai kelas LMS. */
+    public function mapSiakadSchedule(
+        Request $request,
+        Course $course,
+        SiakadGradeSyncService $siakadSync,
+    ): RedirectResponse {
+        $this->ensureSyncOwner($request, $course);
+        $data = $request->validate([
+            'siakad_schedule_id' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        try {
+            $scheduleId = filled($data['siakad_schedule_id'] ?? null)
+                ? (int) $data['siakad_schedule_id']
+                : null;
+            $siakadSync->assignSchedule($course, $scheduleId);
+            Activity::log('grade_sync_map', $scheduleId
+                ? "Memetakan kelas {$course->name} ke jadwal SIAKAD #{$scheduleId}"
+                : "Menghapus pemetaan jadwal SIAKAD kelas {$course->name}");
+
+            return back()->with('status', $scheduleId
+                ? 'Jadwal resmi SIAKAD berhasil dipetakan.'
+                : 'Pemetaan jadwal SIAKAD dihapus.');
+        } catch (DomainException|RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Pemetaan jadwal gagal karena database SIAKAD tidak dapat dihubungi.');
+        }
+    }
+
+    /** Finalisasi snapshot dan kirim/retry nilai akhir ke SIAKAD. */
+    public function syncToSiakad(
+        Request $request,
+        Course $course,
+        SiakadGradeSyncService $siakadSync,
+    ): RedirectResponse {
+        $this->ensureSyncOwner($request, $course);
+
+        try {
+            $result = $siakadSync->syncCourse($course, $request->user());
+            Activity::log(
+                'grade_sync',
+                "Sinkronisasi nilai {$course->name}: {$result['synced']} berhasil, {$result['skipped']} tetap, {$result['failed']} gagal",
+            );
+
+            $message = "Sinkronisasi selesai: {$result['synced']} berhasil";
+            if ($result['skipped'] > 0) {
+                $message .= ", {$result['skipped']} sudah sama";
+            }
+            if ($result['failed'] > 0) {
+                $message .= ", {$result['failed']} gagal. Periksa status tiap mahasiswa";
+            }
+
+            return back()->with($result['failed'] > 0 ? 'error' : 'status', $message.'.');
+        } catch (DomainException|RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Sinkronisasi gagal karena database SIAKAD tidak dapat dihubungi.');
+        }
+    }
+
+    /** Sinkronisasi tetap boleh diulang setelah kelas selesai/read-only. */
+    private function ensureSyncOwner(Request $request, Course $course): void
+    {
+        abort_unless($request->user()->can('manage', $course), 403);
     }
 }

@@ -16,14 +16,28 @@ LEGACY_SIAKAD_ENABLED=true
 LEGACY_SIAKAD_URL=https://siakad.stienus.ac.id/
 LEGACY_SIAKAD_SSO_URL=https://siakad.stienus.ac.id/pages/sso.php
 LEGACY_SIAKAD_SSO_SECRET=ganti-dengan-secret-acak-minimal-32-karakter
+
+# Koneksi kedua khusus sinkronisasi nilai LMS -> SIAKAD
+SIAKAD_GRADE_SYNC_ENABLED=true
+SIAKAD_DB_CONNECTION=mysql
+SIAKAD_DB_HOST=127.0.0.1
+SIAKAD_DB_PORT=3306
+SIAKAD_DB_DATABASE=nama_database_siakad
+SIAKAD_DB_USERNAME=user_integrasi_siakad
+SIAKAD_DB_PASSWORD=password-user-integrasi
 ```
 
 Setelah mengubah `.env`:
 
 ```bash
 php artisan optimize:clear
+php artisan migrate --force
 php artisan config:cache
 ```
+
+`DB_*` tetap menunjuk ke database LMS. `SIAKAD_DB_*` menunjuk ke database lama
+yang berbeda. Jangan menjalankan migrasi Laravel dengan database SIAKAD sebagai
+koneksi default.
 
 ## Konfigurasi SIAKAD PHP lama
 
@@ -81,6 +95,42 @@ signature, waktu kedaluwarsa, identitas, dan peran, kemudian membentuk sesi lama
 tanpa mengirim atau mengubah password SIAKAD. HTTPS wajib digunakan pada kedua
 aplikasi.
 
+## Sinkronisasi nilai akhir LMS ke SIAKAD
+
+Sinkronisasi berjalan satu arah. Nilai tugas, kuis, kehadiran, dan komponen lain
+tetap diolah dalam LMS. Setelah 16 pertemuan terpenuhi, bobot komponen tepat
+100%, dan semua nilai lengkap, dosen menandai kelas selesai lalu membuka halaman
+**Penilaian**.
+
+Pada bagian **Sinkronisasi Nilai SIAKAD** dosen:
+
+1. memilih jadwal resmi SIAKAD (`id_jadwal`) yang kode mata kuliah, periode, dan
+   NIP dosennya cocok;
+2. menekan **Finalisasi & Kirim ke SIAKAD**; dan
+3. memeriksa status setiap mahasiswa atau memakai **Sinkronkan Ulang / Retry**
+   untuk baris yang gagal.
+
+Untuk setiap NIM, LMS memeriksa `krs_mhs` terlebih dahulu. Bila KRS resmi ada,
+LMS mengambil skala resmi dari `tbl_grade`, lalu memperbarui kolom
+`nilai_akhir`, `bobot`, dan `grade` pada baris `khs_mhs` yang sudah ada. LMS tidak
+membuat KRS/KHS baru. Dengan demikian mahasiswa lintas prodi tetap dapat
+diproses berdasarkan `kode_prodi` pada KRS-nya sendiri, sedangkan mahasiswa yang
+hanya bergabung di LMS tanpa KRS resmi ditandai gagal.
+
+Setiap percobaan disimpan di tabel LMS `siakad_grade_syncs`, termasuk snapshot
+nilai, status, jumlah percobaan, pesan kegagalan, pelaku finalisasi, dan waktu
+sinkron. Payload yang sama bersifat idempoten dan tidak ditulis ulang. Jika kelas
+dibuka kembali atau pemetaan jadwal berubah, seluruh status ditandai perlu
+sinkron ulang.
+
+Gunakan akun MySQL integrasi dengan hak minimum:
+
+- `SELECT`: `jadwal_mengajar`, `thn_akademik`, `krs_mhs`, `khs_mhs`, `tbl_grade`;
+- `UPDATE`: hanya `nilai_akhir`, `bobot`, dan `grade` pada `khs_mhs`.
+
+Jangan memberikan izin `DROP`, `ALTER`, `DELETE`, atau `INSERT` kepada akun
+integrasi. Password hanya disimpan pada `.env` hosting dan tidak masuk Git.
+
 ## Pemeriksaan setelah deploy
 
 1. Login melalui LMS, lalu pilih SIAKAD.
@@ -89,3 +139,6 @@ aplikasi.
 4. Pilih LMS, buat kelas sebagai dosen, dan salin kode gabung.
 5. Masuk sebagai mahasiswa dari prodi lain dan gabung memakai kode tersebut.
 6. Pastikan menu KRS/KHS/transkrip hanya dikelola pada SIAKAD lama.
+7. Selesaikan satu kelas uji, petakan jadwal SIAKAD, lalu sinkronkan nilai.
+8. Pastikan mahasiswa ber-KRS berubah pada `khs_mhs`, sementara mahasiswa tanpa
+   KRS mendapat status gagal dan tidak dibuatkan data akademik baru.

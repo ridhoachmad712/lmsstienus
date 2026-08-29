@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\MataKuliah;
 use App\Models\Setting;
+use App\Models\SiakadGradeSync;
 use App\Models\Syllabus;
 use App\Models\User;
 use App\Services\GradeCalculator;
@@ -340,7 +341,16 @@ class CourseController extends Controller
 
         // Membuka kembali kelas selesai → selalu boleh
         if ($course->isCompleted()) {
-            $course->update(['status' => Course::STATUS_ACTIVE]);
+            $course->update([
+                'status' => Course::STATUS_ACTIVE,
+                'grades_finalized_at' => null,
+                'grades_finalized_by' => null,
+            ]);
+            $course->gradeSyncs()->update([
+                'status' => SiakadGradeSync::STATUS_STALE,
+                'error_message' => 'Kelas dibuka kembali; nilai perlu difinalisasi dan disinkronkan ulang.',
+                'synced_at' => null,
+            ]);
             $this->refreshStudentsAcademicCache($course); // nilai kelas ini tak lagi dihitung
 
             return back()->with('status', 'Kelas dibuka kembali — sekarang bisa diubah.');

@@ -278,6 +278,8 @@ Route::middleware('auth')->group(function () {
 
         // Komponen nilai + input nilai manual
         Route::post('/lms/courses/{course}/grades/manual', [GradeController::class, 'saveManual'])->name('grades.saveManual');
+        Route::post('/lms/courses/{course}/grades/siakad-schedule', [GradeController::class, 'mapSiakadSchedule'])->name('grades.siakad.map');
+        Route::post('/lms/courses/{course}/grades/sync-siakad', [GradeController::class, 'syncToSiakad'])->name('grades.siakad.sync');
         Route::post('/lms/courses/{course}/grade-components', [GradeComponentController::class, 'store'])->name('grade-components.store');
         Route::put('/lms/grade-components/{component}', [GradeComponentController::class, 'update'])->name('grade-components.update');
         Route::delete('/lms/grade-components/{component}', [GradeComponentController::class, 'destroy'])->name('grade-components.destroy');

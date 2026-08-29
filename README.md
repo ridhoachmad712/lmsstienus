@@ -11,6 +11,7 @@ SIAKAD lama.
 - LMS menangani kelas, peserta, materi, tugas, kuis, diskusi, presensi, dan proses belajar.
 - Dosen membuat dan mengelola kelas LMS sendiri.
 - Mahasiswa bergabung memakai kode kelas; program studi mahasiswa tidak membatasi kelas yang dapat diikuti.
+- Setelah kelas selesai, dosen dapat memfinalisasi nilai LMS dan mengirimkannya ke KHS resmi SIAKAD; hanya mahasiswa dengan KRS resmi yang diproses.
 - Saat integrasi SIAKAD lama diaktifkan, endpoint akademik internal Laravel otomatis dinonaktifkan.
 
 Petunjuk konfigurasi hosting dan SSO tersedia di

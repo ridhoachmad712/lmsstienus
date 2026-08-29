@@ -60,6 +60,7 @@ return [
         'url' => env('LEGACY_SIAKAD_URL'),
         'sso_url' => env('LEGACY_SIAKAD_SSO_URL'),
         'sso_secret' => env('LEGACY_SIAKAD_SSO_SECRET'),
+        'grade_sync_enabled' => env('SIAKAD_GRADE_SYNC_ENABLED', false),
     ],
 
 ];
