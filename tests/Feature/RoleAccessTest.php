@@ -554,7 +554,7 @@ class RoleAccessTest extends TestCase
         $course = Course::where('code', 'MN401')->first();
         $this->assertNotNull($course);
         $this->assertSame($dosen->id, $course->user_id);   // pengampu = dosen terpilih
-        $this->assertSame($mn->id, $course->prodi_id);     // prodi mengikuti dosen
+        $this->assertSame($mn->id, $course->prodi_id);     // prodi mengikuti mata kuliah
         $this->assertSame(40, $course->quota);
     }
 
@@ -1078,7 +1078,7 @@ class RoleAccessTest extends TestCase
             ->assertDontSee('Gabung Kelas');
     }
 
-    public function test_krs_hanya_menampilkan_kelas_prodi_dan_kurikulum_mahasiswa(): void
+    public function test_krs_mendukung_kelas_lintas_prodi_dan_kurikulum(): void
     {
         \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
         \App\Models\Setting::put('krs_open', '1');
@@ -1112,10 +1112,14 @@ class RoleAccessTest extends TestCase
 
         $this->actingAs($student)->get(route('krs.index'))
             ->assertOk()->assertSee($sesuai->name)
-            ->assertDontSee($bedaKurikulum->name)->assertDontSee($bedaProdi->name);
+            ->assertSee($bedaKurikulum->name)->assertSee($bedaProdi->name);
 
         $this->actingAs($student)->post(route('krs.add', $bedaProdi))
-            ->assertRedirect()->assertSessionHas('error');
+            ->assertRedirect()->assertSessionHas('status');
+        $this->assertDatabaseHas('enrollments', [
+            'course_id' => $bedaProdi->id, 'user_id' => $student->id,
+            'status' => \App\Models\Enrollment::STATUS_DRAFT,
+        ]);
     }
 
     public function test_mahasiswa_nonaktif_tidak_bisa_mengisi_krs(): void
@@ -1125,7 +1129,7 @@ class RoleAccessTest extends TestCase
         $this->actingAs($student)->get(route('krs.index'))->assertForbidden();
     }
 
-    public function test_admin_tidak_bisa_membuat_kelas_lintas_prodi(): void
+    public function test_admin_bisa_menugaskan_dosen_lintas_prodi(): void
     {
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
         $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
@@ -1136,8 +1140,11 @@ class RoleAccessTest extends TestCase
             'user_id' => $dosen->id, 'mata_kuliah_id' => $mk->id,
             'name' => 'Akuntansi Dasar', 'code' => 'AK101A', 'semester' => 'Ganjil',
             'year' => 2026, 'default_meeting_type' => 'tatap_muka',
-        ])->assertSessionHasErrors('mata_kuliah_id');
+        ])->assertRedirect();
 
-        $this->assertDatabaseMissing('courses', ['code' => 'AK101A']);
+        $this->assertDatabaseHas('courses', [
+            'code' => 'AK101A', 'user_id' => $dosen->id, 'prodi_id' => $ak->id,
+            'mata_kuliah_id' => $mk->id,
+        ]);
     }
 }

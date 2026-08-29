@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Services\GradeCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CourseController extends Controller
@@ -414,29 +413,13 @@ class CourseController extends Controller
         ]);
     }
 
-    /** Pastikan kelas, mata kuliah, dan dosen pengampu berada pada prodi yang sama. */
+    /** Prodi kelas mengikuti mata kuliah; dosen pengampu boleh berasal dari prodi lain. */
     private function resolveCourseProdi(array $data): int
     {
-        $dosen = $this->resolveDosen($data['user_id']);
+        $this->resolveDosen($data['user_id']);
         $mataKuliah = MataKuliah::findOrFail($data['mata_kuliah_id']);
 
-        if (! $dosen->prodi_id) {
-            throw ValidationException::withMessages([
-                'user_id' => 'Dosen pengampu belum memiliki program studi.',
-            ]);
-        }
-
-        if (! $mataKuliah->prodi_id) {
-            throw ValidationException::withMessages([
-                'mata_kuliah_id' => 'Mata kuliah belum memiliki program studi.',
-            ]);
-        }
-
-        if ((int) $dosen->prodi_id !== (int) $mataKuliah->prodi_id) {
-            throw ValidationException::withMessages([
-                'mata_kuliah_id' => 'Program studi mata kuliah harus sama dengan program studi dosen pengampu.',
-            ]);
-        }
+        abort_unless($mataKuliah->prodi_id, 422, 'Mata kuliah belum memiliki program studi.');
 
         return (int) $mataKuliah->prodi_id;
     }

@@ -99,10 +99,6 @@ class KrsController extends Controller
 
         $available = Course::where('status', Course::STATUS_ACTIVE)
             ->where('year', $year)->where('semester', $semester)
-            ->when($user->prodi_id, fn ($q) => $q->where('prodi_id', $user->prodi_id))
-            ->when($user->kurikulum_id, fn ($q) => $q->whereHas(
-                'mataKuliah', fn ($mk) => $mk->where('kurikulum_id', $user->kurikulum_id)
-            ))
             ->whereHas('mataKuliah', fn ($q) => $q->where('sks', '>', 0))
             ->whereNotIn('id', $takenCourseIds)
             ->with(['mataKuliah', 'lecturer', 'prodi', 'schedules'])
@@ -172,17 +168,9 @@ class KrsController extends Controller
             return back()->with('error', 'Kelas tidak tersedia untuk periode KRS ini.');
         }
 
-        if ($user->prodi_id && (int) $course->prodi_id !== (int) $user->prodi_id) {
-            return back()->with('error', 'Kelas ini bukan untuk program studi Anda.');
-        }
-
         $course->loadMissing('mataKuliah');
         if (! $course->mataKuliah || (int) $course->mataKuliah->sks <= 0) {
             return back()->with('error', 'Kelas belum memiliki mata kuliah dan SKS yang valid. Hubungi pengelola akademik.');
-        }
-
-        if ($user->kurikulum_id && (int) $course->mataKuliah->kurikulum_id !== (int) $user->kurikulum_id) {
-            return back()->with('error', 'Mata kuliah ini tidak termasuk dalam kurikulum Anda.');
         }
 
         if (Enrollment::where('course_id', $course->id)->where('user_id', $user->id)->exists()) {

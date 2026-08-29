@@ -8,7 +8,7 @@
                     <option value="{{ $d->id }}" @selected(old('user_id', $course->user_id ?? '') == $d->id)>{{ $d->name }}@if ($d->prodi) — {{ $d->prodi->code }}@endif</option>
                 @endforeach
             </select>
-            <small class="form-hint">Kelas mengikuti program studi dosen yang dipilih.</small>
+            <small class="form-hint">Dosen boleh mengajar lintas program studi. Prodi kelas mengikuti mata kuliah.</small>
             @error('user_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
     @endif
@@ -21,7 +21,7 @@
                     <option value="{{ $mk->id }}" @selected(old('mata_kuliah_id', $course->mata_kuliah_id ?? '') == $mk->id)>{{ $mk->code }} — {{ $mk->name }} ({{ $mk->sks }} SKS)@if($mk->prodi) — {{ $mk->prodi->code }}@endif</option>
                 @endforeach
             </select>
-            <small class="form-hint">Wajib. Program studi mata kuliah harus sama dengan program studi dosen pengampu.</small>
+            <small class="form-hint">Wajib. Program studi kelas mengikuti mata kuliah; dosen pengampu boleh berasal dari prodi lain.</small>
             @error('mata_kuliah_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
     @endif
