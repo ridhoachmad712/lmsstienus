@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Models\MataKuliah;
 use App\Models\Setting;
 use App\Models\Syllabus;
 use App\Models\User;
 use App\Services\GradeCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CourseController extends Controller
@@ -112,7 +114,7 @@ class CourseController extends Controller
     /** Pilihan mata kuliah untuk form kelas (admin mengelola semua prodi). */
     private function mataKuliahOptions()
     {
-        return \App\Models\MataKuliah::orderBy('code')->get();
+        return MataKuliah::with('prodi')->orderBy('code')->get();
     }
 
     /** Pilihan dosen pengampu untuk form kelas. */
@@ -130,8 +132,7 @@ class CourseController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validateData($request);
-        $dosen = $this->resolveDosen($data['user_id']);   // dosen pengampu dipilih admin
-        $data['prodi_id'] = $dosen->prodi_id;              // kelas mengikuti prodi dosen
+        $data['prodi_id'] = $this->resolveCourseProdi($data);
         $data['status'] = Course::STATUS_ACTIVE;
         $data['join_code'] = Course::generateJoinCode();
 
@@ -300,7 +301,7 @@ class CourseController extends Controller
         abort_if($course->isCompleted(), 403, 'Kelas sudah selesai (read-only).');
 
         $data = $this->validateData($request);
-        $data['prodi_id'] = $this->resolveDosen($data['user_id'])->prodi_id;
+        $data['prodi_id'] = $this->resolveCourseProdi($data);
         $course->update($data);
         $this->saveSyllabus($request, $course);
 
@@ -401,7 +402,7 @@ class CourseController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50'],
             'class_name' => ['nullable', 'string', 'max:100'],
-            'mata_kuliah_id' => ['nullable', 'integer', 'exists:mata_kuliah,id'],
+            'mata_kuliah_id' => ['required', 'integer', 'exists:mata_kuliah,id'],
             'semester' => ['required', 'in:Ganjil,Genap,Antara'],
             'year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'quota' => ['nullable', 'integer', 'min:1'],
@@ -409,7 +410,35 @@ class CourseController extends Controller
             'description' => ['nullable', 'string'],
         ], [
             'user_id.required' => 'Pilih dosen pengampu.',
+            'mata_kuliah_id.required' => 'Pilih mata kuliah dari katalog agar SKS dan prodi kelas tercatat dengan benar.',
         ]);
+    }
+
+    /** Pastikan kelas, mata kuliah, dan dosen pengampu berada pada prodi yang sama. */
+    private function resolveCourseProdi(array $data): int
+    {
+        $dosen = $this->resolveDosen($data['user_id']);
+        $mataKuliah = MataKuliah::findOrFail($data['mata_kuliah_id']);
+
+        if (! $dosen->prodi_id) {
+            throw ValidationException::withMessages([
+                'user_id' => 'Dosen pengampu belum memiliki program studi.',
+            ]);
+        }
+
+        if (! $mataKuliah->prodi_id) {
+            throw ValidationException::withMessages([
+                'mata_kuliah_id' => 'Mata kuliah belum memiliki program studi.',
+            ]);
+        }
+
+        if ((int) $dosen->prodi_id !== (int) $mataKuliah->prodi_id) {
+            throw ValidationException::withMessages([
+                'mata_kuliah_id' => 'Program studi mata kuliah harus sama dengan program studi dosen pengampu.',
+            ]);
+        }
+
+        return (int) $mataKuliah->prodi_id;
     }
 
     /** Dosen pemilik/mahasiswa terdaftar/admin boleh akses. */

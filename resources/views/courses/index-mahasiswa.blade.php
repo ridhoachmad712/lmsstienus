@@ -67,7 +67,7 @@
 
 @if ($courses->isNotEmpty())
     <div class="mt-4 pb-2">
-        <a href="{{ route('enrollments.join.show') }}" class="btn btn-primary w-100"><i class="ti ti-key me-1"></i>Gabung Kelas</a>
+        <a href="{{ route('krs.index') }}" class="btn btn-primary w-100"><i class="ti ti-clipboard-list me-1"></i>Buka KRS</a>
     </div>
 @endif
 @endsection

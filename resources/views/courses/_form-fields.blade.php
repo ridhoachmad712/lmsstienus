@@ -14,14 +14,14 @@
     @endif
     @if (! empty($mataKuliahs) && $mataKuliahs->isNotEmpty())
         <div class="col-12 mb-3">
-            <label class="form-label">Mata Kuliah (katalog)</label>
-            <select name="mata_kuliah_id" class="form-select @error('mata_kuliah_id') is-invalid @enderror">
-                <option value="">— Tidak ditautkan —</option>
+            <label class="form-label required">Mata Kuliah (katalog)</label>
+            <select name="mata_kuliah_id" class="form-select @error('mata_kuliah_id') is-invalid @enderror" required>
+                <option value="">— pilih mata kuliah —</option>
                 @foreach ($mataKuliahs as $mk)
-                    <option value="{{ $mk->id }}" @selected(old('mata_kuliah_id', $course->mata_kuliah_id ?? '') == $mk->id)>{{ $mk->code }} — {{ $mk->name }} ({{ $mk->sks }} SKS)</option>
+                    <option value="{{ $mk->id }}" @selected(old('mata_kuliah_id', $course->mata_kuliah_id ?? '') == $mk->id)>{{ $mk->code }} — {{ $mk->name }} ({{ $mk->sks }} SKS)@if($mk->prodi) — {{ $mk->prodi->code }}@endif</option>
                 @endforeach
             </select>
-            <small class="form-hint">Opsional — tautkan ke katalog agar kelas ini terhitung sebagai kelas paralel dari mata kuliah tersebut.</small>
+            <small class="form-hint">Wajib. Program studi mata kuliah harus sama dengan program studi dosen pengampu.</small>
             @error('mata_kuliah_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
     @endif

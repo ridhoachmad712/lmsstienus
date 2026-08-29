@@ -85,6 +85,7 @@ class KrsController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
+        $this->ensureEligibleStudent($user);
         [$year, $semester] = $this->period();
 
         $myKrs = Enrollment::where('user_id', $user->id)
@@ -98,6 +99,11 @@ class KrsController extends Controller
 
         $available = Course::where('status', Course::STATUS_ACTIVE)
             ->where('year', $year)->where('semester', $semester)
+            ->when($user->prodi_id, fn ($q) => $q->where('prodi_id', $user->prodi_id))
+            ->when($user->kurikulum_id, fn ($q) => $q->whereHas(
+                'mataKuliah', fn ($mk) => $mk->where('kurikulum_id', $user->kurikulum_id)
+            ))
+            ->whereHas('mataKuliah', fn ($q) => $q->where('sks', '>', 0))
             ->whereNotIn('id', $takenCourseIds)
             ->with(['mataKuliah', 'lecturer', 'prodi', 'schedules'])
             ->withCount(['enrollments as seats_taken_count' => fn ($q) => $q
@@ -158,11 +164,25 @@ class KrsController extends Controller
     public function add(Request $request, Course $course): RedirectResponse
     {
         $user = $request->user();
+        $this->ensureEligibleStudent($user);
         abort_unless(self::krsOpen(), 403, 'Periode KRS sedang tutup.');
 
         [$year, $semester] = $this->period();
         if ($course->status !== Course::STATUS_ACTIVE || (int) $course->year !== (int) $year || $course->semester !== $semester) {
             return back()->with('error', 'Kelas tidak tersedia untuk periode KRS ini.');
+        }
+
+        if ($user->prodi_id && (int) $course->prodi_id !== (int) $user->prodi_id) {
+            return back()->with('error', 'Kelas ini bukan untuk program studi Anda.');
+        }
+
+        $course->loadMissing('mataKuliah');
+        if (! $course->mataKuliah || (int) $course->mataKuliah->sks <= 0) {
+            return back()->with('error', 'Kelas belum memiliki mata kuliah dan SKS yang valid. Hubungi pengelola akademik.');
+        }
+
+        if ($user->kurikulum_id && (int) $course->mataKuliah->kurikulum_id !== (int) $user->kurikulum_id) {
+            return back()->with('error', 'Mata kuliah ini tidak termasuk dalam kurikulum Anda.');
         }
 
         if (Enrollment::where('course_id', $course->id)->where('user_id', $user->id)->exists()) {
@@ -203,6 +223,7 @@ class KrsController extends Controller
     /** Hapus satu kelas dari KRS (selama belum disetujui & KRS masih buka). */
     public function remove(Request $request, Enrollment $enrollment): RedirectResponse
     {
+        $this->ensureEligibleStudent($request->user());
         abort_unless($enrollment->user_id === $request->user()->id, 403);
         abort_unless(self::krsOpen(), 403, 'Periode KRS sedang tutup.');
 
@@ -219,6 +240,7 @@ class KrsController extends Controller
     public function submit(Request $request): RedirectResponse
     {
         $user = $request->user();
+        $this->ensureEligibleStudent($user);
         abort_unless(self::krsOpen(), 403, 'Periode KRS sedang tutup.');
 
         if (! $user->advisor_id) {
@@ -258,6 +280,7 @@ class KrsController extends Controller
     public function pdf(Request $request)
     {
         $user = $request->user();
+        $this->ensureEligibleStudent($user);
         [$year, $semester] = $this->period();
 
         $items = Enrollment::where('user_id', $user->id)
@@ -275,6 +298,16 @@ class KrsController extends Controller
         ])->setPaper('a4', 'portrait');
 
         return $pdf->download('krs-'.Str::slug($user->name).'-'.$year.'-'.$semester.'.pdf');
+    }
+
+    /** Mahasiswa nonaktif tidak boleh menyusun atau mengubah KRS. Data lama null tetap kompatibel. */
+    private function ensureEligibleStudent(User $student): void
+    {
+        abort_unless($student->isMahasiswa(), 403);
+
+        if ($student->student_status !== null) {
+            abort_unless($student->student_status === 'aktif', 403, 'KRS hanya tersedia untuk mahasiswa aktif.');
+        }
     }
 
     /** Total SKS non-tolak (draft + diajukan + disetujui) pada periode. */

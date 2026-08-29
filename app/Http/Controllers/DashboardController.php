@@ -205,7 +205,7 @@ class DashboardController extends Controller
         }
 
         return view('dashboard.mahasiswa', compact(
-            'courses', 'pending', 'recentGrades', 'upcomingMeetings', 'lowAttendance', 'stats', 'krsOpen', 'academic', 'agenda', 'edomOpen', 'edomPending'
+            'courses', 'pending', 'upcomingMeetings', 'lowAttendance', 'stats', 'krsOpen', 'academic', 'agenda', 'edomOpen', 'edomPending'
         ));
     }
 }

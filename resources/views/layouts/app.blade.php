@@ -478,7 +478,7 @@
             <div class="mobile-more-grid">
                 <a href="{{ route('dashboard.mahasiswa') }}#pengingat" class="mobile-more-link"><i class="ti ti-checklist"></i><span>Pengingat</span></a>
                 <a href="{{ route('notifications.index') }}" class="mobile-more-link position-relative"><i class="ti ti-bell"></i><span>Notifikasi</span>@if($mobileUnread)<span class="badge bg-red text-white position-absolute top-0 end-0 m-2">{{ $mobileUnread }}</span>@endif</a>
-                <a href="{{ route('enrollments.join.show') }}" class="mobile-more-link"><i class="ti ti-key"></i><span>Gabung Kelas</span></a>
+                <a href="{{ route('krs.index') }}" class="mobile-more-link"><i class="ti ti-clipboard-list"></i><span>KRS</span></a>
             </div>
             <div class="mobile-more-section-title">Akun & Bantuan</div>
             <div class="mobile-more-grid">

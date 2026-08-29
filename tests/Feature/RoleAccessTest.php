@@ -539,11 +539,15 @@ class RoleAccessTest extends TestCase
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
         $admin = $this->user(User::ROLE_ADMIN);
         $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
+        $mk = \App\Models\MataKuliah::create([
+            'prodi_id' => $mn->id, 'code' => 'MN401', 'name' => 'Manajemen Strategik', 'sks' => 3,
+        ]);
 
         $this->actingAs($admin)->get(route('courses.create'))->assertOk()->assertSee('Dosen Pengampu');
 
         $this->actingAs($admin)->post(route('courses.store'), [
-            'user_id' => $dosen->id, 'name' => 'Manajemen Strategik', 'code' => 'MN401',
+            'user_id' => $dosen->id, 'mata_kuliah_id' => $mk->id,
+            'name' => 'Manajemen Strategik', 'code' => 'MN401',
             'semester' => 'Ganjil', 'year' => 2026, 'quota' => 40, 'default_meeting_type' => 'tatap_muka',
         ])->assertRedirect();
 
@@ -1062,5 +1066,78 @@ class RoleAccessTest extends TestCase
         $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'advisor_id' => $wali->id]);
 
         $this->actingAs($lain)->post(route('perwalian.krs.approve', $mhs))->assertForbidden();
+    }
+
+    public function test_menu_mobile_mahasiswa_mengarah_ke_krs_bukan_gabung_kelas(): void
+    {
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
+
+        $this->actingAs($student)->get(route('dashboard.mahasiswa'))
+            ->assertOk()
+            ->assertSee(route('krs.index'), false)
+            ->assertDontSee('Gabung Kelas');
+    }
+
+    public function test_krs_hanya_menampilkan_kelas_prodi_dan_kurikulum_mahasiswa(): void
+    {
+        \App\Models\Semester::setActiveKeys(['2026-Ganjil']);
+        \App\Models\Setting::put('krs_open', '1');
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $kurMn = \App\Models\Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'Kurikulum MN', 'year' => 2026, 'is_active' => true]);
+        $kurLain = \App\Models\Kurikulum::create(['prodi_id' => $mn->id, 'name' => 'Kurikulum Lama', 'year' => 2022, 'is_active' => false]);
+        $dosenMn = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
+        $dosenAk = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $ak->id]);
+
+        $buatKelas = function (Prodi $prodi, User $dosen, ?\App\Models\Kurikulum $kurikulum, string $code, string $name) {
+            $mk = \App\Models\MataKuliah::create([
+                'prodi_id' => $prodi->id, 'kurikulum_id' => $kurikulum?->id,
+                'code' => $code, 'name' => $name, 'sks' => 3,
+            ]);
+
+            return Course::create([
+                'user_id' => $dosen->id, 'prodi_id' => $prodi->id, 'mata_kuliah_id' => $mk->id,
+                'name' => $name, 'code' => $code.'A', 'semester' => 'Ganjil', 'year' => 2026,
+                'status' => Course::STATUS_ACTIVE, 'join_code' => Course::generateJoinCode(),
+            ]);
+        };
+
+        $sesuai = $buatKelas($mn, $dosenMn, $kurMn, 'MN101', 'Kelas Sesuai');
+        $bedaKurikulum = $buatKelas($mn, $dosenMn, $kurLain, 'MN102', 'Kelas Kurikulum Lama');
+        $bedaProdi = $buatKelas($ak, $dosenAk, null, 'AK101', 'Kelas Akuntansi');
+        $student = User::factory()->create([
+            'role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id,
+            'kurikulum_id' => $kurMn->id, 'student_status' => 'aktif',
+        ]);
+
+        $this->actingAs($student)->get(route('krs.index'))
+            ->assertOk()->assertSee($sesuai->name)
+            ->assertDontSee($bedaKurikulum->name)->assertDontSee($bedaProdi->name);
+
+        $this->actingAs($student)->post(route('krs.add', $bedaProdi))
+            ->assertRedirect()->assertSessionHas('error');
+    }
+
+    public function test_mahasiswa_nonaktif_tidak_bisa_mengisi_krs(): void
+    {
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'student_status' => 'cuti']);
+
+        $this->actingAs($student)->get(route('krs.index'))->assertForbidden();
+    }
+
+    public function test_admin_tidak_bisa_membuat_kelas_lintas_prodi(): void
+    {
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
+        $mk = \App\Models\MataKuliah::create(['prodi_id' => $ak->id, 'code' => 'AK101', 'name' => 'Akuntansi Dasar', 'sks' => 3]);
+
+        $this->actingAs($this->user(User::ROLE_ADMIN))->post(route('courses.store'), [
+            'user_id' => $dosen->id, 'mata_kuliah_id' => $mk->id,
+            'name' => 'Akuntansi Dasar', 'code' => 'AK101A', 'semester' => 'Ganjil',
+            'year' => 2026, 'default_meeting_type' => 'tatap_muka',
+        ])->assertSessionHasErrors('mata_kuliah_id');
+
+        $this->assertDatabaseMissing('courses', ['code' => 'AK101A']);
     }
 }
