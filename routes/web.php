@@ -130,6 +130,23 @@ Route::middleware('auth')->group(function () {
     // Jadwal per kelas (lihat kedua role; kelola di grup dosen)
     Route::get('/lms/courses/{course}/schedule', [ScheduleController::class, 'course'])->name('schedule.course');
 
+    // Dosen memiliki kendali penuh atas kelas LMS yang dibuatnya.
+    // Route statis ditempatkan sebelum /courses/{course} agar tidak dianggap sebagai ID kelas.
+    Route::middleware('role:dosen')->group(function () {
+        Route::get('/lms/courses/create', [CourseController::class, 'create'])->name('courses.create');
+        Route::post('/lms/courses', [CourseController::class, 'store'])->name('courses.store');
+        Route::get('/lms/courses/trash', [CourseController::class, 'trash'])->name('courses.trash');
+        Route::patch('/lms/courses/{id}/restore', [CourseController::class, 'restore'])->name('courses.restore');
+        Route::delete('/lms/courses/{id}/force', [CourseController::class, 'forceDestroy'])->name('courses.forceDestroy');
+        Route::get('/lms/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
+        Route::put('/lms/courses/{course}', [CourseController::class, 'update'])->name('courses.update');
+        Route::delete('/lms/courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
+    });
+
+    // Mahasiswa bergabung sendiri dengan kode kelas; tidak dibatasi program studi.
+    Route::post('/lms/join', [EnrollmentController::class, 'join'])
+        ->middleware(['role:mahasiswa', 'throttle:12,1'])->name('enrollments.join');
+
     // Kelas — index & show untuk kedua role (otorisasi di controller)
     Route::get('/lms/courses', [CourseController::class, 'index'])->name('courses.index');
     Route::get('/lms/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
@@ -193,21 +210,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/lms/courses/{course}/syllabus', [SyllabusController::class, 'show'])->name('syllabus.show');
     Route::get('/lms/courses/{course}/syllabus/pdf', [SyllabusController::class, 'pdf'])->name('syllabus.pdf');
 
-    // --- Buka & jadwalkan kelas (admin saja) ---
+    // --- Administrasi akademik internal lama (akan dialihkan ke SIAKAD lama saat integrasi aktif) ---
     Route::middleware('role:admin')->group(function () {
-        Route::get('/siakad/classes/create', [CourseController::class, 'create'])->name('courses.create');
-        Route::post('/siakad/classes', [CourseController::class, 'store'])->name('courses.store');
-        Route::get('/siakad/classes/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
-        Route::put('/siakad/classes/{course}', [CourseController::class, 'update'])->name('courses.update');
-        Route::delete('/siakad/classes/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
-        Route::get('/siakad/classes/trash', [CourseController::class, 'trash'])->name('courses.trash');
-        Route::patch('/siakad/classes/{id}/restore', [CourseController::class, 'restore'])->name('courses.restore');
-        Route::delete('/siakad/classes/{id}/force', [CourseController::class, 'forceDestroy'])->name('courses.forceDestroy');
-
-        // Jadwal kuliah (slot) — ditetapkan admin
-        Route::post('/siakad/classes/{course}/schedule', [ScheduleController::class, 'store'])->name('schedule.store');
-        Route::delete('/siakad/schedule/{schedule}', [ScheduleController::class, 'destroy'])->name('schedule.destroy');
-
         // Kelola kalender akademik
         Route::post('/siakad/kalender-akademik', [AcademicCalendarController::class, 'store'])->name('academic.calendar.store');
         Route::delete('/siakad/kalender-akademik/{event}', [AcademicCalendarController::class, 'destroy'])->name('academic.calendar.destroy');
@@ -216,14 +220,18 @@ Route::middleware('auth')->group(function () {
     // --- Khusus dosen (mengelola isi kelas yang diampu) ---
     Route::middleware('role:dosen')->group(function () {
         Route::patch('/lms/courses/{course}/complete', [CourseController::class, 'toggleComplete'])->name('courses.complete');
+        Route::patch('/lms/courses/{course}/join-code', [EnrollmentController::class, 'regenerateJoinCode'])->name('enrollments.regenerateJoinCode');
         Route::get('/lms/enrollments/template', [EnrollmentController::class, 'template'])->name('enrollments.template');
-        Route::post('/lms/courses/{course}/students/{user}/reset-password', [EnrollmentController::class, 'resetPassword'])->name('enrollments.resetPassword');
 
         // Enrollment mahasiswa
         Route::get('/lms/courses/{course}/students', [CourseController::class, 'students'])->name('courses.students');
         Route::post('/lms/courses/{course}/students', [EnrollmentController::class, 'store'])->name('enrollments.store');
         Route::post('/lms/courses/{course}/students/import', [EnrollmentController::class, 'import'])->name('enrollments.import');
         Route::delete('/lms/courses/{course}/students/{user}', [EnrollmentController::class, 'destroy'])->name('enrollments.destroy');
+
+        // Jadwal kelas LMS dikelola dosen pemilik kelas.
+        Route::post('/lms/courses/{course}/schedule', [ScheduleController::class, 'store'])->name('schedule.store');
+        Route::delete('/lms/schedule/{schedule}', [ScheduleController::class, 'destroy'])->name('schedule.destroy');
 
         // Pertemuan
         Route::post('/lms/courses/{course}/meetings', [MeetingController::class, 'store'])->name('meetings.store');
@@ -439,9 +447,9 @@ Route::fallback(function (\Illuminate\Http\Request $request) {
             str_starts_with($path, 'dashboard/mahasiswa') => 'lms/'.$path,
             str_starts_with($path, 'admin/courses') => 'lms/'.$path,
             str_starts_with($path, 'admin/') || $path === 'admin' => 'siakad/'.$path,
-            $path === 'courses-create' => 'siakad/classes/create',
-            $path === 'courses-trash' => 'siakad/classes/trash',
-            preg_match('#^courses/([^/]+)/edit$#', $path, $matches) === 1 => 'siakad/classes/'.$matches[1].'/edit',
+            $path === 'courses-create' => 'lms/courses/create',
+            $path === 'courses-trash' => 'lms/courses/trash',
+            preg_match('#^courses/([^/]+)/edit$#', $path, $matches) === 1 => 'lms/courses/'.$matches[1].'/edit',
             collect(['krs', 'transkrip', 'khs', 'evaluasi', 'jadwal', 'kalender-akademik', 'pengumuman', 'perwalian'])
                 ->contains(fn ($prefix) => $path === $prefix || str_starts_with($path, $prefix.'/')) => 'siakad/'.$path,
             collect(['courses', 'materials', 'assignments', 'assignment-groups', 'submissions',

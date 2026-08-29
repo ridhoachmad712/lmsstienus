@@ -1,7 +1,7 @@
 ﻿@extends('layouts.app')
 
 @section('title', 'Buat Kelas')
-@section('page-pretitle', 'Administrasi')
+@section('page-pretitle', 'LMS')
 @section('page-title', 'Buat Kelas Baru')
 
 @section('content')
@@ -14,7 +14,7 @@
             </div>
             <div class="card-footer text-end">
                 <a href="{{ route('courses.index') }}" class="btn btn-link">Batal</a>
-                <button type="submit" class="btn btn-primary"><i class="ti ti-check me-1"></i>Simpan</button>
+                <button type="submit" class="btn btn-primary"><i class="ti ti-check me-1"></i>Buat Kelas</button>
             </div>
         </form>
     </div>

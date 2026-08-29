@@ -16,7 +16,8 @@
                 <span class="avatar avatar-xl bg-blue-lt"><i class="ti ti-building-bank fs-1"></i></span>
                 <div class="flex-fill">
                     <h2 class="mb-1">SIAKAD</h2>
-                    <div class="text-secondary">Administrasi dan informasi akademik</div>
+                    <div class="text-secondary">KRS, jadwal, nilai, KHS, transkrip, dan administrasi akademik</div>
+                    @unless($siakadReady)<span class="badge bg-yellow-lt mt-2">Menunggu konfigurasi alamat</span>@endunless
                 </div>
                 <i class="ti ti-chevron-right fs-2"></i>
             </div>
@@ -28,7 +29,7 @@
                 <span class="avatar avatar-xl bg-green-lt"><i class="ti ti-device-laptop fs-1"></i></span>
                 <div class="flex-fill">
                     <h2 class="mb-1">LMS</h2>
-                    <div class="text-secondary">Kegiatan pembelajaran dan kelas daring</div>
+                    <div class="text-secondary">Kelas, materi, tugas, kuis, diskusi, presensi, dan penilaian pembelajaran</div>
                 </div>
                 <i class="ti ti-chevron-right fs-2"></i>
             </div>

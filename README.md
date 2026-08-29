@@ -1,7 +1,24 @@
-# Pegboard LMS by ridhoachmad_
+# LMS STIE Nusantara Makassar
 
-Learning Management System untuk Prodi Manajemen, FEB Universitas Negeri Makassar.
-Aplikasi web mobile-friendly: 1 dosen + ±120 mahasiswa.
+Learning Management System untuk STIE Nusantara Makassar. Aplikasi ini berfokus
+pada kegiatan pembelajaran; administrasi akademik resmi tetap dijalankan oleh
+SIAKAD lama.
+
+## Arsitektur SIAKAD + LMS
+
+- Login dan portal pemilih sistem berada di aplikasi Laravel ini.
+- SIAKAD lama menangani KRS, jadwal akademik, nilai resmi, KHS, dan transkrip.
+- LMS menangani kelas, peserta, materi, tugas, kuis, diskusi, presensi, dan proses belajar.
+- Dosen membuat dan mengelola kelas LMS sendiri.
+- Mahasiswa bergabung memakai kode kelas; program studi mahasiswa tidak membatasi kelas yang dapat diikuti.
+- Saat integrasi SIAKAD lama diaktifkan, endpoint akademik internal Laravel otomatis dinonaktifkan.
+
+Petunjuk konfigurasi hosting dan SSO tersedia di
+[docs/INTEGRASI-SIAKAD-LMS.md](docs/INTEGRASI-SIAKAD-LMS.md).
+
+Source runtime SIAKAD lama kini ikut dalam repository ini di folder
+[`siakad-legacy`](siakad-legacy). Data produksi, foto pengguna, dump database,
+log, dan kredensial tetap tidak disimpan di Git.
 
 ## Tech Stack
 

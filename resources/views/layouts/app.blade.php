@@ -283,12 +283,6 @@
                                 <span class="nav-link-title">Dashboard</span>
                             </a>
                         </li>
-                        <li class="nav-item {{ request()->routeIs('pengumuman.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('pengumuman.index') }}">
-                                <span class="nav-link-icon"><i class="ti ti-speakerphone"></i></span>
-                                <span class="nav-link-title">Pengumuman</span>
-                            </a>
-                        </li>
                         @if ($user->isMahasiswa())
                             @if ($activeSystem === 'siakad')
                             {{-- Akademik (SIAKAD) --}}
@@ -496,7 +490,7 @@
                 <x-avatar :name="$user->name" :url="$user->avatarUrl()" size="md" />
                 <div class="min-w-0"><div class="fw-bold text-truncate">{{ $user->name }}</div><div class="small text-secondary text-truncate">{{ $user->nim_nip ?: 'Mahasiswa' }}</div></div>
             </div>
-            <div class="mobile-more-section-title">Akademik</div>
+            <div class="mobile-more-section-title">{{ $activeSystem === 'siakad' ? 'Akademik' : 'LMS' }}</div>
             <div class="mobile-more-grid">
                 @if($activeSystem === 'siakad')
                 <a href="{{ route('transkrip.mine') }}" class="mobile-more-link"><i class="ti ti-certificate"></i><span>KHS & Transkrip</span></a>

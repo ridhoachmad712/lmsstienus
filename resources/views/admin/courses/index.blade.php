@@ -5,15 +5,6 @@
 @section('page-pretitle', $who)
 @section('page-title', 'Pengawasan Kelas')
 
-@if (auth()->user()->isAdmin())
-    @section('page-actions')
-        <div class="btn-list">
-            <a href="{{ route('courses.trash') }}" class="btn"><i class="ti ti-trash me-1"></i>Tong Sampah</a>
-            <a href="{{ route('courses.create') }}" class="btn btn-primary"><i class="ti ti-plus me-1"></i>Buat Kelas</a>
-        </div>
-    @endsection
-@endif
-
 @section('content')
 <div class="card">
     <div class="card-header">
@@ -39,7 +30,7 @@
         </form>
     </div>
     @if ($courses->isEmpty())
-        <div class="card-body"><x-empty-state icon="ti-school-off" title="Belum ada kelas" :description="auth()->user()->isAdmin() ? 'Klik “Buat Kelas” untuk membuka kelas baru.' : 'Kelas yang dibuka admin akan tampil di sini.'" /></div>
+        <div class="card-body"><x-empty-state icon="ti-school-off" title="Belum ada kelas" description="Kelas yang dibuat dosen akan tampil di halaman pemantauan ini." /></div>
     @else
         <div class="table-responsive">
             <table class="table table-vcenter card-table">
@@ -47,7 +38,6 @@
                     <th>Kelas</th><th>Dosen</th><th>Periode</th>
                     <th class="text-center">Mhs</th><th class="text-center">Pertemuan</th><th class="text-center">Tugas</th>
                     <th class="text-center">Bobot nilai</th><th class="text-center">Status</th>
-                    @if (auth()->user()->isAdmin())<th></th>@endif
                 </tr></thead>
                 <tbody>
                     @foreach ($courses as $c)
@@ -75,20 +65,6 @@
                             <td class="text-center">
                                 <span class="badge bg-{{ $c->isCompleted() ? 'secondary' : 'green' }}-lt">{{ $c->isCompleted() ? 'Selesai' : 'Aktif' }}</span>
                             </td>
-                            @if (auth()->user()->isAdmin())
-                                <td>
-                                    <div class="btn-list flex-nowrap justify-content-end">
-                                        <a href="{{ route('schedule.course', $c) }}" class="btn btn-sm" title="Jadwal" data-bs-toggle="tooltip"><i class="ti ti-calendar-time"></i></a>
-                                        @unless ($c->isCompleted())
-                                            <a href="{{ route('courses.edit', $c) }}" class="btn btn-sm" title="Edit" data-bs-toggle="tooltip"><i class="ti ti-edit"></i></a>
-                                        @endunless
-                                        <form method="POST" action="{{ route('courses.destroy', $c) }}" onsubmit="return confirm('Hapus kelas {{ $c->name }}? Dipindahkan ke tong sampah, bisa dipulihkan.');">
-                                            @csrf @method('DELETE')
-                                            <button class="btn btn-sm btn-ghost-danger" title="Hapus" data-bs-toggle="tooltip"><i class="ti ti-trash"></i></button>
-                                        </form>
-                                    </div>
-                                </td>
-                            @endif
                         </tr>
                     @endforeach
                 </tbody>

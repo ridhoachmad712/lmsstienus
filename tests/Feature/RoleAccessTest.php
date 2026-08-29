@@ -76,46 +76,58 @@ class RoleAccessTest extends TestCase
     public function test_pilihan_sistem_disimpan_dalam_session(): void
     {
         $student = $this->user(User::ROLE_MAHASISWA);
+        config([
+            'services.legacy_siakad.url' => 'https://siakad.example.test/',
+            'services.legacy_siakad.sso_url' => null,
+            'services.legacy_siakad.sso_secret' => null,
+        ]);
 
         $this->actingAs($student)->get(route('portal.siakad'))
-            ->assertOk()->assertSessionHas('active_system', 'siakad')
-            ->assertSee('Beranda SIAKAD');
+            ->assertRedirect('https://siakad.example.test/')
+            ->assertSessionHas('active_system', 'siakad');
 
         $this->actingAs($student)->get(route('portal.lms'))
             ->assertRedirect(route('dashboard.mahasiswa'))
             ->assertSessionHas('active_system', 'lms');
     }
 
-    public function test_beranda_siakad_mahasiswa_menampilkan_status_akademik_dan_krs(): void
+    public function test_portal_membuat_tiket_sso_siakad_yang_sah(): void
     {
-        $student = $this->user(User::ROLE_MAHASISWA);
-
-        $this->actingAs($student)->get(route('portal.siakad'))
-            ->assertOk()
-            ->assertSee('Status Rencana Studi')
-            ->assertSee('Status KRS')
-            ->assertSee('Dosen Wali')
-            ->assertSee('Jatah semester ini');
-    }
-
-    public function test_beranda_siakad_dosen_menonjolkan_pengajuan_krs_yang_menunggu(): void
-    {
-        $lecturer = $this->user(User::ROLE_DOSEN);
         $student = User::factory()->create([
             'role' => User::ROLE_MAHASISWA,
-            'advisor_id' => $lecturer->id,
+            'nim_nip' => '20260001',
         ]);
-        $course = $this->course($lecturer);
-        Enrollment::create([
-            'course_id' => $course->id,
-            'user_id' => $student->id,
-            'status' => Enrollment::STATUS_SUBMITTED,
+        $secret = 'secret-pengujian-yang-panjang';
+        config([
+            'services.legacy_siakad.url' => 'https://siakad.example.test/',
+            'services.legacy_siakad.sso_url' => 'https://siakad.example.test/pages/sso.php',
+            'services.legacy_siakad.sso_secret' => $secret,
         ]);
 
-        $this->actingAs($lecturer)->get(route('portal.siakad'))
-            ->assertOk()
-            ->assertSee('Tindakan perwalian diperlukan')
-            ->assertSee('mahasiswa menunggu keputusan KRS');
+        $response = $this->actingAs($student)->get(route('portal.siakad'));
+        $location = $response->headers->get('Location');
+        $response->assertRedirect()->assertSessionHas('active_system', 'siakad');
+
+        parse_str(parse_url($location, PHP_URL_QUERY), $query);
+        $decode = fn (string $value) => base64_decode(strtr($value, '-_', '+/'));
+        $payload = json_decode($decode($query['token']), true);
+        $signature = $decode($query['signature']);
+
+        $this->assertSame('20260001', $payload['sub']);
+        $this->assertSame('mhs', $payload['role']);
+        $this->assertLessThanOrEqual(60, $payload['exp'] - $payload['iat']);
+        $this->assertTrue(hash_equals(hash_hmac('sha256', $query['token'], $secret, true), $signature));
+    }
+
+    public function test_siakad_lama_menggantikan_endpoint_akademik_internal(): void
+    {
+        config([
+            'services.legacy_siakad.enabled' => true,
+            'services.legacy_siakad.url' => 'https://siakad.example.test/',
+        ]);
+
+        $this->actingAs($this->user(User::ROLE_MAHASISWA))->get(route('krs.index'))
+            ->assertRedirect(route('portal.siakad'));
     }
 
     public function test_beranda_lms_admin_menampilkan_monitoring_kelas(): void
@@ -132,17 +144,12 @@ class RoleAccessTest extends TestCase
             ->assertSee('Kelas Monitoring LMS');
     }
 
-    public function test_beranda_siakad_admin_menampilkan_pusat_tindakan_akademik(): void
+    public function test_mutasi_akademik_internal_ditolak_saat_siakad_lama_aktif(): void
     {
-        $admin = $this->user(User::ROLE_ADMIN);
-        $this->user(User::ROLE_MAHASISWA);
+        config(['services.legacy_siakad.enabled' => true]);
+        $student = $this->user(User::ROLE_MAHASISWA);
 
-        $this->actingAs($admin)->get(route('portal.siakad'))
-            ->assertOk()
-            ->assertSessionHas('active_system', 'siakad')
-            ->assertSee('Pusat Tindakan Akademik')
-            ->assertSee('Kelengkapan data mahasiswa')
-            ->assertSee('Status Layanan');
+        $this->actingAs($student)->post(route('krs.submit'))->assertStatus(409);
     }
 
     public function test_monitoring_lms_kaprodi_hanya_menampilkan_kelas_prodinya(): void
@@ -542,7 +549,7 @@ class RoleAccessTest extends TestCase
         $this->assertSame('aktif', $a['status']);
 
         $this->actingAs($student)->get(route('dashboard.mahasiswa'))
-            ->assertOk()->assertSee('IPK')->assertSee('Perkuliahan');
+            ->assertOk()->assertSee('Aktivitas LMS')->assertDontSee('Indeks Prestasi Kumulatif');
     }
 
     public function test_kaprodi_transkrip_scope(): void
@@ -557,15 +564,14 @@ class RoleAccessTest extends TestCase
         $this->actingAs($kaprodiAk)->get(route('admin.students.transkrip', $mhsMn))->assertForbidden();
     }
 
-    public function test_admin_atur_jadwal_kelas(): void
+    public function test_dosen_pemilik_atur_jadwal_kelas(): void
     {
         $dosen = $this->user(User::ROLE_DOSEN);
-        $admin = $this->user(User::ROLE_ADMIN);
         $course = $this->course($dosen);
         $slot = TimeSlot::create(['name' => 'Sesi 1', 'start_time' => '08:00', 'end_time' => '10:00', 'sort' => 1]);
         $room = Room::create(['code' => 'R201', 'name' => 'Ruang 201']);
 
-        $this->actingAs($admin)->post(route('schedule.store', $course), [
+        $this->actingAs($dosen)->post(route('schedule.store', $course), [
             'day' => 1, 'time_slot_id' => $slot->id, 'room_id' => $room->id,
         ])->assertRedirect();
 
@@ -616,16 +622,17 @@ class RoleAccessTest extends TestCase
 
     public function test_bentrok_ruang_ditolak(): void
     {
-        $admin = $this->user(User::ROLE_ADMIN);
-        $courseA = $this->course($this->user(User::ROLE_DOSEN));
-        $courseB = $this->course($this->user(User::ROLE_DOSEN)); // dosen beda, periode sama (2026 Ganjil)
+        $dosenA = $this->user(User::ROLE_DOSEN);
+        $dosenB = $this->user(User::ROLE_DOSEN);
+        $courseA = $this->course($dosenA);
+        $courseB = $this->course($dosenB); // dosen beda, periode sama (2026 Ganjil)
         $slot = TimeSlot::create(['name' => 'Sesi 1', 'start_time' => '08:00', 'end_time' => '10:00', 'sort' => 1]);
         $room = Room::create(['name' => 'Ruang 201']);
 
-        $this->actingAs($admin)->post(route('schedule.store', $courseA), ['day' => 1, 'time_slot_id' => $slot->id, 'room_id' => $room->id])->assertRedirect();
+        $this->actingAs($dosenA)->post(route('schedule.store', $courseA), ['day' => 1, 'time_slot_id' => $slot->id, 'room_id' => $room->id])->assertRedirect();
 
         // Kelas lain di ruang & sesi & hari yang sama → ditolak
-        $this->actingAs($admin)->post(route('schedule.store', $courseB), ['day' => 1, 'time_slot_id' => $slot->id, 'room_id' => $room->id])
+        $this->actingAs($dosenB)->post(route('schedule.store', $courseB), ['day' => 1, 'time_slot_id' => $slot->id, 'room_id' => $room->id])
             ->assertRedirect()->assertSessionHas('error');
         $this->assertDatabaseMissing('class_schedules', ['course_id' => $courseB->id]);
     }
@@ -671,29 +678,34 @@ class RoleAccessTest extends TestCase
         $this->assertDatabaseHas('enrollments', ['course_id' => $course->id, 'user_id' => $m2->id, 'status' => Enrollment::STATUS_SUBMITTED]);
     }
 
-    public function test_dosen_tak_bisa_atur_jadwal(): void
+    public function test_dosen_lain_tak_bisa_atur_jadwal(): void
     {
         $owner = $this->user(User::ROLE_DOSEN);
         $course = $this->course($owner);
 
-        // Penjadwalan kini wewenang admin — dosen pemilik pun tak bisa.
-        $this->actingAs($owner)->post(route('schedule.store', $course), [
-            'day' => 1, 'start_time' => '08:00', 'end_time' => '10:00',
+        $other = $this->user(User::ROLE_DOSEN);
+        $slot = TimeSlot::create(['name' => 'Sesi', 'start_time' => '08:00', 'end_time' => '10:00', 'sort' => 1]);
+
+        $this->actingAs($other)->post(route('schedule.store', $course), [
+            'day' => 1, 'time_slot_id' => $slot->id,
         ])->assertForbidden();
     }
 
-    public function test_dosen_tak_bisa_buka_kelas(): void
+    public function test_dosen_bisa_membuat_kelas_dan_menjadi_pemiliknya(): void
     {
         $dosen = $this->user(User::ROLE_DOSEN);
+        $dosenLain = $this->user(User::ROLE_DOSEN);
 
-        $this->actingAs($dosen)->get(route('courses.create'))->assertForbidden();
+        $this->actingAs($dosen)->get(route('courses.create'))->assertOk()->assertSee('Buat Kelas Baru');
         $this->actingAs($dosen)->post(route('courses.store'), [
-            'user_id' => $dosen->id, 'name' => 'X', 'code' => 'X1',
+            'user_id' => $dosenLain->id, 'name' => 'X', 'code' => 'X1',
             'semester' => 'Ganjil', 'year' => 2026, 'default_meeting_type' => 'tatap_muka',
-        ])->assertForbidden();
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('courses', ['code' => 'X1', 'user_id' => $dosen->id]);
     }
 
-    public function test_admin_buka_kelas_pilih_dosen(): void
+    public function test_admin_tidak_membuka_kelas_lms(): void
     {
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
         $admin = $this->user(User::ROLE_ADMIN);
@@ -702,19 +714,15 @@ class RoleAccessTest extends TestCase
             'prodi_id' => $mn->id, 'code' => 'MN401', 'name' => 'Manajemen Strategik', 'sks' => 3,
         ]);
 
-        $this->actingAs($admin)->get(route('courses.create'))->assertOk()->assertSee('Dosen Pengampu');
+        $this->actingAs($admin)->get(route('courses.create'))->assertForbidden();
 
         $this->actingAs($admin)->post(route('courses.store'), [
             'user_id' => $dosen->id, 'mata_kuliah_id' => $mk->id,
             'name' => 'Manajemen Strategik', 'code' => 'MN401',
             'semester' => 'Ganjil', 'year' => 2026, 'quota' => 40, 'default_meeting_type' => 'tatap_muka',
-        ])->assertRedirect();
+        ])->assertForbidden();
 
-        $course = Course::where('code', 'MN401')->first();
-        $this->assertNotNull($course);
-        $this->assertSame($dosen->id, $course->user_id);   // pengampu = dosen terpilih
-        $this->assertSame($mn->id, $course->prodi_id);     // prodi mengikuti mata kuliah
-        $this->assertSame(40, $course->quota);
+        $this->assertDatabaseMissing('courses', ['code' => 'MN401']);
     }
 
     public function test_perwalian_dosen_lihat_bimbingan_dan_transkrip(): void
@@ -1119,22 +1127,69 @@ class RoleAccessTest extends TestCase
         $this->actingAs($mhs)->get(route('courses.index'))->assertOk()->assertSee($course->name);
     }
 
-    public function test_gabung_kelas_manual_dihapus(): void
+    public function test_mahasiswa_bisa_gabung_kelas_lintas_prodi_dengan_kode(): void
     {
-        // Alur join-by-code sudah tidak ada (enrolmen lewat KRS).
-        $this->assertFalse(Route::has('enrollments.join'));
-        $this->actingAs($this->user(User::ROLE_MAHASISWA))->get('/join')->assertNotFound();
+        $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
+        $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
+        $lecturer = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $ak->id]);
+        $student = User::factory()->create(['role' => User::ROLE_MAHASISWA, 'prodi_id' => $mn->id]);
+        $course = $this->course($lecturer);
+        $course->update(['prodi_id' => $ak->id]);
+
+        $this->assertTrue(Route::has('enrollments.join'));
+        $this->actingAs($student)->post(route('enrollments.join'), ['join_code' => strtolower($course->join_code)])
+            ->assertRedirect(route('courses.show', $course));
+        $this->assertDatabaseHas('enrollments', [
+            'course_id' => $course->id,
+            'user_id' => $student->id,
+            'status' => Enrollment::STATUS_APPROVED,
+        ]);
+
+        $this->actingAs($student)->post(route('enrollments.join'), ['join_code' => $course->join_code])->assertRedirect();
+        $this->assertSame(1, Enrollment::where('course_id', $course->id)->where('user_id', $student->id)->count());
     }
 
-    public function test_lms_tampil_info_krs_menunggu(): void
+    public function test_gabung_kelas_mematuhi_kuota_dan_kelas_selesai(): void
+    {
+        $lecturer = $this->user(User::ROLE_DOSEN);
+        $first = $this->user(User::ROLE_MAHASISWA);
+        $second = $this->user(User::ROLE_MAHASISWA);
+        $course = $this->course($lecturer);
+        $course->update(['quota' => 1]);
+
+        $this->actingAs($first)->post(route('enrollments.join'), ['join_code' => $course->join_code])
+            ->assertRedirect();
+        $this->actingAs($second)->post(route('enrollments.join'), ['join_code' => $course->join_code])
+            ->assertSessionHasErrors('join_code');
+
+        $course->update(['status' => Course::STATUS_COMPLETED, 'quota' => null]);
+        $this->actingAs($second)->post(route('enrollments.join'), ['join_code' => $course->join_code])
+            ->assertSessionHasErrors('join_code');
+        $this->assertDatabaseMissing('enrollments', ['course_id' => $course->id, 'user_id' => $second->id]);
+    }
+
+    public function test_hanya_dosen_pemilik_bisa_mengganti_kode_gabung(): void
+    {
+        $owner = $this->user(User::ROLE_DOSEN);
+        $other = $this->user(User::ROLE_DOSEN);
+        $course = $this->course($owner);
+        $oldCode = $course->join_code;
+
+        $this->actingAs($other)->patch(route('enrollments.regenerateJoinCode', $course))->assertForbidden();
+        $this->actingAs($owner)->patch(route('enrollments.regenerateJoinCode', $course))->assertRedirect();
+
+        $this->assertNotSame($oldCode, $course->fresh()->join_code);
+    }
+
+    public function test_lms_tidak_lagi_menunggu_persetujuan_krs(): void
     {
         $course = $this->krsCourse();
         Setting::put('krs_open', '1');
         $mhs = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
         $this->actingAs($mhs)->post(route('krs.add', $course)); // draft, belum disetujui
 
-        // Kelas belum muncul sebagai kelas aktif, tapi ada info KRS menunggu
-        $this->actingAs($mhs)->get(route('courses.index'))->assertOk()->assertSee('belum disetujui');
+        $this->actingAs($mhs)->get(route('courses.index'))
+            ->assertOk()->assertSee('Gabung Kelas')->assertDontSee('belum disetujui');
     }
 
     public function test_krs_deteksi_bentrok_jadwal(): void
@@ -1227,14 +1282,14 @@ class RoleAccessTest extends TestCase
         $this->actingAs($lain)->post(route('perwalian.krs.approve', $mhs))->assertForbidden();
     }
 
-    public function test_menu_mobile_mahasiswa_mengarah_ke_krs_bukan_gabung_kelas(): void
+    public function test_menu_mahasiswa_menyediakan_gabung_kelas(): void
     {
         $student = User::factory()->create(['role' => User::ROLE_MAHASISWA]);
 
-        $this->actingAs($student)->get(route('dashboard.mahasiswa'))
+        $this->actingAs($student)->get(route('courses.index'))
             ->assertOk()
-            ->assertSee(route('krs.index'), false)
-            ->assertDontSee('Gabung Kelas');
+            ->assertSee(route('enrollments.join'), false)
+            ->assertSee('Gabung Kelas');
     }
 
     public function test_krs_mendukung_kelas_lintas_prodi_dan_kurikulum(): void
@@ -1288,15 +1343,15 @@ class RoleAccessTest extends TestCase
         $this->actingAs($student)->get(route('krs.index'))->assertForbidden();
     }
 
-    public function test_admin_bisa_menugaskan_dosen_lintas_prodi(): void
+    public function test_dosen_bisa_membuat_kelas_dengan_referensi_matakuliah_prodi_lain(): void
     {
         $mn = Prodi::create(['name' => 'Manajemen', 'code' => 'MN']);
         $ak = Prodi::create(['name' => 'Akuntansi', 'code' => 'AK']);
         $dosen = User::factory()->create(['role' => User::ROLE_DOSEN, 'prodi_id' => $mn->id]);
         $mk = MataKuliah::create(['prodi_id' => $ak->id, 'code' => 'AK101', 'name' => 'Akuntansi Dasar', 'sks' => 3]);
 
-        $this->actingAs($this->user(User::ROLE_ADMIN))->post(route('courses.store'), [
-            'user_id' => $dosen->id, 'mata_kuliah_id' => $mk->id,
+        $this->actingAs($dosen)->post(route('courses.store'), [
+            'mata_kuliah_id' => $mk->id,
             'name' => 'Akuntansi Dasar', 'code' => 'AK101A', 'semester' => 'Ganjil',
             'year' => 2026, 'default_meeting_type' => 'tatap_muka',
         ])->assertRedirect();

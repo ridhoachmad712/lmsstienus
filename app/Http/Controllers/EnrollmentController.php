@@ -8,20 +8,63 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class EnrollmentController extends Controller
 {
-    /** Dosen reset kata sandi mahasiswa (ke NIM, atau "password" bila NIM kosong). */
-    public function resetPassword(Request $request, Course $course, User $user): RedirectResponse
+    /** Mahasiswa bergabung langsung ke kelas aktif memakai kode dari dosen. */
+    public function join(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'join_code' => ['required', 'string', 'max:12'],
+        ], [
+            'join_code.required' => 'Masukkan kode kelas dari dosen.',
+        ]);
+
+        $code = strtoupper(trim($validated['join_code']));
+        $student = $request->user();
+
+        $course = DB::transaction(function () use ($code, $student) {
+            $course = Course::where('join_code', $code)->lockForUpdate()->first();
+
+            if (! $course || $course->isCompleted()) {
+                throw ValidationException::withMessages([
+                    'join_code' => 'Kode kelas tidak ditemukan atau kelas sudah selesai.',
+                ]);
+            }
+
+            $enrollment = Enrollment::where('course_id', $course->id)
+                ->where('user_id', $student->id)
+                ->first();
+
+            if ($enrollment?->status === Enrollment::STATUS_APPROVED) {
+                return $course;
+            }
+
+            if ($course->isFull()) {
+                throw ValidationException::withMessages([
+                    'join_code' => 'Kelas sudah mencapai batas peserta.',
+                ]);
+            }
+
+            $this->enrollApproved($course, $student->id);
+
+            return $course;
+        });
+
+        return redirect()->route('courses.show', $course)
+            ->with('status', 'Berhasil bergabung ke kelas '.$course->name.'.');
+    }
+
+    /** Ganti kode gabung bila kode lama tidak boleh digunakan lagi. */
+    public function regenerateJoinCode(Request $request, Course $course): RedirectResponse
     {
         $this->authorizeOwner($request, $course);
-        abort_unless($course->students()->whereKey($user->id)->exists(), 404);
+        $course->update(['join_code' => Course::generateJoinCode()]);
 
-        $new = $user->nim_nip ?: 'password';
-        $user->update(['password' => Hash::make($new)]);
-
-        return back()->with('status', "Kata sandi {$user->name} direset menjadi: {$new}");
+        return back()->with('status', 'Kode gabung kelas berhasil diperbarui.');
     }
 
     /** Unduh template CSV impor mahasiswa. */

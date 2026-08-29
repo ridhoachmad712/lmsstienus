@@ -1,0 +1,83 @@
+:root {
+  --siakad-primary: #206bc4;
+  --siakad-surface: #ffffff;
+  --siakad-muted: #667085;
+}
+
+body {
+  background: #f4f6fa;
+  color: #182433;
+}
+
+.navbar-dark {
+  background: linear-gradient(110deg, #163d72, #206bc4) !important;
+  box-shadow: 0 4px 18px rgba(24, 36, 51, .14);
+}
+
+.navbar-brand a {
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+.navbar-nav .nav-item.active > .nav-link,
+.navbar-nav .nav-link[aria-current="page"] {
+  color: var(--siakad-primary);
+  background: rgba(32, 107, 196, .1);
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.page-wrapper .card {
+  border: 1px solid rgba(98, 105, 118, .14);
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(24, 36, 51, .05);
+}
+
+.table-responsive {
+  border-radius: 10px;
+}
+
+.table thead th {
+  color: #475467;
+  background: #f8fafc;
+  white-space: nowrap;
+}
+
+.btn {
+  border-radius: 8px;
+}
+
+.form-control,
+.form-select {
+  min-height: 42px;
+  border-radius: 8px;
+}
+
+.siakad-lms-link {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  font-weight: 600;
+}
+
+@media (max-width: 767.98px) {
+  .page-body {
+    padding-top: 1rem;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .navbar-brand {
+    max-width: 68vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+  }
+}

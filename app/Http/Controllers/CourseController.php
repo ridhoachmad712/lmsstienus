@@ -92,46 +92,27 @@ class CourseController extends Controller
             ->withCount('meetings')
             ->get();
 
-        // Kelas yang diprogramkan di KRS periode aktif tapi belum disetujui (info).
-        [$year, $semester] = explode('-', \App\Models\Semester::primaryKey(), 2);
-        $krsPending = $user->enrollments()
-            ->whereIn('status', [\App\Models\Enrollment::STATUS_DRAFT, \App\Models\Enrollment::STATUS_SUBMITTED])
-            ->whereHas('course', fn ($q) => $q->where('year', $year)->where('semester', $semester))
-            ->count();
-
-        return view('courses.index-mahasiswa', compact('courses', 'krsPending'));
+        return view('courses.index-mahasiswa', compact('courses'));
     }
 
     public function create(Request $request): View
     {
         return view('courses.create', [
             'mataKuliahs' => $this->mataKuliahOptions(),
-            'dosenOptions' => $this->dosenOptions(),
         ]);
     }
 
-    /** Pilihan mata kuliah untuk form kelas (admin mengelola semua prodi). */
+    /** Katalog hanya referensi opsional; kelas LMS tetap dapat dibuat tanpa data akademik. */
     private function mataKuliahOptions()
     {
         return MataKuliah::with('prodi')->orderBy('code')->get();
     }
 
-    /** Pilihan dosen pengampu untuk form kelas. */
-    private function dosenOptions()
-    {
-        return User::where('role', User::ROLE_DOSEN)->with('prodi')->orderBy('name')->get();
-    }
-
-    /** Pastikan id yang dipilih adalah dosen. */
-    private function resolveDosen(int|string $id): User
-    {
-        return User::where('role', User::ROLE_DOSEN)->findOrFail((int) $id);
-    }
-
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validateData($request);
-        $data['prodi_id'] = $this->resolveCourseProdi($data);
+        $data['user_id'] = $request->user()->id;
+        $data['prodi_id'] = $this->resolveCourseProdi($data, $request->user());
         $data['status'] = Course::STATUS_ACTIVE;
         $data['join_code'] = Course::generateJoinCode();
 
@@ -290,7 +271,6 @@ class CourseController extends Controller
         return view('courses.edit', [
             'course' => $course,
             'mataKuliahs' => $this->mataKuliahOptions(),
-            'dosenOptions' => $this->dosenOptions(),
         ]);
     }
 
@@ -300,7 +280,8 @@ class CourseController extends Controller
         abort_if($course->isCompleted(), 403, 'Kelas sudah selesai (read-only).');
 
         $data = $this->validateData($request);
-        $data['prodi_id'] = $this->resolveCourseProdi($data);
+        $data['prodi_id'] = $this->resolveCourseProdi($data, $request->user());
+        unset($data['user_id']);
         $course->update($data);
         $this->saveSyllabus($request, $course);
 
@@ -318,10 +299,11 @@ class CourseController extends Controller
             ->with('status', 'Kelas dipindahkan ke tong sampah. Bisa dipulihkan dari menu Tong Sampah.');
     }
 
-    /** Daftar kelas yang dihapus (tong sampah) — seluruh kampus (admin). */
+    /** Daftar kelas yang dihapus milik dosen yang sedang masuk. */
     public function trash(Request $request): View
     {
         $courses = Course::onlyTrashed()
+            ->where('user_id', $request->user()->id)
             ->with('lecturer')
             ->withCount(['students', 'meetings'])
             ->latest('deleted_at')
@@ -334,6 +316,7 @@ class CourseController extends Controller
     public function restore(Request $request, int $id): RedirectResponse
     {
         $course = Course::onlyTrashed()->findOrFail($id);
+        abort_unless($course->user_id === $request->user()->id, 403);
         $course->restore();
 
         return redirect()->route('courses.show', $course)
@@ -344,6 +327,7 @@ class CourseController extends Controller
     public function forceDestroy(Request $request, int $id): RedirectResponse
     {
         $course = Course::onlyTrashed()->findOrFail($id);
+        abort_unless($course->user_id === $request->user()->id, 403);
         $course->forceDelete();
 
         return redirect()->route('courses.trash')
@@ -397,31 +381,26 @@ class CourseController extends Controller
     private function validateData(Request $request): array
     {
         return $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50'],
             'class_name' => ['nullable', 'string', 'max:100'],
-            'mata_kuliah_id' => ['required', 'integer', 'exists:mata_kuliah,id'],
+            'mata_kuliah_id' => ['nullable', 'integer', 'exists:mata_kuliah,id'],
             'semester' => ['required', 'in:Ganjil,Genap,Antara'],
             'year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'quota' => ['nullable', 'integer', 'min:1'],
             'default_meeting_type' => ['required', 'in:tatap_muka,mandiri'],
             'description' => ['nullable', 'string'],
-        ], [
-            'user_id.required' => 'Pilih dosen pengampu.',
-            'mata_kuliah_id.required' => 'Pilih mata kuliah dari katalog agar SKS dan prodi kelas tercatat dengan benar.',
         ]);
     }
 
-    /** Prodi kelas mengikuti mata kuliah; dosen pengampu boleh berasal dari prodi lain. */
-    private function resolveCourseProdi(array $data): int
+    /** Prodi mengikuti katalog bila dipilih, selain itu profil dosen; boleh kosong. */
+    private function resolveCourseProdi(array $data, User $lecturer): ?int
     {
-        $this->resolveDosen($data['user_id']);
-        $mataKuliah = MataKuliah::findOrFail($data['mata_kuliah_id']);
+        if (! empty($data['mata_kuliah_id'])) {
+            return MataKuliah::findOrFail($data['mata_kuliah_id'])->prodi_id;
+        }
 
-        abort_unless($mataKuliah->prodi_id, 422, 'Mata kuliah belum memiliki program studi.');
-
-        return (int) $mataKuliah->prodi_id;
+        return $lecturer->prodi_id;
     }
 
     /** Dosen pemilik/mahasiswa terdaftar/admin boleh akses. */

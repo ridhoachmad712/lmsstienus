@@ -1,8 +1,12 @@
 @extends('layouts.app')
 
 @section('title', 'Kelas Saya')
-@section('page-pretitle', 'Administrasi')
+@section('page-pretitle', 'LMS')
 @section('page-title', 'Kelas Saya')
+
+@section('page-actions')
+    <a href="{{ route('courses.create') }}" class="btn btn-primary"><i class="ti ti-plus me-1"></i>Buat Kelas</a>
+@endsection
 
 @section('content')
 {{-- Filter Aktif / Selesai + dropdown semester --}}
@@ -50,7 +54,9 @@
                     description="Kelas yang sudah Anda tandai selesai akan muncul di sini." />
             @else
                 <x-empty-state icon="ti-school" title="Belum ada kelas aktif"
-                    description="Kelas dibuka oleh admin. Kelas yang menugaskan Anda sebagai pengampu akan muncul di sini." />
+                    description="Buat kelas sendiri, bagikan kode gabung kepada mahasiswa, lalu mulai susun materi dan pertemuan.">
+                    <a href="{{ route('courses.create') }}" class="btn btn-primary"><i class="ti ti-plus me-1"></i>Buat Kelas</a>
+                </x-empty-state>
             @endif
         </div>
     </div>

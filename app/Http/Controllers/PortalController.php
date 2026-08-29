@@ -18,32 +18,59 @@ class PortalController extends Controller
     /** Pintu masuk setelah login: pengguna memilih ruang kerja. */
     public function index(Request $request): View
     {
-        return view('portal.index', ['user' => $request->user()]);
+        return view('portal.index', [
+            'user' => $request->user(),
+            'siakadReady' => filled(config('services.legacy_siakad.url')),
+        ]);
     }
 
-    /** Masuk ke ruang kerja administrasi akademik. */
-    public function siakad(Request $request): View
+    /** Masuk ke SIAKAD PHP lama melalui tiket HMAC singkat, atau login lamanya. */
+    public function siakad(Request $request): RedirectResponse
     {
         $request->session()->put('active_system', 'siakad');
-        $user = $request->user()->loadMissing(['prodi', 'advisor']);
-        $activeKeys = Semester::activeKeys();
+        $baseUrl = config('services.legacy_siakad.url');
+        $ssoUrl = config('services.legacy_siakad.sso_url');
+        $secret = config('services.legacy_siakad.sso_secret');
 
-        $data = [
-            'user' => $user,
-            'activePeriods' => collect($activeKeys)->map(fn ($key) => Semester::keyLabel($key)),
-            'krsOpen' => KrsController::krsOpen(),
-            'edomOpen' => EvaluationController::edomOpen(),
-        ];
-
-        if ($user->isMahasiswa()) {
-            $data = array_merge($data, $this->studentSiakadData($user));
-        } elseif ($user->isStaff()) {
-            $data = array_merge($data, $this->staffSiakadData($user, $activeKeys));
-        } else {
-            $data = array_merge($data, $this->lecturerSiakadData($user, $activeKeys));
+        if (! filled($baseUrl)) {
+            return redirect()->route('portal.index')
+                ->with('error', 'Alamat SIAKAD lama belum dikonfigurasi oleh administrator.');
         }
 
-        return view('portal.siakad', $data);
+        // Tanpa secret, tetap buka halaman login SIAKAD lama sebagai fallback yang aman.
+        if (! filled($ssoUrl) || ! filled($secret)) {
+            return redirect()->away($baseUrl);
+        }
+
+        $user = $request->user();
+        $issuedAt = now()->timestamp;
+        $payload = [
+            'sub' => $user->nim_nip ?: $user->email,
+            'role' => match ($user->role) {
+                User::ROLE_ADMIN => 'admin',
+                User::ROLE_KAPRODI => 'Jurusan/Prodi',
+                User::ROLE_DOSEN => 'dosen',
+                default => 'mhs',
+            },
+            'name' => $user->name,
+            'iat' => $issuedAt,
+            'exp' => $issuedAt + 60,
+            'nonce' => bin2hex(random_bytes(16)),
+        ];
+
+        $encoded = $this->base64UrlEncode(json_encode($payload, JSON_THROW_ON_ERROR));
+        $signature = $this->base64UrlEncode(hash_hmac('sha256', $encoded, $secret, true));
+        $separator = str_contains($ssoUrl, '?') ? '&' : '?';
+
+        return redirect()->away($ssoUrl.$separator.http_build_query([
+            'token' => $encoded,
+            'signature' => $signature,
+        ]));
+    }
+
+    private function base64UrlEncode(string $value): string
+    {
+        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
     }
 
     /** Masuk ke ruang kerja pembelajaran. */

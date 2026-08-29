@@ -25,6 +25,8 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/lms.zip
+/.htaccess
 
 # Database lokal (SQLite) — jangan di-commit
 /database/*.sqlite

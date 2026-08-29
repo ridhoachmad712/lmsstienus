@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AcademicEvent;
 use App\Models\Assignment;
 use App\Models\Course;
-use App\Models\CourseEvaluation;
 use App\Models\Enrollment;
 use App\Models\Meeting;
 use App\Models\Semester;
-use App\Services\AcademicSummary;
 use App\Services\AttendanceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -116,30 +113,10 @@ class DashboardController extends Controller
             ? Semester::keyLabel($activeKeys[0])
             : 'Semester aktif ('.count($activeKeys).')';
 
-        $agenda = $this->upcomingAcademicEvents();
-
         return view('dashboard.dosen', compact(
             'stats', 'activeCourses', 'periods', 'periode', 'activeKeys', 'activeLabel',
-            'needGrading', 'needAttendance', 'todayMeetings', 'agenda'
+            'needGrading', 'needAttendance', 'todayMeetings'
         ));
-    }
-
-    /** Agenda akademik yang akan datang / berlangsung pada periode aktif (maks 4). */
-    private function upcomingAcademicEvents()
-    {
-        $activeKeys = Semester::activeKeys();
-
-        return AcademicEvent::where(function ($q) use ($activeKeys) {
-            foreach ($activeKeys as $k) {
-                [$y, $s] = explode('-', $k, 2);
-                $q->orWhere(fn ($qq) => $qq->where('year', (int) $y)->where('semester', $s));
-            }
-        })
-            ->orderBy('start_date')
-            ->get()
-            ->reject(fn ($e) => $e->isPast())
-            ->take(4)
-            ->values();
     }
 
     public function mahasiswa(Request $request, AttendanceService $attendance): View
@@ -201,21 +178,8 @@ class DashboardController extends Controller
             'unread' => $user->notifications()->unread()->count(),
         ];
 
-        $krsOpen = KrsController::krsOpen();
-        $academic = (new AcademicSummary)->forStudent($user);
-        $agenda = $this->upcomingAcademicEvents();
-
-        // EDOM: berapa kelas aktif yang belum dievaluasi (saat periode dibuka).
-        $edomOpen = EvaluationController::edomOpen();
-        $edomPending = 0;
-        if ($edomOpen && $courseIds->isNotEmpty()) {
-            $evaluated = CourseEvaluation::where('user_id', $user->id)
-                ->whereIn('course_id', $courseIds)->count();
-            $edomPending = $courseIds->count() - $evaluated;
-        }
-
         return view('dashboard.mahasiswa', compact(
-            'courses', 'pending', 'upcomingMeetings', 'lowAttendance', 'stats', 'krsOpen', 'academic', 'agenda', 'edomOpen', 'edomPending'
+            'courses', 'pending', 'upcomingMeetings', 'lowAttendance', 'stats'
         ));
     }
 }

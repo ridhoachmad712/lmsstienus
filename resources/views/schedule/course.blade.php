@@ -3,6 +3,7 @@
 @section('title', 'Jadwal · '.$course->name)
 
 @section('content')
+@php($canManageSchedule = auth()->user()->isDosen() && $course->user_id === auth()->id())
 @include('courses._hero')
 
 <div class="row row-cards">
@@ -22,7 +23,7 @@
                                     <td>@if ($s->timeSlot){{ $s->timeSlot->name }} · @endif{{ $s->start_time }}–{{ $s->end_time }}</td>
                                     <td>{{ $s->roomLabel() ?? '—' }}</td>
                                     <td class="text-end">
-                                        @if (auth()->user()->isAdmin())
+                                        @if ($canManageSchedule)
                                             @unless ($course->isCompleted())
                                                 <form method="POST" action="{{ route('schedule.destroy', $s) }}" data-confirm="Hapus jadwal {{ $s->dayLabel() }} {{ $s->start_time }}?">
                                                     @csrf @method('DELETE')
@@ -40,7 +41,7 @@
         </div>
     </div>
 
-    @if (auth()->user()->isAdmin())
+    @if ($canManageSchedule)
         @unless ($course->isCompleted())
             <div class="col-lg-5">
                 <form class="card" method="POST" action="{{ route('schedule.store', $course) }}">

@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Pengaman mode demo (efektif hanya saat DEMO_MODE=true)
         $middleware->appendToGroup('web', \App\Http\Middleware\DemoGuard::class);
         $middleware->appendToGroup('web', SystemContext::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\LegacySiakadRedirect::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

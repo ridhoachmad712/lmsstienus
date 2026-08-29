@@ -5,13 +5,21 @@
 @section('content')
 @include('courses._hero')
 
-{{-- Sumber mahasiswa: KRS --}}
+{{-- Akses mahasiswa ke kelas LMS. --}}
 <div class="card mb-3">
     <div class="card-body d-flex align-items-center flex-wrap gap-3">
-        <div class="me-auto text-secondary small">
-            <i class="ti ti-info-circle me-1"></i>Mahasiswa masuk kelas ini <strong>otomatis</strong> lewat KRS yang disetujui dosen wali. Anda juga bisa menambah mahasiswa secara manual di bawah.
+        <div class="me-auto">
+            <div class="text-secondary small mb-1">Kode gabung mahasiswa</div>
+            <div class="d-flex align-items-center gap-2">
+                <code class="fs-2 fw-bold text-primary user-select-all">{{ $course->join_code }}</code>
+                <span class="text-secondary small">Berlaku untuk semua program studi</span>
+            </div>
         </div>
         @unless ($course->isCompleted())
+            <form method="POST" action="{{ route('enrollments.regenerateJoinCode', $course) }}" data-confirm="Ganti kode gabung? Kode lama tidak dapat digunakan lagi.">
+                @csrf @method('PATCH')
+                <button class="btn btn-sm"><i class="ti ti-refresh me-1"></i>Ganti Kode</button>
+            </form>
             <a href="{{ route('enrollments.template') }}" class="btn btn-sm"><i class="ti ti-download me-1"></i>Template CSV</a>
         @endunless
     </div>
@@ -57,11 +65,6 @@
                                 <td class="text-end">
                                     @unless ($course->isCompleted())
                                     <div class="btn-list justify-content-end">
-                                        <form method="POST" action="{{ route('enrollments.resetPassword', [$course, $student]) }}"
-                                              data-confirm="Reset kata sandi {{ $student->name }} menjadi NIM-nya?">
-                                            @csrf
-                                            <button class="btn btn-sm" title="Reset kata sandi" data-bs-toggle="tooltip"><i class="ti ti-key"></i></button>
-                                        </form>
                                         <form method="POST" action="{{ route('enrollments.destroy', [$course, $student]) }}"
                                               data-confirm="Keluarkan {{ $student->name }} dari kelas?">
                                             @csrf @method('DELETE')

@@ -1,27 +1,14 @@
 <div class="row">
-    @if (! empty($dosenOptions))
-        <div class="col-12 mb-3">
-            <label class="form-label required">Dosen Pengampu</label>
-            <select name="user_id" class="form-select @error('user_id') is-invalid @enderror" required>
-                <option value="">— pilih dosen —</option>
-                @foreach ($dosenOptions as $d)
-                    <option value="{{ $d->id }}" @selected(old('user_id', $course->user_id ?? '') == $d->id)>{{ $d->name }}@if ($d->prodi) — {{ $d->prodi->code }}@endif</option>
-                @endforeach
-            </select>
-            <small class="form-hint">Dosen boleh mengajar lintas program studi. Prodi kelas mengikuti mata kuliah.</small>
-            @error('user_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-        </div>
-    @endif
     @if (! empty($mataKuliahs) && $mataKuliahs->isNotEmpty())
         <div class="col-12 mb-3">
-            <label class="form-label required">Mata Kuliah (katalog)</label>
-            <select name="mata_kuliah_id" class="form-select @error('mata_kuliah_id') is-invalid @enderror" required>
-                <option value="">— pilih mata kuliah —</option>
+            <label class="form-label">Referensi Mata Kuliah SIAKAD</label>
+            <select name="mata_kuliah_id" class="form-select @error('mata_kuliah_id') is-invalid @enderror">
+                <option value="">— tanpa referensi SIAKAD —</option>
                 @foreach ($mataKuliahs as $mk)
                     <option value="{{ $mk->id }}" @selected(old('mata_kuliah_id', $course->mata_kuliah_id ?? '') == $mk->id)>{{ $mk->code }} — {{ $mk->name }} ({{ $mk->sks }} SKS)@if($mk->prodi) — {{ $mk->prodi->code }}@endif</option>
                 @endforeach
             </select>
-            <small class="form-hint">Wajib. Program studi kelas mengikuti mata kuliah; dosen pengampu boleh berasal dari prodi lain.</small>
+            <small class="form-hint">Opsional. Pilihan ini hanya membantu konsistensi nama/prodi dan tidak membatasi mahasiswa yang boleh bergabung.</small>
             @error('mata_kuliah_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
     @endif
@@ -63,7 +50,7 @@
         <label class="form-label">Kuota</label>
         <input type="number" name="quota" class="form-control @error('quota') is-invalid @enderror"
                value="{{ old('quota', $course->quota ?? '') }}" min="1" placeholder="Tanpa batas">
-        <small class="form-hint">Kosongkan = tanpa batas (untuk KRS).</small>
+        <small class="form-hint">Kosongkan bila jumlah peserta tidak dibatasi.</small>
         @error('quota')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-12 mb-3">

@@ -1,7 +1,7 @@
 ﻿@extends('layouts.app')
 
 @section('title', 'Edit Kelas')
-@section('page-pretitle', 'Administrasi')
+@section('page-pretitle', 'LMS')
 @section('page-title', 'Edit Kelas')
 
 @section('content')

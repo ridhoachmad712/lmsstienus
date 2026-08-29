@@ -54,7 +54,7 @@ class AppServiceProvider extends ServiceProvider
         View::share('hasLogoDark', (bool) $logoDark);
         View::share('logoHeight', (int) (\App\Models\Setting::get('logo_height') ?: 32));
         View::share('faviconUrl', $favicon ? Storage::url($favicon) : asset('favicon.svg'));
-        View::share('footerText', \App\Models\Setting::get('footer_text', 'Prodi Manajemen · Fakultas Ekonomi dan Bisnis · UNM'));
+        View::share('footerText', \App\Models\Setting::get('footer_text', 'STIE Nusantara Makassar'));
 
         // Status integrasi AI (untuk menyembunyikan tombol AI bila dinonaktifkan)
         View::share('aiEnabled', \App\Models\Setting::bool('ai_enabled', true));

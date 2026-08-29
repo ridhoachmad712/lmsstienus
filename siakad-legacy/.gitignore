@@ -1,0 +1,28 @@
+# Konfigurasi lokal dan data produksi
+.env
+config/local.php
+database/
+*.sql
+*.zip
+*.log
+error_log
+
+# Berkas impor/ekspor dapat mengandung data pribadi
+pages/*.xls
+pages/*.xlsx
+pages/template_file/*
+!pages/template_file/.gitignore
+
+# Foto pengguna disimpan oleh hosting, bukan Git
+pages/foto_mhs/*
+!pages/foto_mhs/.gitignore
+!pages/foto_mhs/avatar-blank.jpg
+!pages/foto_mhs/avatar-blank.png
+pages/foto_dosen/*
+!pages/foto_dosen/.gitignore
+!pages/foto_dosen/avatar-blank.png
+
+# Artefak sistem/editor
+.DS_Store
+Thumbs.db
+.git/
