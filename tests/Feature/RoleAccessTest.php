@@ -105,6 +105,7 @@ class RoleAccessTest extends TestCase
         ]);
 
         $response = $this->actingAs($student)->get(route('portal.siakad'));
+        $this->assertSame('/portal/siakad', route('portal.siakad', absolute: false));
         $response->assertOk()->assertViewIs('portal.siakad-handoff')
             ->assertSessionHas('active_system', 'siakad');
 

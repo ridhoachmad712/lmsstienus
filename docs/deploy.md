@@ -5,6 +5,8 @@ Satu repository berisi dua aplikasi dan menggunakan dua database:
 - `https://akademik.stienus.ac.id/lms` → LMS Laravel;
 - `https://akademik.stienus.ac.id/siakad` → SIAKAD PHP lama;
 - `https://akademik.stienus.ac.id/login` → satu halaman login dan portal pemilih.
+- `https://akademik.stienus.ac.id/portal/siakad` → pintu SSO internal dari
+  portal ke SIAKAD (bukan alamat yang perlu dibuka pengguna secara manual).
 
 Document root subdomain harus menunjuk ke folder `public` Laravel, bukan root
 repository. Folder `siakad-legacy` tetap berada di root repository dan

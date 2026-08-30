@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AcademicCalendarController;
 use App\Http\Controllers\Admin\AcademicController;
 use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
 use App\Http\Controllers\Admin\BackupController;
@@ -10,23 +11,22 @@ use App\Http\Controllers\Admin\KurikulumController;
 use App\Http\Controllers\Admin\MataKuliahController;
 use App\Http\Controllers\Admin\ProdiController;
 use App\Http\Controllers\Admin\RoomController;
-use App\Http\Controllers\Admin\StaffController;
-use App\Http\Controllers\Admin\TemplateController;
-use App\Http\Controllers\Admin\TimeSlotController;
 use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
-use App\Http\Controllers\AcademicCalendarController;
+use App\Http\Controllers\Admin\TemplateController;
+use App\Http\Controllers\Admin\TimeSlotController;
 use App\Http\Controllers\AiController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AnnouncementController;
-use App\Http\Controllers\CalendarController;
-use App\Http\Controllers\CampusAnnouncementController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AssignmentGroupController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ProfileController;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CampusAnnouncementController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EnrollmentController;
@@ -44,12 +44,13 @@ use App\Http\Controllers\PerwalianController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\RubricController;
+use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\SyllabusController;
 use App\Http\Controllers\TranscriptController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
@@ -72,7 +73,9 @@ Route::middleware('auth')->group(function () {
 
     // Portal tunggal: pilih ruang kerja SIAKAD atau LMS tanpa login ulang.
     Route::get('/portal', [PortalController::class, 'index'])->name('portal.index');
-    Route::get('/siakad/dashboard', [PortalController::class, 'siakad'])->name('portal.siakad');
+    // Pintu SSO tidak boleh berada di bawah /siakad karena pada deployment
+    // produksi path tersebut adalah folder fisik aplikasi SIAKAD lama.
+    Route::get('/portal/siakad', [PortalController::class, 'siakad'])->name('portal.siakad');
     Route::get('/lms', [PortalController::class, 'lms'])->name('portal.lms');
 
     // Akhiri mode samaran (dapat diakses oleh sesi yang sedang disamar)
@@ -438,27 +441,26 @@ Route::middleware('auth')->group(function () {
 });
 
 // Kompatibilitas bookmark/notifikasi lama setelah route dipisah ke /siakad dan /lms.
-Route::fallback(function (\Illuminate\Http\Request $request) {
+Route::fallback(function (Request $request) {
     abort_unless($request->isMethod('GET'), 404);
 
     $path = $request->path();
     $target = match (true) {
-            $path === 'portal/siakad' => 'siakad/dashboard',
-            $path === 'portal/lms' => 'lms',
-            str_starts_with($path, 'dashboard/dosen') => 'lms/'.$path,
-            str_starts_with($path, 'dashboard/mahasiswa') => 'lms/'.$path,
-            str_starts_with($path, 'admin/courses') => 'lms/'.$path,
-            str_starts_with($path, 'admin/') || $path === 'admin' => 'siakad/'.$path,
-            $path === 'courses-create' => 'lms/courses/create',
-            $path === 'courses-trash' => 'lms/courses/trash',
-            preg_match('#^courses/([^/]+)/edit$#', $path, $matches) === 1 => 'lms/courses/'.$matches[1].'/edit',
-            collect(['krs', 'transkrip', 'khs', 'evaluasi', 'jadwal', 'kalender-akademik', 'pengumuman', 'perwalian'])
-                ->contains(fn ($prefix) => $path === $prefix || str_starts_with($path, $prefix.'/')) => 'siakad/'.$path,
-            collect(['courses', 'materials', 'assignments', 'assignment-groups', 'submissions',
-                'forum', 'forum-replies', 'attend', 'meetings', 'rubric-criteria', 'quiz-questions', 'grade-components',
-                'announcements', 'calendar', 'api/course'])
-                ->contains(fn ($prefix) => $path === $prefix || str_starts_with($path, $prefix.'/')) => 'lms/'.$path,
-            default => null,
+        $path === 'portal/lms' => 'lms',
+        str_starts_with($path, 'dashboard/dosen') => 'lms/'.$path,
+        str_starts_with($path, 'dashboard/mahasiswa') => 'lms/'.$path,
+        str_starts_with($path, 'admin/courses') => 'lms/'.$path,
+        str_starts_with($path, 'admin/') || $path === 'admin' => 'siakad/'.$path,
+        $path === 'courses-create' => 'lms/courses/create',
+        $path === 'courses-trash' => 'lms/courses/trash',
+        preg_match('#^courses/([^/]+)/edit$#', $path, $matches) === 1 => 'lms/courses/'.$matches[1].'/edit',
+        collect(['krs', 'transkrip', 'khs', 'evaluasi', 'jadwal', 'kalender-akademik', 'pengumuman', 'perwalian'])
+            ->contains(fn ($prefix) => $path === $prefix || str_starts_with($path, $prefix.'/')) => 'siakad/'.$path,
+        collect(['courses', 'materials', 'assignments', 'assignment-groups', 'submissions',
+            'forum', 'forum-replies', 'attend', 'meetings', 'rubric-criteria', 'quiz-questions', 'grade-components',
+            'announcements', 'calendar', 'api/course'])
+            ->contains(fn ($prefix) => $path === $prefix || str_starts_with($path, $prefix.'/')) => 'lms/'.$path,
+        default => null,
     };
 
     abort_unless($target, 404);
