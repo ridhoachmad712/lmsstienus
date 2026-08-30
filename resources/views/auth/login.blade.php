@@ -66,10 +66,10 @@
             @endif
 
             <div class="mb-3">
-                <label class="form-label">Email</label>
-                <input type="email" name="email" value="{{ old('email') }}"
-                       class="form-control @error('email') is-invalid @enderror"
-                       placeholder="nama@unm.ac.id" required autofocus>
+                <label class="form-label">Email, NIM, atau NIP</label>
+                <input type="text" name="login" value="{{ old('login', old('email')) }}"
+                       class="form-control @error('login') is-invalid @enderror"
+                       placeholder="Email / NIM / NIP" required autofocus autocomplete="username">
             </div>
 
             <div class="mb-3">

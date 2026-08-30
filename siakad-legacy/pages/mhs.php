@@ -9,127 +9,129 @@
 -->
 <?php
 session_start();
-include "../config/koneksi.php";
+include '../config/koneksi.php';
 $username = $_SESSION['username'];
 $password = $_SESSION['password'];
 $level = $_SESSION['level'];
-if (!isset($_SESSION["login"])) {
-  header("location: login");
+if (! isset($_SESSION['login'])) {
+    header('location: login');
 } else {
-  $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
-  if ($cek_user !== 1) {
-    header("location: login");
-  }
+    $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
+    if ($cek_user !== 1) {
+        header('location: login');
+    }
 }
 // --------------------------------------------------
-// pengaturan aplikasi 
+// pengaturan aplikasi
 $pengaturan = mysqli_query($koneksi, "SELECT * FROM pengaturan WHERE id_pengaturan='1'");
 $r_pengaturan = mysqli_fetch_array($pengaturan);
 // tambah data fakultas
 // MAHASISWA
-if ($level=='mhs') {
-    header("location: dashboard.php"); // Gantilah 'unauthorized.php' dengan halaman yang sesuai
+if ($level == 'mhs') {
+    header('location: dashboard.php'); // Gantilah 'unauthorized.php' dengan halaman yang sesuai
     exit();
-  $mhs=mysqli_query($koneksi,"SELECT * FROM mahasiswa
+    $mhs = mysqli_query($koneksi, "SELECT * FROM mahasiswa
     INNER JOIN tbl_jk ON mahasiswa.id_jk=tbl_jk.id_jk
     INNER JOIN tbl_agama ON mahasiswa.id_agama=tbl_agama.id_agama WHERE nim_npm='$username'");
-  $tampil_mhs=mysqli_fetch_array($mhs);
+    $tampil_mhs = mysqli_fetch_array($mhs);
 }
 if (isset($_POST['tambah'])) {
-  $nim_npm = mysqli_real_escape_string($koneksi, $_POST['nim_npm']);
-  $thn_masuk = mysqli_real_escape_string($koneksi, $_POST['thn_masuk']);
-  $lulusan_jalur = mysqli_real_escape_string($koneksi, $_POST['lulusan_jalur']);
-  $sekolah_asal = mysqli_real_escape_string($koneksi, $_POST['sekolah_asal']);
-  $nama_mhs = mysqli_real_escape_string($koneksi, $_POST['nama_mhs']);
-  $id_jk = mysqli_real_escape_string($koneksi, $_POST['id_jk']);
-  $tempat_lhr = mysqli_real_escape_string($koneksi, $_POST['tempat_lhr']);
-  $tgl_lhr_mhs = mysqli_real_escape_string($koneksi, $_POST['tgl_lhr_mhs']);
-  $id_agama = mysqli_real_escape_string($koneksi, $_POST['id_agama']);
-  $email = mysqli_real_escape_string($koneksi, $_POST['email']);
-  $alamat_mhs = mysqli_real_escape_string($koneksi, $_POST['alamat_mhs']);
-  $no_telp_mhs = mysqli_real_escape_string($koneksi, $_POST['no_telp_mhs']);
-  $status_mhs = mysqli_real_escape_string($koneksi, $_POST['status_mhs']);
-  $input = mysqli_query($koneksi, "INSERT INTO mahasiswa VALUES('$nim_npm','$thn_masuk','$lulusan_jalur','$sekolah_asal','$nama_mhs','$id_jk','$tempat_lhr','$tgl_lhr_mhs','$id_agama','$email','$alamat_mhs','$no_telp_mhs','','$status_mhs')");
-  if ($input == 1) {
-    echo "<script>window.alert('Mahasiswa Berhasil ditambah !!!')
+    $nim_npm = mysqli_real_escape_string($koneksi, $_POST['nim_npm']);
+    $thn_masuk = mysqli_real_escape_string($koneksi, $_POST['thn_masuk']);
+    $lulusan_jalur = mysqli_real_escape_string($koneksi, $_POST['lulusan_jalur']);
+    $sekolah_asal = mysqli_real_escape_string($koneksi, $_POST['sekolah_asal']);
+    $nama_mhs = mysqli_real_escape_string($koneksi, $_POST['nama_mhs']);
+    $id_jk = mysqli_real_escape_string($koneksi, $_POST['id_jk']);
+    $tempat_lhr = mysqli_real_escape_string($koneksi, $_POST['tempat_lhr']);
+    $tgl_lhr_mhs = mysqli_real_escape_string($koneksi, $_POST['tgl_lhr_mhs']);
+    $id_agama = mysqli_real_escape_string($koneksi, $_POST['id_agama']);
+    $email = mysqli_real_escape_string($koneksi, $_POST['email']);
+    $alamat_mhs = mysqli_real_escape_string($koneksi, $_POST['alamat_mhs']);
+    $no_telp_mhs = mysqli_real_escape_string($koneksi, $_POST['no_telp_mhs']);
+    $status_mhs = mysqli_real_escape_string($koneksi, $_POST['status_mhs']);
+    $input = mysqli_query($koneksi, "INSERT INTO mahasiswa VALUES('$nim_npm','$thn_masuk','$lulusan_jalur','$sekolah_asal','$nama_mhs','$id_jk','$tempat_lhr','$tgl_lhr_mhs','$id_agama','$email','$alamat_mhs','$no_telp_mhs','','$status_mhs')");
+    if ($input == 1) {
+        echo "<script>window.alert('Mahasiswa Berhasil ditambah !!!')
     window.location='mhs'</script>";
-  }
+    }
 }
 // Edit data fakultas
 if (isset($_POST['update'])) {
-  $nim_npm = mysqli_real_escape_string($koneksi, $_POST['nim_npm']);
-  $thn_masuk = mysqli_real_escape_string($koneksi, $_POST['thn_masuk']);
-  $nama_mhs = mysqli_real_escape_string($koneksi, $_POST['nama_mhs']);
-  $id_jk = mysqli_real_escape_string($koneksi, $_POST['id_jk']);
-  $tempat_lhr = mysqli_real_escape_string($koneksi, $_POST['tempat_lhr']);
-  $tgl_lhr_mhs = mysqli_real_escape_string($koneksi, $_POST['tgl_lhr_mhs']);
-  $id_agama = mysqli_real_escape_string($koneksi, $_POST['id_agama']);
-  $email = mysqli_real_escape_string($koneksi, $_POST['email']);
-  $alamat_mhs = mysqli_real_escape_string($koneksi, $_POST['alamat_mhs']);
-  $no_telp_mhs = mysqli_real_escape_string($koneksi, $_POST['no_telp_mhs']);
-  $status_mhs = mysqli_real_escape_string($koneksi, $_POST['status_mhs']);
-  $update = mysqli_query($koneksi, "UPDATE mahasiswa SET nama_mhs='$nama_mhs', thn_masuk='$thn_masuk', id_jk='$id_jk', tempat_lhr='$tempat_lhr', tgl_lhr_mhs='$tgl_lhr_mhs', id_agama='$id_agama', email='$email', alamat_mhs='$alamat_mhs', no_telp_mhs='$no_telp_mhs', status_mhs='$status_mhs' WHERE nim_npm='$nim_npm'");
-  if ($update == 1) {
-    echo "<script>window.alert('Data Berhasil diupdate !!!')
+    $nim_npm = mysqli_real_escape_string($koneksi, $_POST['nim_npm']);
+    $thn_masuk = mysqli_real_escape_string($koneksi, $_POST['thn_masuk']);
+    $nama_mhs = mysqli_real_escape_string($koneksi, $_POST['nama_mhs']);
+    $id_jk = mysqli_real_escape_string($koneksi, $_POST['id_jk']);
+    $tempat_lhr = mysqli_real_escape_string($koneksi, $_POST['tempat_lhr']);
+    $tgl_lhr_mhs = mysqli_real_escape_string($koneksi, $_POST['tgl_lhr_mhs']);
+    $id_agama = mysqli_real_escape_string($koneksi, $_POST['id_agama']);
+    $email = mysqli_real_escape_string($koneksi, $_POST['email']);
+    $alamat_mhs = mysqli_real_escape_string($koneksi, $_POST['alamat_mhs']);
+    $no_telp_mhs = mysqli_real_escape_string($koneksi, $_POST['no_telp_mhs']);
+    $status_mhs = mysqli_real_escape_string($koneksi, $_POST['status_mhs']);
+    $update = mysqli_query($koneksi, "UPDATE mahasiswa SET nama_mhs='$nama_mhs', thn_masuk='$thn_masuk', id_jk='$id_jk', tempat_lhr='$tempat_lhr', tgl_lhr_mhs='$tgl_lhr_mhs', id_agama='$id_agama', email='$email', alamat_mhs='$alamat_mhs', no_telp_mhs='$no_telp_mhs', status_mhs='$status_mhs' WHERE nim_npm='$nim_npm'");
+    if ($update == 1) {
+        echo "<script>window.alert('Data Berhasil diupdate !!!')
     window.location='mhs'</script>";
-  }
+    }
 }
 // Hapus data
 if (isset($_GET['aksi']) == 'hapus') {
-  $nim_npm = mysqli_real_escape_string($koneksi, $_GET['nim_npm']);
-  $hapus = mysqli_query($koneksi, "DELETE FROM mahasiswa WHERE nim_npm='$nim_npm'");
-  mysqli_query($koneksi, "DELETE FROM user WHERE username='$nim_npm'");
-  if ($hapus == 1) {
-    echo "<script>window.alert('Berhasil dihapus !!!')
+    $nim_npm = mysqli_real_escape_string($koneksi, $_GET['nim_npm']);
+    $hapus = mysqli_query($koneksi, "DELETE FROM mahasiswa WHERE nim_npm='$nim_npm'");
+    mysqli_query($koneksi, "DELETE FROM user WHERE username='$nim_npm'");
+    if ($hapus == 1) {
+        echo "<script>window.alert('Berhasil dihapus !!!')
     window.location='mhs'</script>";
-  }
+    }
 }
 if (isset($_POST['import'])) {
-  require('php-excel-reader/excel_reader2.php');
-  // upload file xls
-  $target = basename($_FILES['mahasiswa']['name']);
-  move_uploaded_file($_FILES['mahasiswa']['tmp_name'], $target);
+    require 'php-excel-reader/excel_reader2.php';
+    // upload file xls
+    $target = basename($_FILES['mahasiswa']['name']);
+    move_uploaded_file($_FILES['mahasiswa']['tmp_name'], $target);
 
-  // beri permisi agar file xls dapat di baca
-  chmod($_FILES['mahasiswa']['name'], 0777);
+    // mengambil isi file xls
+    $data = new Spreadsheet_Excel_Reader($target, false);
+    // menghitung jumlah baris data yang ada
+    $jumlah_baris = $data->rowcount($sheet_index = 0);
 
-  // mengambil isi file xls
-  $data = new Spreadsheet_Excel_Reader($_FILES['mahasiswa']['name'], false);
-  // menghitung jumlah baris data yang ada
-  $jumlah_baris = $data->rowcount($sheet_index = 0);
+    // jumlah default data yang berhasil di import
+    $berhasil = 0;
+    $stmt_import = mysqli_prepare($koneksi, 'INSERT INTO mahasiswa VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    for ($i = 2; $i <= $jumlah_baris; $i++) {
 
-  // jumlah default data yang berhasil di import
-  $berhasil = 0;
-  for ($i = 2; $i <= $jumlah_baris; $i++) {
+        // menangkap data dan memasukkan ke variabel sesuai dengan kolumnya masing-masing
+        $nim = $data->val($i, 1);
+        $thn_masuk = $data->val($i, 2);
+        $jalur = $data->val($i, 3);
+        $sekolah_asal = $data->val($i, 4);
+        $nama_mhs = $data->val($i, 5);
+        $id_jk = $data->val($i, 6);
+        $tmp_lhr = $data->val($i, 7);
+        $tgl_lhr = $data->val($i, 8);
+        $id_agama = $data->val($i, 9);
+        $email = $data->val($i, 10);
+        $alamat = $data->val($i, 11);
+        $no_telp = $data->val($i, 12);
+        $foto_mhs = $data->val($i, 13);
+        $status_mhs = $data->val($i, 14);
 
-    // menangkap data dan memasukkan ke variabel sesuai dengan kolumnya masing-masing
-    $nim  = $data->val($i, 1);
-    $thn_masuk   = $data->val($i, 2);
-    $jalur   = $data->val($i, 3);
-    $sekolah_asal   = $data->val($i, 4);
-    $nama_mhs   = $data->val($i, 5);
-    $id_jk   = $data->val($i, 6);
-    $tmp_lhr   = $data->val($i, 7);
-    $tgl_lhr   = $data->val($i, 8);
-    $id_agama   = $data->val($i, 9);
-    $email   = $data->val($i, 10);
-    $alamat   = $data->val($i, 11);
-    $no_telp   = $data->val($i, 12);
-    $foto_mhs   = $data->val($i, 13);
-    $status_mhs   = $data->val($i, 14);
-
-    // input data ke database (table data_pegawai)
-    // mysqli_query($koneksi,"INSERT INTO siswa values('$nim','$nama_mhs','$status','$waktu')");
-    if ($nim != "" && $nama_mhs != "") {
-      mysqli_query($koneksi, "INSERT INTO mahasiswa VALUES('$nim','$thn_masuk','$jalur','$sekolah_asal','$nama_mhs','$id_jk','$tmp_lhr','$tgl_lhr','$id_agama','$email','$alamat','$no_telp','$foto_mhs','$status_mhs')");
-      $berhasil++;
+        // input data ke database (table data_pegawai)
+        // mysqli_query($koneksi,"INSERT INTO siswa values('$nim','$nama_mhs','$status','$waktu')");
+        if ($nim != '' && $nama_mhs != '') {
+            mysqli_stmt_bind_param($stmt_import, 'ssssssssssssss', $nim, $thn_masuk, $jalur, $sekolah_asal, $nama_mhs, $id_jk, $tmp_lhr, $tgl_lhr, $id_agama, $email, $alamat, $no_telp, $foto_mhs, $status_mhs);
+            if (mysqli_stmt_execute($stmt_import)) {
+                $berhasil++;
+            }
+        }
     }
-  }
+    mysqli_stmt_close($stmt_import);
 
-  // hapus kembali file .xls yang di upload tadi
+    // hapus kembali file .xls yang di upload tadi
+    @unlink($target);
 
-  // alihkan halaman ke index.php
-  echo "<script>window.alert('$berhasil Data Mahasiswa berhasil diimport !!!')
+    // alihkan halaman ke index.php
+    echo "<script>window.alert('$berhasil Data Mahasiswa berhasil diimport !!!')
   window.location='mhs'</script>";
 }
 ?>
@@ -151,15 +153,15 @@ if (isset($_POST['import'])) {
 <body class="antialiased">
   <div class="wrapper">
     <?php
-    require_once "../template/header.php";
-    ?>
+    require_once '../template/header.php';
+?>
     <div class="navbar-expand-md">
       <div class="collapse navbar-collapse" id="navbar-menu">
         <div class="navbar navbar-light">
           <div class="container-xl">
             <?php
-            require_once "../template/menu.php";
-            ?>
+        require_once '../template/menu.php';
+?>
           </div>
         </div>
       </div>
@@ -273,8 +275,8 @@ if (isset($_POST['import'])) {
         </div>
       </div>
       <?php
-      require_once "../template/footer.php";
-      ?>
+      require_once '../template/footer.php';
+?>
     </div>
   </div>
 

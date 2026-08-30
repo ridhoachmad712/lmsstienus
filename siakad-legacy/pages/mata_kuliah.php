@@ -7,100 +7,102 @@
 * Copyright 2018-2021 codecalm.net Paweł Kuna
 * Licensed under MIT (https://github.com/tabler/tabler/blob/master/LICENSE)
 -->
-<?php 
+<?php
 session_start();
-include"../config/koneksi.php";
-$username=$_SESSION['username'];
-$password=$_SESSION['password'];
-$level=$_SESSION['level'];
-if (!isset($_SESSION["login"]) ) {
-  header("location: login");
-}else{
-  $cek_user=mysqli_num_rows(mysqli_query($koneksi,"SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
-  if ($cek_user !== 1) {
-    header("location: login");
-  }
+include '../config/koneksi.php';
+$username = $_SESSION['username'];
+$password = $_SESSION['password'];
+$level = $_SESSION['level'];
+if (! isset($_SESSION['login'])) {
+    header('location: login');
+} else {
+    $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
+    if ($cek_user !== 1) {
+        header('location: login');
+    }
 }
 // --------------------------------------------------
-// pengaturan aplikasi 
-$pengaturan=mysqli_query($koneksi,"SELECT * FROM pengaturan WHERE id_pengaturan='1'");
-$r_pengaturan=mysqli_fetch_array($pengaturan);
+// pengaturan aplikasi
+$pengaturan = mysqli_query($koneksi, "SELECT * FROM pengaturan WHERE id_pengaturan='1'");
+$r_pengaturan = mysqli_fetch_array($pengaturan);
 // tambah data fakultas
 if (isset($_POST['tambah'])) {
-  $kode_matkul=mysqli_real_escape_string($koneksi, $_POST['kode_matkul']);
-  $nama_matkul=mysqli_real_escape_string($koneksi, $_POST['nama_matkul']);
-  $sks=mysqli_real_escape_string($koneksi, $_POST['sks']);
-  $semester=mysqli_real_escape_string($koneksi, $_POST['semester']);
-  $id_jenis_mk=mysqli_real_escape_string($koneksi, $_POST['id_jenis_mk']);
-  $input=mysqli_query($koneksi,"INSERT INTO mata_kuliah VALUES('$kode_matkul','$nama_matkul','$sks','$semester','$id_jenis_mk')");
-  if ($input == 1) {
-    echo "<script>window.alert('Mata Kuliah $nama_matkul Berhasil di tambahkan !!!')
+    $kode_matkul = mysqli_real_escape_string($koneksi, $_POST['kode_matkul']);
+    $nama_matkul = mysqli_real_escape_string($koneksi, $_POST['nama_matkul']);
+    $sks = mysqli_real_escape_string($koneksi, $_POST['sks']);
+    $semester = mysqli_real_escape_string($koneksi, $_POST['semester']);
+    $id_jenis_mk = mysqli_real_escape_string($koneksi, $_POST['id_jenis_mk']);
+    $input = mysqli_query($koneksi, "INSERT INTO mata_kuliah VALUES('$kode_matkul','$nama_matkul','$sks','$semester','$id_jenis_mk')");
+    if ($input == 1) {
+        echo "<script>window.alert('Mata Kuliah $nama_matkul Berhasil di tambahkan !!!')
     window.location='mata_kuliah'</script>";
-  }else{
-    echo "<script>window.alert('Tambah data gagal !!!')
+    } else {
+        echo "<script>window.alert('Tambah data gagal !!!')
     window.location='mata_kuliah'</script>";
-  }
+    }
 }
 // Edit data fakultas
 if (isset($_POST['update'])) {
-  $kode_matkul=mysqli_real_escape_string($koneksi, $_POST['kode_matkul']);
-  $nama_matkul=mysqli_real_escape_string($koneksi, $_POST['nama_matkul']);
-  $sks=mysqli_real_escape_string($koneksi, $_POST['sks']);
-  $semester=mysqli_real_escape_string($koneksi, $_POST['semester']);
-  $id_jenis_mk=mysqli_real_escape_string($koneksi, $_POST['id_jenis_mk']);
-  $update=mysqli_query($koneksi,"UPDATE mata_kuliah SET nama_matkul='$nama_matkul', sks='$sks', semester='$semester', id_jenis_mk='$id_jenis_mk' WHERE kode_matkul='$kode_matkul'");
-  if ($update == 1) {
-    echo "<script>window.alert('Berhasil diupdate menjadi $nama_matkul !!!')
+    $kode_matkul = mysqli_real_escape_string($koneksi, $_POST['kode_matkul']);
+    $nama_matkul = mysqli_real_escape_string($koneksi, $_POST['nama_matkul']);
+    $sks = mysqli_real_escape_string($koneksi, $_POST['sks']);
+    $semester = mysqli_real_escape_string($koneksi, $_POST['semester']);
+    $id_jenis_mk = mysqli_real_escape_string($koneksi, $_POST['id_jenis_mk']);
+    $update = mysqli_query($koneksi, "UPDATE mata_kuliah SET nama_matkul='$nama_matkul', sks='$sks', semester='$semester', id_jenis_mk='$id_jenis_mk' WHERE kode_matkul='$kode_matkul'");
+    if ($update == 1) {
+        echo "<script>window.alert('Berhasil diupdate menjadi $nama_matkul !!!')
     window.location='mata_kuliah'</script>";
-  }
+    }
 }
 // Hapus data
-if (isset($_GET['aksi'])=='hapus') {
-  $kode_matkul=mysqli_real_escape_string($koneksi, $_GET['kode_matkul']);
-  $hapus=mysqli_query($koneksi,"DELETE FROM mata_kuliah WHERE kode_matkul='$kode_matkul'");
-  if ($hapus==1) {
-    echo "<script>window.alert('Berhasil dihapus !!!')
+if (isset($_GET['aksi']) == 'hapus') {
+    $kode_matkul = mysqli_real_escape_string($koneksi, $_GET['kode_matkul']);
+    $hapus = mysqli_query($koneksi, "DELETE FROM mata_kuliah WHERE kode_matkul='$kode_matkul'");
+    if ($hapus == 1) {
+        echo "<script>window.alert('Berhasil dihapus !!!')
     window.location='mata_kuliah'</script>";
-  }
+    }
 }
 
 if (isset($_POST['import'])) {
-  require('php-excel-reader/excel_reader2.php');
-// upload file xls
-  $target = basename($_FILES['mata_kuliah']['name']) ;
-  move_uploaded_file($_FILES['mata_kuliah']['tmp_name'], $target);
+    require 'php-excel-reader/excel_reader2.php';
+    // upload file xls
+    $target = basename($_FILES['mata_kuliah']['name']);
+    move_uploaded_file($_FILES['mata_kuliah']['tmp_name'], $target);
 
-// beri permisi agar file xls dapat di baca
-  chmod($_FILES['mata_kuliah']['name'],0777);
+    // mengambil isi file xls
+    $data = new Spreadsheet_Excel_Reader($target, false);
+    // menghitung jumlah baris data yang ada
+    $jumlah_baris = $data->rowcount($sheet_index = 0);
 
-// mengambil isi file xls
-  $data = new Spreadsheet_Excel_Reader($_FILES['mata_kuliah']['name'],false);
-// menghitung jumlah baris data yang ada
-  $jumlah_baris = $data->rowcount($sheet_index=0);
+    // jumlah default data yang berhasil di import
+    $berhasil = 0;
+    $stmt_import = mysqli_prepare($koneksi, 'INSERT INTO mata_kuliah VALUES(?,?,?,?,?)');
+    for ($i = 2; $i <= $jumlah_baris; $i++) {
 
-// jumlah default data yang berhasil di import
-  $berhasil = 0;
-  for ($i=2; $i<=$jumlah_baris; $i++){
-
-    // menangkap data dan memasukkan ke variabel sesuai dengan kolumnya masing-masing
-    $kode_matkul  = $data->val($i, 1);
-    $nama_matkul   = $data->val($i, 2);
-    $sks   = $data->val($i, 3);
-    $semester   = $data->val($i, 4);
-    $id_jenis_mk   = $data->val($i, 5);
+        // menangkap data dan memasukkan ke variabel sesuai dengan kolumnya masing-masing
+        $kode_matkul = $data->val($i, 1);
+        $nama_matkul = $data->val($i, 2);
+        $sks = $data->val($i, 3);
+        $semester = $data->val($i, 4);
+        $id_jenis_mk = $data->val($i, 5);
 
         // input data ke database (table data_pegawai)
         // mysqli_query($koneksi,"INSERT INTO siswa values('$nim','$nama_mhs','$status','$waktu')");
-    if ($kode_matkul != "" && $nama_matkul != "" && $sks != "" && $semester != "" && $id_jenis_mk != "") {
-      mysqli_query($koneksi,"INSERT INTO mata_kuliah VALUES('$kode_matkul','$nama_matkul','$sks','$semester','$id_jenis_mk')");
-      $berhasil++;
+        if ($kode_matkul != '' && $nama_matkul != '' && $sks != '' && $semester != '' && $id_jenis_mk != '') {
+            mysqli_stmt_bind_param($stmt_import, 'sssss', $kode_matkul, $nama_matkul, $sks, $semester, $id_jenis_mk);
+            if (mysqli_stmt_execute($stmt_import)) {
+                $berhasil++;
+            }
+        }
     }
-  }
+    mysqli_stmt_close($stmt_import);
 
-// hapus kembali file .xls yang di upload tadi
+    // hapus kembali file .xls yang di upload tadi
+    @unlink($target);
 
-// alihkan halaman ke index.php
-  echo "<script>window.alert('$berhasil Mata Kuliah berhasil diimport !!!')
+    // alihkan halaman ke index.php
+    echo "<script>window.alert('$berhasil Mata Kuliah berhasil diimport !!!')
   window.location='mata_kuliah'</script>";
 }
 
@@ -120,16 +122,16 @@ if (isset($_POST['import'])) {
 </head>
 <body class="antialiased">
   <div class="wrapper">
-    <?php 
-    require_once"../template/header.php";
-    ?>
+    <?php
+    require_once '../template/header.php';
+?>
     <div class="navbar-expand-md">
       <div class="collapse navbar-collapse" id="navbar-menu">
         <div class="navbar navbar-light">
           <div class="container-xl">
-            <?php 
-            require_once"../template/menu.php";
-            ?>
+            <?php
+        require_once '../template/menu.php';
+?>
           </div>
         </div>
       </div>
@@ -200,9 +202,9 @@ if (isset($_POST['import'])) {
       </div>
     </div>
   </div>
-  <?php 
-  require_once"../template/footer.php";
-  ?>
+  <?php
+  require_once '../template/footer.php';
+?>
 </div>
 </div>
 
@@ -244,29 +246,29 @@ if (isset($_POST['import'])) {
         <div class="offcanvas-body">
          <div>
           <div class="mb-3">
-            <label>Kode Mata Kuliah</label> 
+            <label>Kode Mata Kuliah</label>
             <input type="text" name="kode_matkul" class="form-control" required="require">
           </div>
           <div class="mb-3">
-            <label>Nama Mata Kuliah</label> 
+            <label>Nama Mata Kuliah</label>
             <textarea class="form-control" name="nama_matkul" required="required"></textarea>
           </div>
           <div class="mb-3">
-            <label>SKS</label> 
+            <label>SKS</label>
             <input type="number" name="sks" class="form-control" required="required">
           </div>
           <div class="mb-3">
-            <label>Semester</label> 
+            <label>Semester</label>
             <input type="text" name="semester" class="form-control" required="required">
           </div>
           <div class="mb-3">
-            <label>Jenis Mata Kuliah</label> 
+            <label>Jenis Mata Kuliah</label>
             <select class="form-control" name="id_jenis_mk" required>
               <option value="">Pilih Jenis Mata Kuliah</option>
-              <?php 
-              $jenis_mk=mysqli_query($koneksi,"SELECT * FROM tbl_jenis_mk");
-              while ($tampil_jenis_mk=mysqli_fetch_array($jenis_mk)) {
-               ?>
+              <?php
+            $jenis_mk = mysqli_query($koneksi, 'SELECT * FROM tbl_jenis_mk');
+while ($tampil_jenis_mk = mysqli_fetch_array($jenis_mk)) {
+    ?>
                <option value="<?= $tampil_jenis_mk['id_jenis_mk']; ?>"><?= $tampil_jenis_mk['jenis_mk']; ?></option>
              <?php } ?>
            </select>
@@ -314,7 +316,7 @@ if (isset($_POST['import'])) {
       }
       else
       {
-        load_data();      
+        load_data();
       }
     });
   });

@@ -9,109 +9,111 @@
 -->
 <?php
 session_start();
-include "../config/koneksi.php";
+include '../config/koneksi.php';
 $username = $_SESSION['username'];
 $password = $_SESSION['password'];
 $level = $_SESSION['level'];
-if (!isset($_SESSION["login"])) {
-  header("location: login");
+if (! isset($_SESSION['login'])) {
+    header('location: login');
 } else {
-  $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
-  if ($cek_user !== 1) {
-    header("location: login");
-  }
+    $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
+    if ($cek_user !== 1) {
+        header('location: login');
+    }
 }
 // --------------------------------------------------
-// pengaturan aplikasi 
+// pengaturan aplikasi
 $pengaturan = mysqli_query($koneksi, "SELECT * FROM pengaturan WHERE id_pengaturan='1'");
 $r_pengaturan = mysqli_fetch_array($pengaturan);
 // tambah data fakultas
 if (isset($_POST['tambah'])) {
-  $nip = mysqli_real_escape_string($koneksi, $_POST['nip']);
-  $nama_dosen = mysqli_real_escape_string($koneksi, $_POST['nama_dosen']);
-  $id_jk = mysqli_real_escape_string($koneksi, $_POST['id_jk']);
-  $id_agama = mysqli_real_escape_string($koneksi, $_POST['id_agama']);
-  $alamat = mysqli_real_escape_string($koneksi, $_POST['alamat']);
-  $email = mysqli_real_escape_string($koneksi, $_POST['email']);
-  $tmp_lhr_dosen = mysqli_real_escape_string($koneksi, $_POST['tmp_lhr_dosen']);
-  $tgl_lhr_dosen = mysqli_real_escape_string($koneksi, $_POST['tgl_lhr_dosen']);
-  $email = mysqli_real_escape_string($koneksi, $_POST['email']);
-  $no_telp = mysqli_real_escape_string($koneksi, $_POST['no_telp']);
-  $input = mysqli_query($koneksi, "INSERT INTO dosen VALUES('$nip','$nama_dosen','$id_jk','$id_agama','$alamat','','$tmp_lhr_dosen','$tgl_lhr_dosen','$email','$no_telp')");
-  if ($input == 1) {
-    echo "<script>window.alert('Dosen Berhasil ditambah !!!')
+    $nip = mysqli_real_escape_string($koneksi, $_POST['nip']);
+    $nama_dosen = mysqli_real_escape_string($koneksi, $_POST['nama_dosen']);
+    $id_jk = mysqli_real_escape_string($koneksi, $_POST['id_jk']);
+    $id_agama = mysqli_real_escape_string($koneksi, $_POST['id_agama']);
+    $alamat = mysqli_real_escape_string($koneksi, $_POST['alamat']);
+    $email = mysqli_real_escape_string($koneksi, $_POST['email']);
+    $tmp_lhr_dosen = mysqli_real_escape_string($koneksi, $_POST['tmp_lhr_dosen']);
+    $tgl_lhr_dosen = mysqli_real_escape_string($koneksi, $_POST['tgl_lhr_dosen']);
+    $email = mysqli_real_escape_string($koneksi, $_POST['email']);
+    $no_telp = mysqli_real_escape_string($koneksi, $_POST['no_telp']);
+    $input = mysqli_query($koneksi, "INSERT INTO dosen VALUES('$nip','$nama_dosen','$id_jk','$id_agama','$alamat','','$tmp_lhr_dosen','$tgl_lhr_dosen','$email','$no_telp')");
+    if ($input == 1) {
+        echo "<script>window.alert('Dosen Berhasil ditambah !!!')
     window.location='dosen'</script>";
-  }
+    }
 }
 // Edit data fakultas
 if (isset($_POST['update'])) {
-  $nip = mysqli_real_escape_string($koneksi, $_POST['nip']);
-  $nama_dosen = mysqli_real_escape_string($koneksi, $_POST['nama_dosen']);
-  $id_jk = mysqli_real_escape_string($koneksi, $_POST['id_jk']);
-  $id_agama = mysqli_real_escape_string($koneksi, $_POST['id_agama']);
-  $alamat = mysqli_real_escape_string($koneksi, $_POST['alamat']);
-  $tmp_lhr_dosen = mysqli_real_escape_string($koneksi, $_POST['tmp_lhr_dosen']);
-  $tgl_lhr_dosen = mysqli_real_escape_string($koneksi, $_POST['tgl_lhr_dosen']);
-  $email = mysqli_real_escape_string($koneksi, $_POST['email']);
-  $no_telp = mysqli_real_escape_string($koneksi, $_POST['no_telp']);
-  $update = mysqli_query($koneksi, "UPDATE dosen SET nama_dosen='$nama_dosen', id_jk='$id_jk', id_agama='$id_agama', alamat='$alamat', tmp_lhr_dosen='$tmp_lhr_dosen', tgl_lhr_dosen='$tgl_lhr_dosen', email='$email', no_telp='$no_telp' WHERE nip='$nip'");
-  if ($update == 1) {
-    echo "<script>window.alert('Data Berhasil diupdate !!!')
+    $nip = mysqli_real_escape_string($koneksi, $_POST['nip']);
+    $nama_dosen = mysqli_real_escape_string($koneksi, $_POST['nama_dosen']);
+    $id_jk = mysqli_real_escape_string($koneksi, $_POST['id_jk']);
+    $id_agama = mysqli_real_escape_string($koneksi, $_POST['id_agama']);
+    $alamat = mysqli_real_escape_string($koneksi, $_POST['alamat']);
+    $tmp_lhr_dosen = mysqli_real_escape_string($koneksi, $_POST['tmp_lhr_dosen']);
+    $tgl_lhr_dosen = mysqli_real_escape_string($koneksi, $_POST['tgl_lhr_dosen']);
+    $email = mysqli_real_escape_string($koneksi, $_POST['email']);
+    $no_telp = mysqli_real_escape_string($koneksi, $_POST['no_telp']);
+    $update = mysqli_query($koneksi, "UPDATE dosen SET nama_dosen='$nama_dosen', id_jk='$id_jk', id_agama='$id_agama', alamat='$alamat', tmp_lhr_dosen='$tmp_lhr_dosen', tgl_lhr_dosen='$tgl_lhr_dosen', email='$email', no_telp='$no_telp' WHERE nip='$nip'");
+    if ($update == 1) {
+        echo "<script>window.alert('Data Berhasil diupdate !!!')
     window.location='dosen'</script>";
-  }
+    }
 }
 // Hapus data
 if (isset($_GET['aksi']) == 'hapus') {
-  $nip = mysqli_real_escape_string($koneksi, $_GET['nip']);
-  $hapus = mysqli_query($koneksi, "DELETE FROM dosen WHERE nip='$nip'");
-  mysqli_query($koneksi, "DELETE FROM user WHERE username='$nip'");
-  if ($hapus == 1) {
-    echo "<script>window.alert('Berhasil dihapus !!!')
+    $nip = mysqli_real_escape_string($koneksi, $_GET['nip']);
+    $hapus = mysqli_query($koneksi, "DELETE FROM dosen WHERE nip='$nip'");
+    mysqli_query($koneksi, "DELETE FROM user WHERE username='$nip'");
+    if ($hapus == 1) {
+        echo "<script>window.alert('Berhasil dihapus !!!')
     window.location='dosen'</script>";
-  }
+    }
 }
 if (isset($_POST['import'])) {
-  require('php-excel-reader/excel_reader2.php');
-  // upload file xls
-  $target = basename($_FILES['dosen']['name']);
-  move_uploaded_file($_FILES['dosen']['tmp_name'], $target);
+    require 'php-excel-reader/excel_reader2.php';
+    // upload file xls
+    $target = basename($_FILES['dosen']['name']);
+    move_uploaded_file($_FILES['dosen']['tmp_name'], $target);
 
-  // beri permisi agar file xls dapat di baca
-  chmod($_FILES['dosen']['name'], 0777);
+    // mengambil isi file xls
+    $data = new Spreadsheet_Excel_Reader($target, false);
+    // menghitung jumlah baris data yang ada
+    $jumlah_baris = $data->rowcount($sheet_index = 0);
 
-  // mengambil isi file xls
-  $data = new Spreadsheet_Excel_Reader($_FILES['dosen']['name'], false);
-  // menghitung jumlah baris data yang ada
-  $jumlah_baris = $data->rowcount($sheet_index = 0);
+    // jumlah default data yang berhasil di import
+    $berhasil = 0;
+    $stmt_import = mysqli_prepare($koneksi, 'INSERT INTO dosen VALUES(?,?,?,?,?,?,?,?,?,?)');
+    for ($i = 2; $i <= $jumlah_baris; $i++) {
 
-  // jumlah default data yang berhasil di import
-  $berhasil = 0;
-  for ($i = 2; $i <= $jumlah_baris; $i++) {
+        // menangkap data dan memasukkan ke variabel sesuai dengan kolumnya masing-masing
+        $nidn = $data->val($i, 1);
+        $nama_dosen = $data->val($i, 2);
+        $id_jk = $data->val($i, 3);
+        $id_agama = $data->val($i, 4);
+        $alamat = $data->val($i, 5);
+        $foto_dosen = $data->val($i, 6);
+        $tmp_lhr = $data->val($i, 7);
+        $tgl_lhr = $data->val($i, 8);
+        $email = $data->val($i, 9);
+        $no_telp = $data->val($i, 10);
 
-    // menangkap data dan memasukkan ke variabel sesuai dengan kolumnya masing-masing
-    $nidn  = $data->val($i, 1);
-    $nama_dosen   = $data->val($i, 2);
-    $id_jk   = $data->val($i, 3);
-    $id_agama   = $data->val($i, 4);
-    $alamat   = $data->val($i, 5);
-    $foto_dosen   = $data->val($i, 6);
-    $tmp_lhr   = $data->val($i, 7);
-    $tgl_lhr   = $data->val($i, 8);
-    $email   = $data->val($i, 9);
-    $no_telp   = $data->val($i, 10);
-
-    // input data ke database (table data_pegawai)
-    // mysqli_query($koneksi,"INSERT INTO siswa values('$nim','$nama_mhs','$status','$waktu')");
-    if ($nidn != "" && $nama_dosen != "") {
-      mysqli_query($koneksi, "INSERT INTO dosen VALUES('$nidn','$nama_dosen','$id_jk','$id_agama','$alamat','$foto_dosen','$tmp_lhr','$tgl_lhr','$email','$no_telp')");
-      $berhasil++;
+        // input data ke database (table data_pegawai)
+        // mysqli_query($koneksi,"INSERT INTO siswa values('$nim','$nama_mhs','$status','$waktu')");
+        if ($nidn != '' && $nama_dosen != '') {
+            mysqli_stmt_bind_param($stmt_import, 'ssssssssss', $nidn, $nama_dosen, $id_jk, $id_agama, $alamat, $foto_dosen, $tmp_lhr, $tgl_lhr, $email, $no_telp);
+            if (mysqli_stmt_execute($stmt_import)) {
+                $berhasil++;
+            }
+        }
     }
-  }
+    mysqli_stmt_close($stmt_import);
 
-  // hapus kembali file .xls yang di upload tadi
+    // hapus kembali file .xls yang di upload tadi
+    @unlink($target);
 
-  // alihkan halaman ke index.php
-  echo "<script>window.alert('$berhasil Data dosen berhasil diimport !!!')
+    // alihkan halaman ke index.php
+    echo "<script>window.alert('$berhasil Data dosen berhasil diimport !!!')
   window.location='dosen'</script>";
 }
 ?>
@@ -133,15 +135,15 @@ if (isset($_POST['import'])) {
 <body class="antialiased">
   <div class="wrapper">
     <?php
-    require_once "../template/header.php";
-    ?>
+    require_once '../template/header.php';
+?>
     <div class="navbar-expand-md">
       <div class="collapse navbar-collapse" id="navbar-menu">
         <div class="navbar navbar-light">
           <div class="container-xl">
             <?php
-            require_once "../template/menu.php";
-            ?>
+        require_once '../template/menu.php';
+?>
           </div>
         </div>
       </div>
@@ -253,8 +255,8 @@ if (isset($_POST['import'])) {
         </div>
       </div>
       <?php
-      require_once "../template/footer.php";
-      ?>
+      require_once '../template/footer.php';
+?>
     </div>
   </div>
 

@@ -27,6 +27,12 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      - name: Audit dependencies
+        run: composer audit --locked
+
+      - name: Lint legacy SIAKAD PHP
+        run: find siakad-legacy -name '*.php' -print0 | xargs -0 -n1 php -l
+
       - name: Prepare environment
         run: |
           cp .env.example .env
@@ -34,3 +40,6 @@ jobs:
 
       - name: Run tests
         run: php artisan test
+
+      - name: Audit production JavaScript dependencies
+        run: npm audit --omit=dev

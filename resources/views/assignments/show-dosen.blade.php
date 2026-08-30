@@ -130,11 +130,7 @@
                                 <div class="btn-list justify-content-end">
                                     @if ($sub && $sub->file_path)
                                         @php($sext = strtolower(pathinfo($sub->file_path, PATHINFO_EXTENSION)))
-                                        @php($spreview = $sext === 'pdf'
-                                            ? route('submissions.preview', $sub)
-                                            : (in_array($sext, ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'])
-                                                ? 'https://view.officeapps.live.com/op/embed.aspx?src='.urlencode(asset('storage/'.$sub->file_path))
-                                                : null))
+                                        @php($spreview = $sext === 'pdf' ? route('submissions.preview', $sub) : null)
                                         @if ($spreview)
                                             <button type="button" class="btn btn-sm" title="Lihat berkas" data-bs-toggle="modal" data-bs-target="#modal-preview"
                                                     data-preview-url="{{ $spreview }}" data-download-url="{{ route('submissions.download', $sub) }}" data-preview-title="{{ $g->name }}"><i class="ti ti-eye"></i></button>
@@ -220,11 +216,7 @@
                                 <div class="btn-list justify-content-end">
                                     @if ($sub->file_path)
                                         @php($sext = strtolower(pathinfo($sub->file_path, PATHINFO_EXTENSION)))
-                                        @php($spreview = $sext === 'pdf'
-                                            ? route('submissions.preview', $sub)
-                                            : (in_array($sext, ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'])
-                                                ? 'https://view.officeapps.live.com/op/embed.aspx?src='.urlencode(asset('storage/'.$sub->file_path))
-                                                : null))
+                                        @php($spreview = $sext === 'pdf' ? route('submissions.preview', $sub) : null)
                                         @if ($spreview)
                                             <button type="button" class="btn btn-sm" title="Lihat berkas"
                                                     data-bs-toggle="modal" data-bs-target="#modal-preview"
@@ -361,11 +353,7 @@
                     @endif
                     @if ($sub->file_path)
                         @php($gext = strtolower(pathinfo($sub->file_path, PATHINFO_EXTENSION)))
-                        @php($gpreview = $gext === 'pdf'
-                            ? route('submissions.preview', $sub)
-                            : (in_array($gext, ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'])
-                                ? 'https://view.officeapps.live.com/op/embed.aspx?src='.urlencode(asset('storage/'.$sub->file_path))
-                                : null))
+                        @php($gpreview = $gext === 'pdf' ? route('submissions.preview', $sub) : null)
                         <div class="mb-3">
                             @if ($gpreview)
                                 <a href="{{ $gpreview }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"><i class="ti ti-eye me-1"></i>Lihat berkas jawaban</a>

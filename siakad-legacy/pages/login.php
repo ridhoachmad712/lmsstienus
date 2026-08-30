@@ -1,40 +1,55 @@
-<?php 
+<?php
 session_start();
-include"../config/koneksi.php";
-date_default_timezone_set('Asia/Jakarta');
-// pengaturan aplikasi 
-$pengaturan=mysqli_query($koneksi,"SELECT * FROM pengaturan WHERE id_pengaturan='1'");
-$r_pengaturan=mysqli_fetch_array($pengaturan);
+include '../config/koneksi.php';
+// pengaturan aplikasi
+$pengaturan = mysqli_query($koneksi, "SELECT * FROM pengaturan WHERE id_pengaturan='1'");
+$r_pengaturan = mysqli_fetch_array($pengaturan);
 // codingan masuk
 if (isset($_POST['masuk'])) {
-	$username=mysqli_real_escape_string($koneksi, $_POST['username']);
-	$password=mysqli_real_escape_string($koneksi, $_POST['password']);
-	$level=mysqli_real_escape_string($koneksi, $_POST['level']);
-	if ($username=="" OR $password=="") {
-		echo "<script>window.alert('Kesalahan login !!!')
-		window.location='login'</script>";
-	}elseif ($username!=="" AND $password!=="") {
-		$user=mysqli_query($koneksi,"SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'");
-		$r_user=mysqli_fetch_array($user);
-		$data_user=mysqli_num_rows($user);
-		if ($data_user == 1) {
-			$ip_address=get_client_ip();
-			$os=getOS($user_agent);
-			$browser=getBrowser($user_agent);
-			$date=date('Y-m-d');
-			$time=date('H:i:s');
-			$update=mysqli_query($koneksi,"UPDATE user SET ip='$ip_address', os='$os', browser='$browser', tgl='$date', waktu='$time' WHERE username='$username' AND password='$password' AND level='$level'");
-			$_SESSION['password']=$r_user['password'];
-			$_SESSION['username']=$r_user['username'];
-			$_SESSION['level']=$r_user['level'];
-			$_SESSION['kode_prodi']=$r_user['kode_prodi'];
-			$_SESSION['login']=true;
-			header("location:login?status=sukses");
-		}else{
-			header("location:login?login=gagal");
+    siakad_login_rate_limit();
+    $username = trim((string) $_POST['username']);
+    $password = (string) $_POST['password'];
+    $level = (string) $_POST['level'];
+    $allowed_levels = ['admin', 'Jurusan/Prodi', 'dosen', 'mhs'];
+    if ($username == '' or $password == '') {
+        header('Location: login?login=gagal');
+        exit;
+    } elseif ($username !== '' and $password !== '' and in_array($level, $allowed_levels, true)) {
+        $stmt = mysqli_prepare($koneksi, 'SELECT username, password, level, kode_prodi FROM user WHERE username = ? AND level = ? LIMIT 1');
+        mysqli_stmt_bind_param($stmt, 'ss', $username, $level);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_bind_result($stmt, $db_username, $db_password, $db_level, $db_kode_prodi);
+        $found = mysqli_stmt_fetch($stmt);
+        mysqli_stmt_close($stmt);
+        if ($found && siakad_upgrade_password($koneksi, $db_username, $db_level, $password, $db_password)) {
+            $ip_address = get_client_ip();
+            $os = getOS($user_agent);
+            $browser = getBrowser($user_agent);
+            $date = date('Y-m-d');
+            $time = date('H:i:s');
+            $update_stmt = mysqli_prepare($koneksi, 'UPDATE user SET ip = ?, os = ?, browser = ?, tgl = ?, waktu = ? WHERE username = ? AND level = ?');
+            mysqli_stmt_bind_param($update_stmt, 'sssssss', $ip_address, $os, $browser, $date, $time, $db_username, $db_level);
+            mysqli_stmt_execute($update_stmt);
+            mysqli_stmt_close($update_stmt);
+            session_regenerate_id(true);
+            $_SESSION['username'] = $db_username;
+            $_SESSION['level'] = $db_level;
+            $_SESSION['kode_prodi'] = $db_kode_prodi;
+            $_SESSION['login'] = true;
+            siakad_authenticate_session($koneksi);
+            siakad_refresh_session_cookie();
+            siakad_login_rate_limit(true);
+            header('location:login?status=sukses');
+            exit;
+        } else {
+            header('location:login?login=gagal');
+            exit;
 
-		}
-	}
+        }
+    } else {
+        header('location:login?login=gagal');
+        exit;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -57,9 +72,9 @@ if (isset($_POST['masuk'])) {
 <body class="login-page sidebar-collapse">
 
 
-	<?php 
-	if (isset($_GET['login'])=='gagal') {
-		echo "<script type='text/javascript'>
+	<?php
+    if (isset($_GET['login']) == 'gagal') {
+        echo "<script type='text/javascript'>
 		setTimeout(function () {
 			swal({
 				title: 'Gagal',
@@ -73,9 +88,9 @@ if (isset($_POST['masuk'])) {
 					window.location.replace('login');
 					},3000);
 					</script>";
-				}
-				if (isset($_GET['status'])=='sukses') {
-					echo "<script type='text/javascript'>
+    }
+if (isset($_GET['status']) == 'sukses') {
+    echo "<script type='text/javascript'>
 					setTimeout(function () {
 						swal({
 							title: 'Login Berhasil',
@@ -89,8 +104,8 @@ if (isset($_POST['masuk'])) {
 								window.location.replace('dashboard');
 								},3000);
 								</script>";
-							}
-							?>
+}
+?>
 							<!-- Navbar -->
 
 							<!-- End Navbar -->

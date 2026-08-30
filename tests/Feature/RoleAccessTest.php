@@ -105,18 +105,24 @@ class RoleAccessTest extends TestCase
         ]);
 
         $response = $this->actingAs($student)->get(route('portal.siakad'));
-        $location = $response->headers->get('Location');
-        $response->assertRedirect()->assertSessionHas('active_system', 'siakad');
+        $response->assertOk()->assertViewIs('portal.siakad-handoff')
+            ->assertSessionHas('active_system', 'siakad');
 
-        parse_str(parse_url($location, PHP_URL_QUERY), $query);
+        $query = [
+            'token' => $response->viewData('token'),
+            'signature' => $response->viewData('signature'),
+        ];
         $decode = fn (string $value) => base64_decode(strtr($value, '-_', '+/'));
         $payload = json_decode($decode($query['token']), true);
         $signature = $decode($query['signature']);
 
         $this->assertSame('20260001', $payload['sub']);
         $this->assertSame('mhs', $payload['role']);
+        $this->assertSame(config('app.url'), $payload['iss']);
+        $this->assertSame('https://siakad.example.test', $payload['aud']);
         $this->assertLessThanOrEqual(60, $payload['exp'] - $payload['iat']);
         $this->assertTrue(hash_equals(hash_hmac('sha256', $query['token'], $secret, true), $signature));
+        $response->assertDontSee('?token=')->assertSee('method="post"', false);
     }
 
     public function test_siakad_lama_menggantikan_endpoint_akademik_internal(): void

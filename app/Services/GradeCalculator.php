@@ -2,7 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Assignment;
+use App\Models\AssignmentGroup;
 use App\Models\Course;
+use App\Models\GradeScore;
+use App\Models\Submission;
 use App\Models\User;
 use App\Support\Grades;
 use Illuminate\Support\Collection;
@@ -27,27 +31,28 @@ class GradeCalculator
         // Persentase kehadiran per mahasiswa (bila ada komponen bertipe kehadiran).
         $attendancePercents = [];
         if ($components->contains(fn ($c) => $c->isAttendance())) {
-            $grid = (new AttendanceService())->gridForCourse($course);
+            $grid = (new AttendanceService)->gridForCourse($course);
             foreach ($grid['summary'] as $uid => $s) {
                 $attendancePercents[$uid] = $s['percent']; // null bila belum ada sesi
             }
         }
 
-        // semua submission bernilai untuk kelas ini
-        $submissions = \App\Models\Submission::whereIn('assignment_id', $assignments->pluck('id'))
-            ->whereNotNull('score')
+        // Semua submission yang sudah dikirim, termasuk yang masih menunggu
+        // koreksi. Submission tanpa nilai tidak boleh diam-diam dianggap nol.
+        $submissions = Submission::whereIn('assignment_id', $assignments->pluck('id'))
+            ->whereNotNull('submitted_at')
             ->get()
             ->groupBy('user_id');
 
         // Tugas kelompok: pengumpulan bersama dipetakan ke SEMUA anggota → [assignment_id][user_id] => submission.
         $groupSubs = [];
-        $groupAssignmentIds = $assignments->where('mode', \App\Models\Assignment::MODE_KELOMPOK)->pluck('id');
+        $groupAssignmentIds = $assignments->where('mode', Assignment::MODE_KELOMPOK)->pluck('id');
         if ($groupAssignmentIds->isNotEmpty()) {
-            $groups = \App\Models\AssignmentGroup::whereIn('assignment_id', $groupAssignmentIds)
+            $groups = AssignmentGroup::whereIn('assignment_id', $groupAssignmentIds)
                 ->with(['members:id', 'submission'])
                 ->get();
             foreach ($groups as $g) {
-                if ($g->submission && ! is_null($g->submission->score)) {
+                if ($g->submission && $g->submission->submitted_at) {
                     foreach ($g->members as $m) {
                         $groupSubs[$g->assignment_id][$m->id] = $g->submission;
                     }
@@ -56,7 +61,7 @@ class GradeCalculator
         }
 
         // Nilai manual (untuk komponen tanpa tugas online) → [component_id][user_id]
-        $manual = \App\Models\GradeScore::whereIn('grade_component_id', $components->pluck('id'))
+        $manual = GradeScore::whereIn('grade_component_id', $components->pluck('id'))
             ->whereNotNull('score')
             ->get()
             ->groupBy('grade_component_id')
@@ -66,12 +71,21 @@ class GradeCalculator
             $studentSubs = ($submissions->get($student->id) ?? collect())->keyBy('assignment_id');
             $componentScores = [];
             $overrides = [];
+            $pendingComponents = [];
             $final = 0.0;
 
             foreach ($components as $component) {
                 $compAssignments = $assignmentsByComponent->get($component->id) ?? collect();
                 $override = $manual->get($component->id)?->get($student->id);
                 $isOverride = false;
+                $hasPendingSubmission = $compAssignments->contains(function ($assignment) use ($studentSubs, $groupSubs, $student) {
+                    $submission = $studentSubs->get($assignment->id) ?? ($groupSubs[$assignment->id][$student->id] ?? null);
+
+                    return $submission && is_null($submission->score);
+                });
+                if ($hasPendingSubmission) {
+                    $pendingComponents[] = (int) $component->id;
+                }
 
                 if ($override) {
                     // Nilai manual dosen SELALU diutamakan — termasuk override atas
@@ -87,11 +101,10 @@ class GradeCalculator
                     $percents = [];
                     foreach ($compAssignments as $a) {
                         $sub = $studentSubs->get($a->id) ?? ($groupSubs[$a->id][$student->id] ?? null);
-                        $percents[] = ($sub && $a->max_score > 0)
-                            ? (float) $sub->score / $a->max_score * 100
-                            : 0.0;
+                        $percents[] = ($sub && ! is_null($sub->score) && $a->max_score > 0)
+                            ? (float) $sub->score / $a->max_score * 100 : 0.0;
                     }
-                    $score = round(array_sum($percents) / count($percents), 2);
+                    $score = $hasPendingSubmission ? null : round(array_sum($percents) / count($percents), 2);
                 } else {
                     $score = null; // komponen manual, belum diisi
                 }
@@ -107,6 +120,7 @@ class GradeCalculator
                 'student' => $student,
                 'components' => $componentScores,
                 'overrides' => $overrides,
+                'pending_components' => $pendingComponents,
                 'final' => $final,
                 'letter' => Grades::letter($final),
             ];
@@ -119,6 +133,7 @@ class GradeCalculator
             'max' => $finals->count() ? $finals->max() : 0,
             'min' => $finals->count() ? $finals->min() : 0,
             'weight_total' => (int) $components->sum('weight'),
+            'pending_students' => $rows->filter(fn ($row) => $row['pending_components'] !== [])->count(),
         ];
 
         // ID komponen yang nilainya otomatis (dari tugas atau kehadiran); sisanya = input manual

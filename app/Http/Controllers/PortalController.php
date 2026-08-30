@@ -25,7 +25,7 @@ class PortalController extends Controller
     }
 
     /** Masuk ke SIAKAD PHP lama melalui tiket HMAC singkat, atau login lamanya. */
-    public function siakad(Request $request): RedirectResponse
+    public function siakad(Request $request): View|RedirectResponse
     {
         $request->session()->put('active_system', 'siakad');
         $baseUrl = config('services.legacy_siakad.url');
@@ -46,13 +46,15 @@ class PortalController extends Controller
         $issuedAt = now()->timestamp;
         $payload = [
             'sub' => $user->nim_nip ?: $user->email,
-            'role' => match ($user->role) {
-                User::ROLE_ADMIN => 'admin',
-                User::ROLE_KAPRODI => 'Jurusan/Prodi',
-                User::ROLE_DOSEN => 'dosen',
+            'role' => match (true) {
+                $user->isAdmin() => 'admin',
+                $user->isKaprodi() => 'Jurusan/Prodi',
+                $user->isDosen() => 'dosen',
                 default => 'mhs',
             },
             'name' => $user->name,
+            'iss' => (string) config('app.url'),
+            'aud' => rtrim((string) $baseUrl, '/'),
             'iat' => $issuedAt,
             'exp' => $issuedAt + 60,
             'nonce' => bin2hex(random_bytes(16)),
@@ -60,12 +62,14 @@ class PortalController extends Controller
 
         $encoded = $this->base64UrlEncode(json_encode($payload, JSON_THROW_ON_ERROR));
         $signature = $this->base64UrlEncode(hash_hmac('sha256', $encoded, $secret, true));
-        $separator = str_contains($ssoUrl, '?') ? '&' : '?';
 
-        return redirect()->away($ssoUrl.$separator.http_build_query([
+        // Tiket tidak diletakkan di URL agar tidak masuk riwayat browser,
+        // access log, referrer, atau layanan analitik.
+        return view('portal.siakad-handoff', [
+            'ssoUrl' => $ssoUrl,
             'token' => $encoded,
             'signature' => $signature,
-        ]));
+        ]);
     }
 
     private function base64UrlEncode(string $value): string

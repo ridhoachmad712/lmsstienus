@@ -9,88 +9,90 @@
 -->
 <?php
 session_start();
-include "../config/koneksi.php";
+include '../config/koneksi.php';
 $username = $_SESSION['username'];
 $password = $_SESSION['password'];
 $level = $_SESSION['level'];
-if (!isset($_SESSION["login"])) {
-  header("location: login");
+if (! isset($_SESSION['login'])) {
+    header('location: login');
 } else {
-  $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
-  if ($cek_user !== 1) {
-    header("location: login");
-  }
+    $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
+    if ($cek_user !== 1) {
+        header('location: login');
+    }
 }
 // --------------------------------------------------
-// pengaturan aplikasi 
+// pengaturan aplikasi
 $pengaturan = mysqli_query($koneksi, "SELECT * FROM pengaturan WHERE id_pengaturan='1'");
 $r_pengaturan = mysqli_fetch_array($pengaturan);
 // tambah data fakultas
 if (isset($_POST['tambah'])) {
-  $kode_fakultas = mysqli_real_escape_string($koneksi, $_POST['kode_fakultas']);
-  $nama_fakultas = mysqli_real_escape_string($koneksi, $_POST['nama_fakultas']);
-  $input = mysqli_query($koneksi, "INSERT INTO tbl_fakultas VALUES('$kode_fakultas','$nama_fakultas')");
-  if ($input == 1) {
-    echo "<script>window.alert('Fakultas $nama_fakultas Berhasil di tambahkan !!!')
+    $kode_fakultas = mysqli_real_escape_string($koneksi, $_POST['kode_fakultas']);
+    $nama_fakultas = mysqli_real_escape_string($koneksi, $_POST['nama_fakultas']);
+    $input = mysqli_query($koneksi, "INSERT INTO tbl_fakultas VALUES('$kode_fakultas','$nama_fakultas')");
+    if ($input == 1) {
+        echo "<script>window.alert('Fakultas $nama_fakultas Berhasil di tambahkan !!!')
     window.location='fakultas'</script>";
-  } else {
-    echo "<script>window.alert('Tambah Data Gagal !!!')
+    } else {
+        echo "<script>window.alert('Tambah Data Gagal !!!')
     window.location='fakultas'</script>";
-  }
+    }
 }
 // Edit data fakultas
 if (isset($_POST['update'])) {
-  $kode_fakultas = mysqli_real_escape_string($koneksi, $_POST['kode_fakultas']);
-  $nama_fakultas = mysqli_real_escape_string($koneksi, $_POST['nama_fakultas']);
-  $update = mysqli_query($koneksi, "UPDATE tbl_fakultas SET nama_fakultas='$nama_fakultas' WHERE kode_fakultas='$kode_fakultas'");
-  if ($update == 1) {
-    echo "<script>window.alert('Berhasil diupdate menjadi $nama_fakultas !!!')
+    $kode_fakultas = mysqli_real_escape_string($koneksi, $_POST['kode_fakultas']);
+    $nama_fakultas = mysqli_real_escape_string($koneksi, $_POST['nama_fakultas']);
+    $update = mysqli_query($koneksi, "UPDATE tbl_fakultas SET nama_fakultas='$nama_fakultas' WHERE kode_fakultas='$kode_fakultas'");
+    if ($update == 1) {
+        echo "<script>window.alert('Berhasil diupdate menjadi $nama_fakultas !!!')
     window.location='fakultas'</script>";
-  }
+    }
 }
 // Hapus data
 if (isset($_GET['aksi']) == 'hapus') {
-  $kode_fakultas = mysqli_real_escape_string($koneksi, $_GET['kode_fakultas']);
-  $hapus = mysqli_query($koneksi, "DELETE FROM tbl_fakultas WHERE kode_fakultas='$kode_fakultas'");
-  if ($hapus == 1) {
-    echo "<script>window.alert('Berhasil dihapus !!!')
+    $kode_fakultas = mysqli_real_escape_string($koneksi, $_GET['kode_fakultas']);
+    $hapus = mysqli_query($koneksi, "DELETE FROM tbl_fakultas WHERE kode_fakultas='$kode_fakultas'");
+    if ($hapus == 1) {
+        echo "<script>window.alert('Berhasil dihapus !!!')
     window.location='fakultas'</script>";
-  }
+    }
 }
 if (isset($_POST['import'])) {
-  require('php-excel-reader/excel_reader2.php');
-  // upload file xls
-  $target = basename($_FILES['fakultas']['name']);
-  move_uploaded_file($_FILES['fakultas']['tmp_name'], $target);
+    require 'php-excel-reader/excel_reader2.php';
+    // upload file xls
+    $target = basename($_FILES['fakultas']['name']);
+    move_uploaded_file($_FILES['fakultas']['tmp_name'], $target);
 
-  // beri permisi agar file xls dapat di baca
-  chmod($_FILES['fakultas']['name'], 0777);
+    // mengambil isi file xls
+    $data = new Spreadsheet_Excel_Reader($target, false);
+    // menghitung jumlah baris data yang ada
+    $jumlah_baris = $data->rowcount($sheet_index = 0);
 
-  // mengambil isi file xls
-  $data = new Spreadsheet_Excel_Reader($_FILES['fakultas']['name'], false);
-  // menghitung jumlah baris data yang ada
-  $jumlah_baris = $data->rowcount($sheet_index = 0);
+    // jumlah default data yang berhasil di import
+    $berhasil = 0;
+    $stmt_import = mysqli_prepare($koneksi, 'INSERT INTO tbl_fakultas VALUES(?,?)');
+    for ($i = 2; $i <= $jumlah_baris; $i++) {
 
-  // jumlah default data yang berhasil di import
-  $berhasil = 0;
-  for ($i = 2; $i <= $jumlah_baris; $i++) {
+        // menangkap data dan memasukkan ke variabel sesuai dengan kolumnya masing-masing
+        $kode_fakultas = $data->val($i, 1);
+        $nama_fakultas = $data->val($i, 2);
 
-    // menangkap data dan memasukkan ke variabel sesuai dengan kolumnya masing-masing
-    $kode_fakultas  = $data->val($i, 1);
-    $nama_fakultas   = $data->val($i, 2);
-
-    // input data ke database (table data_pegawai)
-    // mysqli_query($koneksi,"INSERT INTO siswa values('$nim','$nama_mhs','$status','$waktu')");
-    if ($kode_fakultas != "" && $nama_fakultas != "") {
-      mysqli_query($koneksi, "INSERT INTO tbl_fakultas VALUES('$kode_fakultas','$nama_fakultas')");
-      $berhasil++;
+        // input data ke database (table data_pegawai)
+        // mysqli_query($koneksi,"INSERT INTO siswa values('$nim','$nama_mhs','$status','$waktu')");
+        if ($kode_fakultas != '' && $nama_fakultas != '') {
+            mysqli_stmt_bind_param($stmt_import, 'ss', $kode_fakultas, $nama_fakultas);
+            if (mysqli_stmt_execute($stmt_import)) {
+                $berhasil++;
+            }
+        }
     }
-  }
+    mysqli_stmt_close($stmt_import);
 
-  // hapus kembali file .xls yang di upload tadi
+    // hapus kembali file .xls yang di upload tadi
+    @unlink($target);
 
-  // alihkan halaman ke index.php
-  echo "<script>window.alert('$berhasil Data Institus Berhasil Diimport !!!')
+    // alihkan halaman ke index.php
+    echo "<script>window.alert('$berhasil Data Institus Berhasil Diimport !!!')
   window.location='fakultas'</script>";
 }
 ?>
@@ -112,15 +114,15 @@ if (isset($_POST['import'])) {
 <body class="antialiased">
   <div class="wrapper">
     <?php
-    require_once "../template/header.php";
-    ?>
+    require_once '../template/header.php';
+?>
     <div class="navbar-expand-md">
       <div class="collapse navbar-collapse" id="navbar-menu">
         <div class="navbar navbar-light">
           <div class="container-xl">
             <?php
-            require_once "../template/menu.php";
-            ?>
+        require_once '../template/menu.php';
+?>
           </div>
         </div>
       </div>
@@ -203,8 +205,8 @@ if (isset($_POST['import'])) {
         </div>
       </div>
       <?php
-      require_once "../template/footer.php";
-      ?>
+      require_once '../template/footer.php';
+?>
     </div>
   </div>
   <!--  -->

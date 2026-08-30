@@ -5,6 +5,25 @@
 @section('content')
 @include('courses._hero')
 
+@if ($course->siakad_schedule_id)
+    @if ($siakadRoster['error'])
+        <div class="alert alert-warning"><i class="ti ti-plug-connected-x me-1"></i>{{ $siakadRoster['error'] }}</div>
+    @elseif ($siakadRoster['available'] && ($siakadRoster['missing']->isNotEmpty() || $siakadRoster['officialOnly']->isNotEmpty()))
+        <div class="alert alert-danger">
+            <div class="fw-bold mb-1"><i class="ti ti-users-minus me-1"></i>Peserta LMS belum sama dengan KRS resmi</div>
+            @if ($siakadRoster['missing']->isNotEmpty())
+                <div>Tidak ada di KRS resmi: {{ $siakadRoster['missing']->map(fn ($s) => $s->name.' ('.($s->nim_nip ?: 'NIM kosong').')')->join(', ') }}.</div>
+            @endif
+            @if ($siakadRoster['officialOnly']->isNotEmpty())
+                <div>Ada di KRS tetapi belum masuk LMS: {{ $siakadRoster['officialOnly']->join(', ') }}.</div>
+            @endif
+            <div class="small mt-1">Selaraskan peserta sebelum pembelajaran berjalan agar nilai akhir tidak gagal disinkronkan.</div>
+        </div>
+    @elseif ($siakadRoster['available'])
+        <div class="alert alert-success"><i class="ti ti-circle-check me-1"></i>Seluruh peserta LMS sesuai dengan KRS resmi SIAKAD.</div>
+    @endif
+@endif
+
 {{-- Akses mahasiswa ke kelas LMS. --}}
 <div class="card mb-3">
     <div class="card-body d-flex align-items-center flex-wrap gap-3">

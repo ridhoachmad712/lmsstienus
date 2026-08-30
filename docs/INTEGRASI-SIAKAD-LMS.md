@@ -13,8 +13,8 @@ panjang dan jangan pernah commit nilainya ke Git.
 
 ```dotenv
 LEGACY_SIAKAD_ENABLED=true
-LEGACY_SIAKAD_URL=https://siakad.stienus.ac.id/
-LEGACY_SIAKAD_SSO_URL=https://siakad.stienus.ac.id/pages/sso.php
+LEGACY_SIAKAD_URL=https://akademik.stienus.ac.id/siakad
+LEGACY_SIAKAD_SSO_URL=https://akademik.stienus.ac.id/siakad/pages/sso.php
 LEGACY_SIAKAD_SSO_SECRET=ganti-dengan-secret-acak-minimal-32-karakter
 
 # Koneksi kedua khusus sinkronisasi nilai LMS -> SIAKAD
@@ -41,10 +41,11 @@ koneksi default.
 
 ## Konfigurasi SIAKAD PHP lama
 
-Source runtime SIAKAD lama sudah tersedia pada folder `siakad-legacy` di
-repository yang sama. Deploy folder tersebut ke document root SIAKAD yang sudah
-ada. Folder itu tidak boleh diletakkan di dalam `public` Laravel karena kedua
-aplikasi memiliki entry point dan konfigurasi server yang berbeda.
+Source runtime SIAKAD lama tersedia pada folder `siakad-legacy` di repository
+yang sama. Deploy seluruh repository sekali, lalu jalankan `php artisan
+lms:prepare-deployment`. Perintah itu membuat `public/siakad` sebagai symlink ke
+`siakad-legacy`, sehingga kedua aplikasi ikut dalam satu `git pull` tanpa
+menduplikasi source.
 
 Git sengaja tidak membawa database dump, kredensial, foto pengguna, log, arsip,
 serta spreadsheet impor/ekspor. Saat melakukan `git pull` pada instalasi lama,
@@ -54,7 +55,9 @@ Pasang environment variable pada hosting SIAKAD:
 
 ```text
 SIAKAD_SSO_SECRET = nilai yang sama dengan LEGACY_SIAKAD_SSO_SECRET
-LMS_URL = https://lms.stienus.ac.id/portal
+SIAKAD_SSO_ISSUER = https://akademik.stienus.ac.id
+SIAKAD_PUBLIC_URL = https://akademik.stienus.ac.id/siakad
+LMS_URL = https://akademik.stienus.ac.id/portal
 SIAKAD_DB_HOST = alamat server database
 SIAKAD_DB_PORT = 3306
 SIAKAD_DB_NAME = nama database SIAKAD lama
@@ -90,10 +93,10 @@ admin/kaprodi juga perlu diisi `nim_nip` dengan username SIAKAD agar SSO berhasi
 
 ## Cara kerja keamanan
 
-LMS membuat tiket HMAC-SHA256 yang hanya berlaku 60 detik. SIAKAD memverifikasi
-signature, waktu kedaluwarsa, identitas, dan peran, kemudian membentuk sesi lama
-tanpa mengirim atau mengubah password SIAKAD. HTTPS wajib digunakan pada kedua
-aplikasi.
+LMS membuat tiket HMAC-SHA256 yang hanya berlaku 60 detik dan mengirimkannya
+melalui POST, bukan URL. SIAKAD memverifikasi signature, issuer, audience, waktu,
+identitas, peran, serta nonce sekali pakai, kemudian membentuk sesi lama tanpa
+mengirim password SIAKAD. HTTPS wajib digunakan.
 
 ## Sinkronisasi nilai akhir LMS ke SIAKAD
 

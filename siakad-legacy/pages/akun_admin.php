@@ -7,51 +7,51 @@
 * Copyright 2018-2021 codecalm.net Paweł Kuna
 * Licensed under MIT (https://github.com/tabler/tabler/blob/master/LICENSE)
 -->
-<?php 
+<?php
 session_start();
-include"../config/koneksi.php";
-$username=$_SESSION['username'];
-$password=$_SESSION['password'];
-$level=$_SESSION['level'];
-if (!isset($_SESSION["login"]) ) {
-  header("location: login");
-}else{
-  $cek_user=mysqli_num_rows(mysqli_query($koneksi,"SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
-  if ($cek_user !== 1) {
-    header("location: login");
-  }
+include '../config/koneksi.php';
+$username = $_SESSION['username'];
+$password = $_SESSION['password'];
+$level = $_SESSION['level'];
+if (! isset($_SESSION['login'])) {
+    header('location: login');
+} else {
+    $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
+    if ($cek_user !== 1) {
+        header('location: login');
+    }
 }
 // --------------------------------------------------
-// pengaturan aplikasi 
-$pengaturan=mysqli_query($koneksi,"SELECT * FROM pengaturan WHERE id_pengaturan='1'");
-$r_pengaturan=mysqli_fetch_array($pengaturan);
+// pengaturan aplikasi
+$pengaturan = mysqli_query($koneksi, "SELECT * FROM pengaturan WHERE id_pengaturan='1'");
+$r_pengaturan = mysqli_fetch_array($pengaturan);
 // tambah data fakultas
 if (isset($_POST['tambah'])) {
-  $username=mysqli_real_escape_string($koneksi, $_POST['username']);
-  $password=md5($_POST['password']);
-  $input=mysqli_query($koneksi,"INSERT INTO user VALUES(NULL,'$username','$password','','admin','','','','0000-00-00','')");
-  echo "<script>window.alert('Tambah user Berhasil !!!')
+    $username = mysqli_real_escape_string($koneksi, $_POST['username']);
+    $password = mysqli_real_escape_string($koneksi, siakad_hash_password($koneksi, $_POST['password']));
+    $input = mysqli_query($koneksi, "INSERT INTO user VALUES(NULL,'$username','$password','','admin','','','','0000-00-00','')");
+    echo "<script>window.alert('Tambah user Berhasil !!!')
   window.location='akun_admin'</script>";
 }
 // Edit data fakultas
 if (isset($_POST['update'])) {
-  $kode_matkul=mysqli_real_escape_string($koneksi, $_POST['kode_matkul']);
-  $nama_matkul=mysqli_real_escape_string($koneksi, $_POST['nama_matkul']);
-  $sks=mysqli_real_escape_string($koneksi, $_POST['sks']);
-  $update=mysqli_query($koneksi,"UPDATE mata_kuliah SET nama_matkul='$nama_matkul', sks='$sks' WHERE kode_matkul='$kode_matkul'");
-  if ($update == 1) {
-    echo "<script>window.alert('Berhasil diupdate menjadi $nama_matkul !!!')
+    $kode_matkul = mysqli_real_escape_string($koneksi, $_POST['kode_matkul']);
+    $nama_matkul = mysqli_real_escape_string($koneksi, $_POST['nama_matkul']);
+    $sks = mysqli_real_escape_string($koneksi, $_POST['sks']);
+    $update = mysqli_query($koneksi, "UPDATE mata_kuliah SET nama_matkul='$nama_matkul', sks='$sks' WHERE kode_matkul='$kode_matkul'");
+    if ($update == 1) {
+        echo "<script>window.alert('Berhasil diupdate menjadi $nama_matkul !!!')
     window.location='mata_kuliah'</script>";
-  }
+    }
 }
 // Hapus data
-if (isset($_GET['aksi'])=='hapus') {
-  $id=mysqli_real_escape_string($koneksi, $_GET['id_user']);
-  $hapus=mysqli_query($koneksi,"DELETE FROM user WHERE id_user='$id'");
-  if ($hapus==1) {
-    echo "<script>window.alert('Akun Berhasil dihapus !!!')
+if (isset($_GET['aksi']) == 'hapus') {
+    $id = mysqli_real_escape_string($koneksi, $_GET['id_user']);
+    $hapus = mysqli_query($koneksi, "DELETE FROM user WHERE id_user='$id'");
+    if ($hapus == 1) {
+        echo "<script>window.alert('Akun Berhasil dihapus !!!')
     window.location='akun_admin'</script>";
-  }
+    }
 }
 ?>
 <html lang="en">
@@ -69,16 +69,16 @@ if (isset($_GET['aksi'])=='hapus') {
 </head>
 <body class="antialiased">
   <div class="wrapper">
-    <?php 
-    require_once"../template/header.php";
-    ?>
+    <?php
+    require_once '../template/header.php';
+?>
     <div class="navbar-expand-md">
       <div class="collapse navbar-collapse" id="navbar-menu">
         <div class="navbar navbar-light">
           <div class="container-xl">
-            <?php 
-            require_once"../template/menu.php";
-            ?>
+            <?php
+        require_once '../template/menu.php';
+?>
           </div>
         </div>
       </div>
@@ -116,19 +116,19 @@ if (isset($_GET['aksi'])=='hapus') {
                   <thead>
                     <th>NO</th>
                     <th>Username</th>
-                    <th>Password (Enkripsi)</th>
+                    <th>Status kata sandi</th>
                     <th>Opsi</th>
                   </thead>
                   <tbody>
-                    <?php 
-                    $no=1;
-                    $user=mysqli_query($koneksi,"SELECT * FROM user WHERE level='admin'");
-                    while ($t_user=mysqli_fetch_array($user)) {
-                      ?>
+                    <?php
+        $no = 1;
+$user = mysqli_query($koneksi, "SELECT * FROM user WHERE level='admin'");
+while ($t_user = mysqli_fetch_array($user)) {
+    ?>
                       <tr>
                         <td><?= $no++ ?>.</td>
                         <td><?= $t_user['username']; ?></td>
-                        <td><?= $t_user['password']; ?></td>
+                        <td><span class="badge bg-green-lt">Tersimpan aman</span></td>
                         <td>
                           <a onclick="return confirm('Hapus data user ini ?')" href="akun_admin?aksi=hapus&id_user=<?= $t_user['id_user']; ?>">
                             <!-- Download SVG icon from http://tabler-icons.io/i/trash -->
@@ -148,9 +148,9 @@ if (isset($_GET['aksi'])=='hapus') {
         </div>
       </div>
     </div>
-    <?php 
-    require_once"../template/footer.php";
-    ?>
+    <?php
+    require_once '../template/footer.php';
+?>
   </div>
 </div>
 
@@ -164,12 +164,12 @@ if (isset($_GET['aksi'])=='hapus') {
     <div class="offcanvas-body">
      <div>
       <div class="mb-3">
-        <label>Username</label> 
+        <label>Username</label>
         <input type="text" name="username" placeholder="Username" class="form-control" required="require">
       </div>
       <div class="mb-3">
-        <label>Password</label> 
-        <input type="text" name="password" placeholder="Password" class="form-control" required="require">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Kata sandi awal" class="form-control" minlength="8" autocomplete="new-password" required>
       </div>
     </div>
     <div class="mt-3">

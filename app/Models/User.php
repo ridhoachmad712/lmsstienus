@@ -3,16 +3,20 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Services\Transcript;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'email', 'password', 'role', 'prodi_id', 'kurikulum_id', 'advisor_id', 'nim_nip', 'phone', 'avatar', 'email_notifications',
+#[Fillable(['name', 'email', 'password', 'must_change_password', 'role', 'prodi_id', 'kurikulum_id', 'advisor_id', 'nim_nip', 'phone', 'avatar', 'email_notifications',
     'gender', 'birth_place', 'birth_date', 'address', 'entry_year', 'student_status', 'nidn', 'jabatan',
     'ipk_cache', 'sks_cache', 'ips_cache'])]
 #[Hidden(['password', 'remember_token'])]
@@ -22,8 +26,11 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     public const ROLE_ADMIN = 'admin';
+
     public const ROLE_KAPRODI = 'kaprodi';
+
     public const ROLE_DOSEN = 'dosen';
+
     public const ROLE_MAHASISWA = 'mahasiswa';
 
     /**
@@ -34,6 +41,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
             'email_notifications' => 'boolean',
             'birth_date' => 'date',
             'ipk_cache' => 'float',
@@ -54,18 +62,18 @@ class User extends Authenticatable
         };
     }
 
-    public function prodi(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class);
     }
 
-    public function kurikulum(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function kurikulum(): BelongsTo
     {
         return $this->belongsTo(Kurikulum::class);
     }
 
     /** Dosen pembimbing akademik (wali) mahasiswa ini. */
-    public function advisor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function advisor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'advisor_id');
     }
@@ -77,7 +85,7 @@ class User extends Authenticatable
     }
 
     /** Prodi yang dikepalai user ini (bila menjabat kaprodi). */
-    public function headedProdi(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function headedProdi(): HasOne
     {
         return $this->hasOne(Prodi::class, 'kaprodi_id');
     }
@@ -152,7 +160,7 @@ class User extends Authenticatable
     /** URL foto profil, atau null bila belum ada. */
     public function avatarUrl(): ?string
     {
-        return $this->avatar ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->avatar) : null;
+        return $this->avatar ? Storage::disk('public')->url($this->avatar) : null;
     }
 
     public function initial(): string
@@ -199,7 +207,7 @@ class User extends Authenticatable
      */
     public function refreshAcademicCache(): void
     {
-        $t = (new \App\Services\Transcript())->forStudent($this);
+        $t = (new Transcript)->forStudent($this);
 
         $ips = null;
         foreach ($t['periods'] as $p) {

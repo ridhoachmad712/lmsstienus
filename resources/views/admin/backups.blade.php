@@ -15,7 +15,7 @@
 <div class="row justify-content-center">
     <div class="col-lg-9">
         <div class="alert alert-info">
-            <i class="ti ti-info-circle me-1"></i>Backup juga berjalan otomatis setiap hari pukul 02.00 WITA. Berkas disimpan di <code>storage/app/backups</code>. Koneksi aktif: <strong>{{ strtoupper($connection) }}</strong> (backup {{ $connection === 'mysql' ? '.sql' : '.sqlite' }}).
+            <i class="ti ti-info-circle me-1"></i>Backup berjalan otomatis pukul 02.00 WITA, disimpan privat di <code>storage/app/backups</code>, dan dibersihkan sesuai masa retensi. Koneksi LMS: <strong>{{ strtoupper($connection) }}</strong> ({{ $connection === 'mysql' ? '.sql' : '.sqlite' }}). Backup SIAKAD/offsite mengikuti konfigurasi server.
         </div>
 
         {{-- Unggah / impor berkas backup --}}

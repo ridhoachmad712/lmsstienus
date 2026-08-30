@@ -33,6 +33,12 @@
         <div>Ada <strong>{{ $unlinkedGraded }}</strong> tugas/kuis yang sudah dinilai tapi <strong>belum ditautkan</strong> ke komponen nilai, jadi nilainya tidak masuk rekap. Buka tugas → Edit → pilih <em>Komponen Nilai</em>.</div>
     </div>
 @endif
+@if (($summary['pending_students'] ?? 0) > 0)
+    <div class="alert alert-danger d-flex align-items-center" role="alert">
+        <i class="ti ti-hourglass me-2 fs-3"></i>
+        <div><strong>{{ $summary['pending_students'] }} mahasiswa</strong> memiliki pengumpulan yang belum dinilai. Komponen terkait ditampilkan kosong dan finalisasi kelas/SIAKAD dikunci sampai koreksi selesai.</div>
+    </div>
+@endif
 
 {{-- Integrasi nilai resmi SIAKAD --}}
 @php($syncCounts = $gradeSyncs->countBy('status'))

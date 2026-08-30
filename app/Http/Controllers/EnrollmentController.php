@@ -132,6 +132,7 @@ class EnrollmentController extends Controller
 
             if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $skipped++;
+
                 continue;
             }
 
@@ -144,12 +145,14 @@ class EnrollmentController extends Controller
                     'nim_nip' => $nim !== '' ? $nim : null,
                     'role' => User::ROLE_MAHASISWA,
                     'password' => Hash::make($nim !== '' ? $nim : 'password'),
+                    'must_change_password' => true,
                 ]);
                 $created++;
             }
 
             if ($user->role !== User::ROLE_MAHASISWA) {
                 $skipped++;
+
                 continue;
             }
 

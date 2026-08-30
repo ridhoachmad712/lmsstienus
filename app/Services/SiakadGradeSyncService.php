@@ -56,6 +56,36 @@ class SiakadGradeSyncService
             || filled($connection['username'] ?? null);
     }
 
+    /** Bandingkan peserta LMS dengan KRS resmi segera setelah jadwal dipetakan. */
+    public function rosterOverview(Course $course): array
+    {
+        $result = ['available' => false, 'missing' => collect(), 'officialOnly' => collect(), 'error' => null];
+        if (! config('services.legacy_siakad.grade_sync_enabled') || ! $this->isConfigured() || ! $course->siakad_schedule_id) {
+            return $result;
+        }
+
+        try {
+            $schedule = $this->findSchedule((int) $course->siakad_schedule_id);
+            $this->assertScheduleMatchesCourse($course, $schedule);
+            $official = DB::connection('siakad')->table('krs_mhs')
+                ->where('id_jadwal', $schedule->id_jadwal)
+                ->where('id_thn_akademik', $schedule->id_thn_akademik)
+                ->pluck('nim_npm')->map(fn ($nim) => trim((string) $nim))->filter()->unique()->values();
+            $lms = $course->students()->get(['users.id', 'users.name', 'users.nim_nip']);
+            $lmsNims = $lms->pluck('nim_nip')->map(fn ($nim) => trim((string) $nim))->filter()->unique();
+
+            $result['available'] = true;
+            $result['missing'] = $lms->filter(fn ($student) => trim((string) $student->nim_nip) === ''
+                || ! $official->contains(trim((string) $student->nim_nip)))->values();
+            $result['officialOnly'] = $official->diff($lmsNims)->values();
+        } catch (Throwable $exception) {
+            report($exception);
+            $result['error'] = 'Daftar KRS resmi belum dapat diverifikasi.';
+        }
+
+        return $result;
+    }
+
     /** Jadwal SIAKAD yang kode mata kuliah dan periodenya cocok dengan kelas LMS. */
     public function scheduleCandidates(Course $course): Collection
     {
@@ -126,6 +156,10 @@ class SiakadGradeSyncService
 
         if ($gradeData['components']->isEmpty() || $gradeData['summary']['weight_total'] !== 100) {
             throw new DomainException('Komponen nilai harus tersedia dengan total bobot tepat 100%.');
+        }
+
+        if (($gradeData['summary']['pending_students'] ?? 0) > 0) {
+            throw new DomainException('Masih ada pengumpulan yang belum dinilai. Nilai belum boleh difinalisasi.');
         }
 
         foreach ($gradeData['rows'] as $row) {

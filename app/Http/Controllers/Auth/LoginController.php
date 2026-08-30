@@ -21,14 +21,19 @@ class LoginController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'string', 'email'],
+        $data = $request->validate([
+            'login' => ['nullable', 'string', 'max:255', 'required_without:email'],
+            'email' => ['nullable', 'string', 'max:255', 'required_without:login'],
             'password' => ['required', 'string'],
         ]);
 
+        $identifier = trim((string) ($data['login'] ?? $data['email']));
+        $field = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'nim_nip';
+        $credentials = [$field => $field === 'email' ? strtolower($identifier) : $identifier, 'password' => $data['password']];
+
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             throw ValidationException::withMessages([
-                'email' => 'Email atau kata sandi salah.',
+                'login' => 'Email/NIM/NIP atau kata sandi salah.',
             ]);
         }
 

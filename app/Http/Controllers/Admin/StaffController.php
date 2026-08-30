@@ -61,6 +61,7 @@ class StaffController extends Controller
     {
         $data = $this->validated($request);
         $data['email'] = strtolower($data['email']);
+        $data['must_change_password'] = true;
 
         // Password (plain) di-hash otomatis oleh cast 'hashed' di model User.
         User::create($data);
@@ -93,7 +94,7 @@ class StaffController extends Controller
     {
         $this->ensureStaff($staff);
         $new = $staff->nim_nip ?: 'password';
-        $staff->update(['password' => $new]); // di-hash oleh cast
+        $staff->update(['password' => $new, 'must_change_password' => true]); // di-hash oleh cast
 
         return back()->with('status', "Kata sandi {$staff->name} direset menjadi: {$new}");
     }
@@ -168,6 +169,7 @@ class StaffController extends Controller
                 'nim_nip' => $nip !== '' ? $nip : null,
                 'nidn' => $nidn !== '' ? $nidn : null,
                 'password' => Hash::make($nip !== '' ? $nip : 'password'),
+                'must_change_password' => true,
             ]);
             $created++;
         }

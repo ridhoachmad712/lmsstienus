@@ -9,57 +9,58 @@
 -->
 <?php
 session_start();
-include "../config/koneksi.php";
+include '../config/koneksi.php';
 $username = $_SESSION['username'];
 $password = $_SESSION['password'];
 $level = $_SESSION['level'];
-if (!isset($_SESSION["login"])) {
-  header("location: login");
+if (! isset($_SESSION['login'])) {
+    header('location: login');
 } else {
-  $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
-  if ($cek_user !== 1) {
-    header("location: login");
-  }
+    $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
+    if ($cek_user !== 1) {
+        header('location: login');
+    }
 }
 // --------------------------------------------------
-// pengaturan aplikasi 
+// pengaturan aplikasi
 $pengaturan = mysqli_query($koneksi, "SELECT * FROM pengaturan WHERE id_pengaturan='1'");
 $r_pengaturan = mysqli_fetch_array($pengaturan);
 // tambah data fakultas
 if (isset($_POST['simpan'])) {
-  $username = $_POST['pilih'];
-  $kode_prodi = "";
-  $ip = "";
-  $os = "";
-  $browser = "";
-  $waktu = "00:00:00";
-  $jumlah_dipilih = count($username);
-  for ($x = 0; $x < $jumlah_dipilih; $x++) {
-    $password = $username[$x];
-    $input = mysqli_query($koneksi, "INSERT INTO user VALUES(NULL,'$username[$x]','$password','$kode_prodi','dosen','$ip','$os','$browser','0000-00-00','$waktu')");
-  }
-  echo "<script>window.alert('Akun Berhasil ditambah !!!')
+    $username = $_POST['pilih'];
+    $kode_prodi = '';
+    $ip = '';
+    $os = '';
+    $browser = '';
+    $waktu = '00:00:00';
+    $jumlah_dipilih = count($username);
+    for ($x = 0; $x < $jumlah_dipilih; $x++) {
+        $account = mysqli_real_escape_string($koneksi, (string) $username[$x]);
+        $password = mysqli_real_escape_string($koneksi, siakad_hash_password($koneksi, $username[$x]));
+        $input = mysqli_query($koneksi, "INSERT INTO user VALUES(NULL,'$account','$password','$kode_prodi','dosen','$ip','$os','$browser','0000-00-00','$waktu')");
+    }
+    echo "<script>window.alert('Akun Berhasil ditambah !!!')
   window.location='akun_dosen'</script>";
 }
 // Edit data fakultas
 if (isset($_POST['update'])) {
-  $kode_matkul = mysqli_real_escape_string($koneksi, $_POST['kode_matkul']);
-  $nama_matkul = mysqli_real_escape_string($koneksi, $_POST['nama_matkul']);
-  $sks = mysqli_real_escape_string($koneksi, $_POST['sks']);
-  $update = mysqli_query($koneksi, "UPDATE mata_kuliah SET nama_matkul='$nama_matkul', sks='$sks' WHERE kode_matkul='$kode_matkul'");
-  if ($update == 1) {
-    echo "<script>window.alert('Berhasil diupdate menjadi $nama_matkul !!!')
+    $kode_matkul = mysqli_real_escape_string($koneksi, $_POST['kode_matkul']);
+    $nama_matkul = mysqli_real_escape_string($koneksi, $_POST['nama_matkul']);
+    $sks = mysqli_real_escape_string($koneksi, $_POST['sks']);
+    $update = mysqli_query($koneksi, "UPDATE mata_kuliah SET nama_matkul='$nama_matkul', sks='$sks' WHERE kode_matkul='$kode_matkul'");
+    if ($update == 1) {
+        echo "<script>window.alert('Berhasil diupdate menjadi $nama_matkul !!!')
     window.location='mata_kuliah'</script>";
-  }
+    }
 }
 // Hapus data
 if (isset($_GET['aksi']) == 'hapus') {
-  $id = mysqli_real_escape_string($koneksi, $_GET['id_user']);
-  $hapus = mysqli_query($koneksi, "DELETE FROM user WHERE id_user='$id'");
-  if ($hapus == 1) {
-    echo "<script>window.alert('Akun Berhasil dihapus !!!')
+    $id = mysqli_real_escape_string($koneksi, $_GET['id_user']);
+    $hapus = mysqli_query($koneksi, "DELETE FROM user WHERE id_user='$id'");
+    if ($hapus == 1) {
+        echo "<script>window.alert('Akun Berhasil dihapus !!!')
     window.location='akun_dosen'</script>";
-  }
+    }
 }
 ?>
 <html lang="en">
@@ -80,15 +81,15 @@ if (isset($_GET['aksi']) == 'hapus') {
 <body class="antialiased">
   <div class="wrapper">
     <?php
-    require_once "../template/header.php";
-    ?>
+    require_once '../template/header.php';
+?>
     <div class="navbar-expand-md">
       <div class="collapse navbar-collapse" id="navbar-menu">
         <div class="navbar navbar-light">
           <div class="container-xl">
             <?php
-            require_once "../template/menu.php";
-            ?>
+        require_once '../template/menu.php';
+?>
           </div>
         </div>
       </div>
@@ -127,20 +128,20 @@ if (isset($_GET['aksi']) == 'hapus') {
                       <th>NO</th>
                       <th>Nama Dosen</th>
                       <th>Username</th>
-                      <th>Password (Enkripsi)</th>
+                      <th>Status kata sandi</th>
                       <th>Opsi</th>
                     </thead>
                     <?php
-                    $no = 1;
-                    $user = mysqli_query($koneksi, "SELECT * FROM user
+        $no = 1;
+$user = mysqli_query($koneksi, "SELECT * FROM user
                     INNER JOIN dosen ON user.username=dosen.nip WHERE level='dosen'");
-                    while ($t_user = mysqli_fetch_array($user)) {
-                    ?>
+while ($t_user = mysqli_fetch_array($user)) {
+    ?>
                       <tr>
                         <td><?= $no++ ?>.</td>
                         <td><?= $t_user['nama_dosen']; ?></td>
                         <td><?= $t_user['username']; ?></td>
-                        <td><?= $t_user['password']; ?></td>
+                        <td><span class="badge bg-green-lt">Tersimpan aman</span></td>
                         <td>
                           <a onclick="return confirm('Hapus data user ini ?')" href="akun_dosen?aksi=hapus&id_user=<?= $t_user['id_user']; ?>">
                             <!-- Download SVG icon from http://tabler-icons.io/i/trash -->
@@ -167,8 +168,8 @@ if (isset($_GET['aksi']) == 'hapus') {
         </div>
       </div>
       <?php
-      require_once "../template/footer.php";
-      ?>
+      require_once '../template/footer.php';
+?>
     </div>
   </div>
 
@@ -192,14 +193,14 @@ if (isset($_GET['aksi']) == 'hapus') {
                 </tr>
               </thead>
               <?php
-              $dosen = mysqli_query($koneksi, "SELECT * FROM dosen ORDER BY nama_dosen ASC");
-              while ($t_dosen = mysqli_fetch_array($dosen)) {
-                $nip = $t_dosen['nip'];
-              ?>
+        $dosen = mysqli_query($koneksi, 'SELECT * FROM dosen ORDER BY nama_dosen ASC');
+while ($t_dosen = mysqli_fetch_array($dosen)) {
+    $nip = $t_dosen['nip'];
+    ?>
                 <?php
-                $cek_data = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$nip'"));
-                if ($cek_data > 0) {
-                ?>
+      $cek_data = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$nip'"));
+    if ($cek_data > 0) {
+        ?>
 
                 <?php } else { ?>
                   <tr>
@@ -208,7 +209,7 @@ if (isset($_GET['aksi']) == 'hapus') {
                     <td><?= $t_dosen['nama_dosen']; ?></td>
                   </tr>
               <?php }
-              } ?>
+                } ?>
             </table>
           </div>
           <div class="modal-footer">

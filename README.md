@@ -14,8 +14,8 @@ SIAKAD lama.
 - Setelah kelas selesai, dosen dapat memfinalisasi nilai LMS dan mengirimkannya ke KHS resmi SIAKAD; hanya mahasiswa dengan KRS resmi yang diproses.
 - Saat integrasi SIAKAD lama diaktifkan, endpoint akademik internal Laravel otomatis dinonaktifkan.
 
-Petunjuk konfigurasi hosting dan SSO tersedia di
-[docs/INTEGRASI-SIAKAD-LMS.md](docs/INTEGRASI-SIAKAD-LMS.md).
+Petunjuk konfigurasi hosting tersedia di [docs/deploy.md](docs/deploy.md),
+sedangkan rincian integrasi ada di [docs/INTEGRASI-SIAKAD-LMS.md](docs/INTEGRASI-SIAKAD-LMS.md).
 
 Source runtime SIAKAD lama kini ikut dalam repository ini di folder
 [`siakad-legacy`](siakad-legacy). Data produksi, foto pengguna, dump database,
@@ -86,11 +86,11 @@ Sub-navigasi per-kelas: Materi · Tugas & Kuis · Penilaian · Kehadiran · Foru
 - [x] **Analitik kelas:** distribusi nilai (bar) & tren kehadiran (line) via Chart.js (self-host), tabel mahasiswa berisiko (nilai <60 / hadir <75%), ringkasan statistik; endpoint JSON `/api/course/{id}/analytics`
 - [x] **Notifikasi email:** `ReminderTugas` (H-1) & `PengumumanBaru` (mail, queued), command `lms:send-reminders`, scheduler harian 07.00 WITA, preferensi email per user
 - [x] **Integrasi AI (Claude):** `ClaudeService` (Messages API via Guzzle, model `claude-sonnet-4-6`), ringkasan materi PDF (smalot/pdfparser), generate soal PG dari materi/teks; aktif bila `ANTHROPIC_API_KEY` diisi (graceful bila kosong)
-- [x] **Keamanan & deploy:** rate limiting login (6/mnt) & submit/kuis (20/mnt), validasi whitelist berkas, CSRF aktif, command `lms:backup-db` + jadwal harian 02.00, panduan deploy (`../docs/deploy.md`)
+- [x] **Keamanan & deploy:** rate limiting login (6/mnt) & submit/kuis (20/mnt), file akademik privat, CSRF aktif, command `lms:backup-db` + jadwal harian 02.00, panduan deploy (`docs/deploy.md`)
 
 **Library tambahan (Fase 4):** `smalot/pdfparser`; aset Chart.js di `public/js/chart.umd.min.js`.
 
-🎉 **Keempat fase selesai.** Untuk produksi, lihat [panduan deploy](../docs/deploy.md) dan isi `ANTHROPIC_API_KEY` bila ingin fitur AI.
+🎉 **Keempat fase selesai.** Untuk produksi, lihat [panduan deploy](docs/deploy.md) dan isi `ANTHROPIC_API_KEY` bila ingin fitur AI.
 
 ## Struktur kunci
 

@@ -160,7 +160,7 @@ class AssignmentGroupController extends Controller
         $sub = $group->submission()->first();
         if ($sub) {
             if ($sub->file_path) {
-                Storage::disk('public')->delete($sub->file_path);
+                Storage::disk('local')->delete($sub->file_path);
             }
             $sub->delete();
         }

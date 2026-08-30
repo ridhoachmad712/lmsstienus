@@ -7,34 +7,38 @@
 * Copyright 2018-2021 codecalm.net Paweł Kuna
 * Licensed under MIT (https://github.com/tabler/tabler/blob/master/LICENSE)
 -->
-<?php 
+<?php
 session_start();
-include"../config/koneksi.php";
-// pengaturan aplikasi 
-$pengaturan=mysqli_query($koneksi,"SELECT * FROM pengaturan WHERE id_pengaturan='1'");
-$r_pengaturan=mysqli_fetch_array($pengaturan);
+// Endpoint login lama dinonaktifkan agar seluruh autentikasi memakai alur
+// login yang telah dilindungi rate limit dan migrasi hash password.
+header('Location: login', true, 302);
+exit;
+include '../config/koneksi.php';
+// pengaturan aplikasi
+$pengaturan = mysqli_query($koneksi, "SELECT * FROM pengaturan WHERE id_pengaturan='1'");
+$r_pengaturan = mysqli_fetch_array($pengaturan);
 // codingan masuk
 if (isset($_POST['masuk'])) {
-  $username=mysqli_real_escape_string($koneksi, $_POST['username']);
-  $password=mysqli_real_escape_string($koneksi, md5($_POST['password']));
-  $level=mysqli_real_escape_string($koneksi, $_POST['level']);
-  if ($username=="" OR $password=="") {
-    header("location:login?kesalahan=login");
-  }elseif ($username!=="" AND $password!=="") {
-    $user=mysqli_query($koneksi,"SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'");
-    $r_user=mysqli_fetch_array($user);
-    $data_user=mysqli_num_rows($user);
-    if ($data_user == 1) {
-      $_SESSION['password']=$r_user['password'];
-      $_SESSION['username']=$r_user['username'];
-      $_SESSION['level']=$r_user['level'];
-      $_SESSION['kode_prodi']=$r_user['kode_prodi'];
-      $_SESSION['login']=true;
-      header("location:login?Berhasil=login");
-    }else{
-      header("location:login?login=gagal");
+    $username = mysqli_real_escape_string($koneksi, $_POST['username']);
+    $password = mysqli_real_escape_string($koneksi, md5($_POST['password']));
+    $level = mysqli_real_escape_string($koneksi, $_POST['level']);
+    if ($username == '' or $password == '') {
+        header('location:login?kesalahan=login');
+    } elseif ($username !== '' and $password !== '') {
+        $user = mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'");
+        $r_user = mysqli_fetch_array($user);
+        $data_user = mysqli_num_rows($user);
+        if ($data_user == 1) {
+            $_SESSION['password'] = $r_user['password'];
+            $_SESSION['username'] = $r_user['username'];
+            $_SESSION['level'] = $r_user['level'];
+            $_SESSION['kode_prodi'] = $r_user['kode_prodi'];
+            $_SESSION['login'] = true;
+            header('location:login?Berhasil=login');
+        } else {
+            header('location:login?login=gagal');
+        }
     }
-  }
 }
 ?>
 <html lang="en">
@@ -67,16 +71,16 @@ if (isset($_POST['masuk'])) {
           <img style="height: 120px; width: 100%;" src="../img/siakad.jpg"><br><br>
           <!-- <h2 class="card-title text-center mb-4">Masuk menggunakan akun anda</h2> -->
           <div class="mb-3">
-           <?php 
-           if (isset($_GET['kesalahan'])=='login') {
-            ?>
+           <?php
+           if (isset($_GET['kesalahan']) == 'login') {
+               ?>
             <div class="alert btn-warning" role="alert">
               <p style="font-size: 12pt;"><strong>Kesalahan Login !!!</strong></p>
             </div>
           <?php } ?>
-          <?php 
-          if (isset($_GET['Berhasil'])=='login') {
-            ?>
+          <?php
+          if (isset($_GET['Berhasil']) == 'login') {
+              ?>
             <div class="alert btn-success" role="alert">
               <p style="font-size: 12pt;"><strong>Login Anda Berhasil</strong></p>
             </div>
@@ -88,9 +92,9 @@ if (isset($_POST['masuk'])) {
             </script>
 
           <?php } ?>
-          <?php 
-          if (isset($_GET['login'])=='gagal') {
-            ?>
+          <?php
+          if (isset($_GET['login']) == 'gagal') {
+              ?>
             <div class="alert btn-danger" role="alert">
               <p style="font-size: 12pt;"><strong>Username atau password salah !!!</strong></p>
             </div>

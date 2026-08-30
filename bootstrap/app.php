@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\DemoGuard;
+use App\Http\Middleware\LegacySiakadRedirect;
+use App\Http\Middleware\RequirePasswordChange;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SystemContext;
 use Illuminate\Foundation\Application;
@@ -19,9 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Pengaman mode demo (efektif hanya saat DEMO_MODE=true)
-        $middleware->appendToGroup('web', \App\Http\Middleware\DemoGuard::class);
+        $middleware->appendToGroup('web', DemoGuard::class);
         $middleware->appendToGroup('web', SystemContext::class);
-        $middleware->appendToGroup('web', \App\Http\Middleware\LegacySiakadRedirect::class);
+        $middleware->appendToGroup('web', LegacySiakadRedirect::class);
+        $middleware->appendToGroup('web', RequirePasswordChange::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

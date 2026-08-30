@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ChecksCourseAccess;
 use App\Models\Assignment;
+use App\Models\RubricScore;
 use App\Models\Submission;
+use App\Models\User;
 use App\Services\Notifier;
+use App\Support\Grades;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -78,9 +81,9 @@ class SubmissionController extends Controller
 
         if ($assignment->allowsFile() && $request->hasFile('file')) {
             if ($existing && $existing->file_path) {
-                Storage::disk('public')->delete($existing->file_path);
+                Storage::disk('local')->delete($existing->file_path);
             }
-            $payload['file_path'] = $request->file('file')->store('submissions/'.$assignment->id, 'public');
+            $payload['file_path'] = $request->file('file')->store('submissions/'.$assignment->id, 'local');
         }
 
         if ($existing) {
@@ -110,7 +113,7 @@ class SubmissionController extends Controller
         abort_if($submission->isGraded(), 403, 'Tugas sudah dinilai, tidak bisa dihapus.');
 
         if ($submission->file_path) {
-            Storage::disk('public')->delete($submission->file_path);
+            Storage::disk('local')->delete($submission->file_path);
         }
         $submission->delete();
 
@@ -124,7 +127,7 @@ class SubmissionController extends Controller
         $this->ensureCourseOwner($request, $submission->assignment->course);
 
         if ($submission->file_path) {
-            Storage::disk('public')->delete($submission->file_path);
+            Storage::disk('local')->delete($submission->file_path);
         }
         $submission->delete();
 
@@ -140,9 +143,9 @@ class SubmissionController extends Controller
         $subs = $assignment->submissions()->with('student')->whereNotNull('file_path')->get();
         abort_if($subs->isEmpty(), 404, 'Belum ada berkas untuk diunduh.');
 
-        $disk = Storage::disk('public');
+        $disk = Storage::disk('local');
         $tmp = storage_path('app/zip-'.uniqid().'.zip');
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         $zip->open($tmp, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
         foreach ($subs as $sub) {
@@ -177,7 +180,7 @@ class SubmissionController extends Controller
             foreach ($assignment->rubricCriteria as $crit) {
                 $pts = max(0, min((float) ($input[$crit->id] ?? 0), (float) $crit->max_points));
                 $total += $pts;
-                \App\Models\RubricScore::updateOrCreate(
+                RubricScore::updateOrCreate(
                     ['submission_id' => $submission->id, 'rubric_criterion_id' => $crit->id],
                     ['points' => $pts],
                 );
@@ -207,7 +210,7 @@ class SubmissionController extends Controller
                 $uid,
                 'grade',
                 'Nilai tugas tersedia',
-                $submission->assignment->title.' telah dinilai: '.\App\Support\Grades::num($data['score']),
+                $submission->assignment->title.' telah dinilai: '.Grades::num($data['score']),
                 route('assignments.show', $submission->assignment),
             );
         }
@@ -224,7 +227,7 @@ class SubmissionController extends Controller
         $isOwnerStudent = $this->studentOwns($submission, $user);
         abort_unless($isOwnerDosen || $isOwnerStudent, 403);
 
-        $disk = Storage::disk('public');
+        $disk = Storage::disk('local');
         abort_unless($submission->file_path && $disk->exists($submission->file_path), 404);
 
         // Disposisi "inline" → browser menampilkan (PDF/gambar), bukan mengunduh.
@@ -240,7 +243,7 @@ class SubmissionController extends Controller
         $isOwnerStudent = $this->studentOwns($submission, $user);
         abort_unless($isOwnerDosen || $isOwnerStudent, 403);
 
-        $disk = Storage::disk('public');
+        $disk = Storage::disk('local');
         abort_unless($submission->file_path && $disk->exists($submission->file_path), 404);
 
         $ext = pathinfo($submission->file_path, PATHINFO_EXTENSION);
@@ -250,7 +253,7 @@ class SubmissionController extends Controller
     }
 
     /** Mahasiswa berhak atas pengumpulan: pengumpul itu sendiri, atau (tugas kelompok) sesama anggota. */
-    private function studentOwns(Submission $submission, \App\Models\User $user): bool
+    private function studentOwns(Submission $submission, User $user): bool
     {
         if ($submission->user_id === $user->id) {
             return true;

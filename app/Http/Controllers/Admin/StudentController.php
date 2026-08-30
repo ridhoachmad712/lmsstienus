@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Course;
+use App\Models\Kurikulum;
 use App\Models\Prodi;
 use App\Models\User;
 use Illuminate\Contracts\Database\Eloquent\Builder;
@@ -63,7 +65,7 @@ class StudentController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $courses = \App\Models\Course::orderBy('name')->get(['id', 'name']);
+        $courses = Course::orderBy('name')->get(['id', 'name']);
         $prodis = Prodi::orderBy('name')->get();
 
         return view('admin.students.index', compact('students', 'q', 'courses', 'courseId', 'prodis', 'prodiId'));
@@ -73,7 +75,7 @@ class StudentController extends Controller
     {
         return view('admin.students.create', [
             'prodis' => Prodi::orderBy('name')->get(),
-            'kurikulums' => \App\Models\Kurikulum::orderByDesc('year')->get(),
+            'kurikulums' => Kurikulum::orderByDesc('year')->get(),
             'advisors' => $this->advisorOptions($request),
         ]);
     }
@@ -117,6 +119,7 @@ class StudentController extends Controller
         $data['prodi_id'] = $this->targetProdiId($request);
         // Sandi (plain) di-hash otomatis oleh cast; default = NIM (atau 'password').
         $data['password'] = ($data['password'] ?? null) ?: ($data['nim_nip'] ?? null ?: 'password');
+        $data['must_change_password'] = true;
 
         User::create($data);
 
@@ -130,7 +133,7 @@ class StudentController extends Controller
         return view('admin.students.edit', [
             'student' => $student,
             'prodis' => Prodi::orderBy('name')->get(),
-            'kurikulums' => \App\Models\Kurikulum::orderByDesc('year')->get(),
+            'kurikulums' => Kurikulum::orderByDesc('year')->get(),
             'advisors' => $this->advisorOptions($request),
         ]);
     }
@@ -161,7 +164,7 @@ class StudentController extends Controller
     {
         $this->authorizeStudent($request, $student);
         $new = $student->nim_nip ?: 'password';
-        $student->update(['password' => Hash::make($new)]);
+        $student->update(['password' => Hash::make($new), 'must_change_password' => true]);
 
         return back()->with('status', "Kata sandi {$student->name} direset menjadi: {$new}");
     }
@@ -184,7 +187,7 @@ class StudentController extends Controller
     {
         $students = User::whereIn('id', $this->selectedStudentIds($request))->get();
         foreach ($students as $student) {
-            $student->update(['password' => Hash::make($student->nim_nip ?: 'password')]);
+            $student->update(['password' => Hash::make($student->nim_nip ?: 'password'), 'must_change_password' => true]);
         }
 
         return back()->with('status', $students->count().' kata sandi direset menjadi NIM masing-masing (mahasiswa tanpa NIM → "password").');
@@ -231,6 +234,7 @@ class StudentController extends Controller
 
             if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL) || User::where('email', $email)->exists()) {
                 $skipped++;
+
                 continue;
             }
 
@@ -241,6 +245,7 @@ class StudentController extends Controller
                 'role' => User::ROLE_MAHASISWA,
                 'prodi_id' => $prodiId,
                 'password' => Hash::make($nim !== '' ? $nim : 'password'),
+                'must_change_password' => true,
             ]);
             $created++;
         }

@@ -231,11 +231,7 @@
                                 @else
                                 @php($ext = $material->isFile() ? strtolower(pathinfo($material->path ?? '', PATHINFO_EXTENSION)) : '')
                                 @php($isPdf = $ext === 'pdf')
-                                @php($previewUrl = $isPdf
-                                    ? route('materials.preview', $material)
-                                    : (in_array($ext, ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'])
-                                        ? 'https://view.officeapps.live.com/op/embed.aspx?src='.urlencode(asset('storage/'.$material->path))
-                                        : null))
+                                @php($previewUrl = $isPdf ? route('materials.preview', $material) : null)
                                 <div class="list-group-item">
                                     <div class="d-flex align-items-center">
                                         <span class="avatar avatar-sm bg-{{ $material->isFile() ? 'red' : 'azure' }}-lt me-2">

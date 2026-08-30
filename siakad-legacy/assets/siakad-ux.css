@@ -7,7 +7,12 @@
 body {
   background: #f4f6fa;
   color: #182433;
+  font-size: 15px;
 }
+
+.page-header { margin-bottom: 1rem; }
+.page-title { font-weight: 700; letter-spacing: -.02em; }
+.text-muted, .text-secondary { color: var(--siakad-muted) !important; }
 
 .navbar-dark {
   background: linear-gradient(110deg, #163d72, #206bc4) !important;
@@ -36,7 +41,15 @@ body {
 
 .table-responsive {
   border-radius: 10px;
+  border: 1px solid rgba(98, 105, 118, .14);
 }
+
+.table { margin-bottom: 0; }
+.table td { vertical-align: middle; }
+.card-header { min-height: 3.5rem; }
+.card-title { font-weight: 700; }
+.modal-content { border: 0; border-radius: 14px; box-shadow: 0 20px 55px rgba(24,36,51,.2); }
+.alert { border-radius: 10px; }
 
 .table thead th {
   color: #475467;
@@ -80,4 +93,8 @@ body {
   .table-responsive {
     -webkit-overflow-scrolling: touch;
   }
+
+  .page-wrapper .container-xl { padding-left: .75rem; padding-right: .75rem; }
+  .btn { min-height: 40px; }
+  .table { min-width: 680px; }
 }

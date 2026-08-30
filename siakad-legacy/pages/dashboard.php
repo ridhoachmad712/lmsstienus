@@ -9,168 +9,171 @@
 -->
 <?php
 session_start();
-include "../config/koneksi.php";
+include '../config/koneksi.php';
 $username = $_SESSION['username'];
 $password = $_SESSION['password'];
 $level = $_SESSION['level'];
 $kode_prodi = $_SESSION['kode_prodi'];
-// 
+//
 $prodi = mysqli_fetch_array(mysqli_query($koneksi, "SELECT * FROM prodi WHERE kode_prodi='$kode_prodi'"));
-if (!isset($_SESSION["login"])) {
-  header("location: login");
+if (! isset($_SESSION['login'])) {
+    header('location: login');
 } else {
-  $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
-  if ($cek_user !== 1) {
-    header("location: login");
-  }
+    $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
+    if ($cek_user !== 1) {
+        header('location: login');
+    }
 }
 // --------------------------------------------------
-// pengaturan aplikasi 
+// pengaturan aplikasi
 $pengaturan = mysqli_query($koneksi, "SELECT * FROM pengaturan WHERE id_pengaturan='1'");
 $r_pengaturan = mysqli_fetch_array($pengaturan);
 
-
 // MAHASISWA
 if ($level == 'mhs') {
-  $mhs = mysqli_query($koneksi, "SELECT * FROM mahasiswa
+    $mhs = mysqli_query($koneksi, "SELECT * FROM mahasiswa
     INNER JOIN tbl_jk ON mahasiswa.id_jk=tbl_jk.id_jk
     INNER JOIN tbl_agama ON mahasiswa.id_agama=tbl_agama.id_agama WHERE nim_npm='$username'");
-  $tampil_mhs = mysqli_fetch_array($mhs);
-  $foto_mhs = $tampil_mhs['foto_mhs'];
+    $tampil_mhs = mysqli_fetch_array($mhs);
+    $foto_mhs = $tampil_mhs['foto_mhs'];
 }
 //  org tua
 $orgtua = mysqli_fetch_array(mysqli_query($koneksi, "SELECT * FROM tbl_org_tua WHERE nim_npm='$username'"));
-// 
+//
 
 // MAHASISWA
 if ($level == 'dosen') {
-  $dosen = mysqli_query($koneksi, "SELECT * FROM dosen
+    $dosen = mysqli_query($koneksi, "SELECT * FROM dosen
     INNER JOIN tbl_jk ON dosen.id_jk=tbl_jk.id_jk
     INNER JOIN tbl_agama ON dosen.id_agama=tbl_agama.id_agama WHERE nip='$username'");
-  $tampil_dosen = mysqli_fetch_array($dosen);
-  $foto_dosen = $tampil_dosen['foto_dosen'];
+    $tampil_dosen = mysqli_fetch_array($dosen);
+    $foto_dosen = $tampil_dosen['foto_dosen'];
 }
 
 if (isset($_POST['simpan_mhs'])) {
-  // update mhs
-  $nama_mhs = $_POST['nama_mhs'];
-  $thn_masuk = $_POST['thn_masuk'];
-  $id_jk = $_POST['id_jk'];
-  $tempat_lhr = $_POST['tempat_lhr'];
-  $tgl_lhr_mhs = $_POST['tgl_lhr_mhs'];
-  $id_agama = $_POST['id_agama'];
-  $email = $_POST['email'];
-  $lulusan_jalur = $_POST['lulusan_jalur'];
-  $sekolah_asal = $_POST['sekolah_asal'];
-  $alamat_mhs = $_POST['alamat_mhs'];
-  $no_telp_mhs = $_POST['no_telp_mhs'];
+    // update mhs
+    $nama_mhs = $_POST['nama_mhs'];
+    $thn_masuk = $_POST['thn_masuk'];
+    $id_jk = $_POST['id_jk'];
+    $tempat_lhr = $_POST['tempat_lhr'];
+    $tgl_lhr_mhs = $_POST['tgl_lhr_mhs'];
+    $id_agama = $_POST['id_agama'];
+    $email = $_POST['email'];
+    $lulusan_jalur = $_POST['lulusan_jalur'];
+    $sekolah_asal = $_POST['sekolah_asal'];
+    $alamat_mhs = $_POST['alamat_mhs'];
+    $no_telp_mhs = $_POST['no_telp_mhs'];
 
-  // DATA ORG TUA
+    // DATA ORG TUA
 
-  $no_kk = $_POST['no_kk'];
-  $nama_ayah = $_POST['nama_ayah'];
-  $tmp_lhr_ayah = $_POST['tmp_lhr_ayah'];
-  $tgl_lhr_ayah = $_POST['tgl_lhr_ayah'];
-  $pekerjaan_ayah = $_POST['pekerjaan_ayah'];
-  $penghasilan_ayah = $_POST['penghasilan_ayah'];
-  $pend_ayah = $_POST['pend_ayah'];
+    $no_kk = $_POST['no_kk'];
+    $nama_ayah = $_POST['nama_ayah'];
+    $tmp_lhr_ayah = $_POST['tmp_lhr_ayah'];
+    $tgl_lhr_ayah = $_POST['tgl_lhr_ayah'];
+    $pekerjaan_ayah = $_POST['pekerjaan_ayah'];
+    $penghasilan_ayah = $_POST['penghasilan_ayah'];
+    $pend_ayah = $_POST['pend_ayah'];
 
-  $nama_ibu = $_POST['nama_ibu'];
-  $tmp_lhr_ibu = $_POST['tmp_lhr_ibu'];
-  $tgl_lhr_ibu = $_POST['tgl_lhr_ibu'];
-  $pekerjaan_ibu = $_POST['pekerjaan_ibu'];
-  $penghasilan_ibu = $_POST['penghasilan_ibu'];
-  $pend_ibu = $_POST['pend_ibu'];
-  $alamat_org_tua = $_POST['alamat_org_tua'];
-  $no_telp_orgtua = $_POST['no_telp_orgtua'];
+    $nama_ibu = $_POST['nama_ibu'];
+    $tmp_lhr_ibu = $_POST['tmp_lhr_ibu'];
+    $tgl_lhr_ibu = $_POST['tgl_lhr_ibu'];
+    $pekerjaan_ibu = $_POST['pekerjaan_ibu'];
+    $penghasilan_ibu = $_POST['penghasilan_ibu'];
+    $pend_ibu = $_POST['pend_ibu'];
+    $alamat_org_tua = $_POST['alamat_org_tua'];
+    $no_telp_orgtua = $_POST['no_telp_orgtua'];
 
-  $update = mysqli_query($koneksi, "UPDATE mahasiswa SET nama_mhs='$nama_mhs', thn_masuk='$thn_masuk', id_jk='$id_jk', tempat_lhr='$tempat_lhr', tgl_lhr_mhs='$tgl_lhr_mhs', id_agama='$id_agama', email='$email', lulusan_jalur='$lulusan_jalur', sekolah_asal='$sekolah_asal', alamat_mhs='$alamat_mhs', no_telp_mhs='$no_telp_mhs' WHERE nim_npm='$username'");
+    $update = mysqli_query($koneksi, "UPDATE mahasiswa SET nama_mhs='$nama_mhs', thn_masuk='$thn_masuk', id_jk='$id_jk', tempat_lhr='$tempat_lhr', tgl_lhr_mhs='$tgl_lhr_mhs', id_agama='$id_agama', email='$email', lulusan_jalur='$lulusan_jalur', sekolah_asal='$sekolah_asal', alamat_mhs='$alamat_mhs', no_telp_mhs='$no_telp_mhs' WHERE nim_npm='$username'");
 
-  $cek_data = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM tbl_org_tua WHERE nim_npm='$username'"));
+    $cek_data = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM tbl_org_tua WHERE nim_npm='$username'"));
 
-  if ($cek_data == 0) {
-    $input = mysqli_query($koneksi, "INSERT INTO tbl_org_tua VALUES('$username','$no_kk','$nama_ayah','$tmp_lhr_ayah','$tgl_lhr_ayah','$pekerjaan_ayah','$penghasilan_ayah','$pend_ayah','$nama_ibu','$tmp_lhr_ibu','$tgl_lhr_ibu','$pekerjaan_ibu','$penghasilan_ibu','$pend_ibu','$alamat_org_tua','$no_telp_orgtua')");
-  } else {
-    $update = mysqli_query($koneksi, "UPDATE tbl_org_tua SET no_kk='$no_kk', nama_ayah='$nama_ayah', tmp_lhr_ayah='$tmp_lhr_ayah', tgl_lhr_ayah='$tgl_lhr_ayah', pekerjaan_ayah='$pekerjaan_ayah', penghasilan_ayah='$penghasilan_ayah', pend_ayah='$pend_ayah', nama_ibu='$nama_ibu', tmp_lhr_ibu='$tmp_lhr_ibu', tgl_lhr_ibu='$tgl_lhr_ibu', pekerjaan_ibu='$pekerjaan_ibu', penghasilan_ibu='$penghasilan_ibu', pend_ibu='$pend_ibu', alamat_org_tua='$alamat_org_tua', no_telp_orgtua='$no_telp_orgtua' WHERE nim_npm='$username'");
-  }
-  echo "<script>window.alert('Data anda berhasil di simpan')
+    if ($cek_data == 0) {
+        $input = mysqli_query($koneksi, "INSERT INTO tbl_org_tua VALUES('$username','$no_kk','$nama_ayah','$tmp_lhr_ayah','$tgl_lhr_ayah','$pekerjaan_ayah','$penghasilan_ayah','$pend_ayah','$nama_ibu','$tmp_lhr_ibu','$tgl_lhr_ibu','$pekerjaan_ibu','$penghasilan_ibu','$pend_ibu','$alamat_org_tua','$no_telp_orgtua')");
+    } else {
+        $update = mysqli_query($koneksi, "UPDATE tbl_org_tua SET no_kk='$no_kk', nama_ayah='$nama_ayah', tmp_lhr_ayah='$tmp_lhr_ayah', tgl_lhr_ayah='$tgl_lhr_ayah', pekerjaan_ayah='$pekerjaan_ayah', penghasilan_ayah='$penghasilan_ayah', pend_ayah='$pend_ayah', nama_ibu='$nama_ibu', tmp_lhr_ibu='$tmp_lhr_ibu', tgl_lhr_ibu='$tgl_lhr_ibu', pekerjaan_ibu='$pekerjaan_ibu', penghasilan_ibu='$penghasilan_ibu', pend_ibu='$pend_ibu', alamat_org_tua='$alamat_org_tua', no_telp_orgtua='$no_telp_orgtua' WHERE nim_npm='$username'");
+    }
+    echo "<script>window.alert('Data anda berhasil di simpan')
 window.location='dashboard'</script>";
 }
 
 if (isset($_POST['simpan_dosen'])) {
-  $nama_dosen = $_POST['nama_dosen'];
-  $id_jk = $_POST['id_jk'];
-  $id_agama = $_POST['id_agama'];
-  $alamat = $_POST['alamat'];
-  $tmp_lhr_dosen = $_POST['tmp_lhr_dosen'];
-  $tgl_lhr_dosen = $_POST['tgl_lhr_dosen'];
-  $email = $_POST['email'];
-  $no_telp = $_POST['no_telp'];
-  $update = mysqli_query($koneksi, "UPDATE dosen SET nama_dosen='$nama_dosen', id_jk='$id_jk', id_agama='$id_agama', alamat='$alamat', tmp_lhr_dosen='$tmp_lhr_dosen', tgl_lhr_dosen='$tgl_lhr_dosen', email='$email', no_telp='$no_telp' WHERE nip='$username'");
-  echo "<script>window.alert('Data anda berhasil di simpan')
+    $nama_dosen = $_POST['nama_dosen'];
+    $id_jk = $_POST['id_jk'];
+    $id_agama = $_POST['id_agama'];
+    $alamat = $_POST['alamat'];
+    $tmp_lhr_dosen = $_POST['tmp_lhr_dosen'];
+    $tgl_lhr_dosen = $_POST['tgl_lhr_dosen'];
+    $email = $_POST['email'];
+    $no_telp = $_POST['no_telp'];
+    $update = mysqli_query($koneksi, "UPDATE dosen SET nama_dosen='$nama_dosen', id_jk='$id_jk', id_agama='$id_agama', alamat='$alamat', tmp_lhr_dosen='$tmp_lhr_dosen', tgl_lhr_dosen='$tgl_lhr_dosen', email='$email', no_telp='$no_telp' WHERE nip='$username'");
+    echo "<script>window.alert('Data anda berhasil di simpan')
   window.location='dashboard'</script>";
 }
 
 if (isset($_POST['ubahfotomhs'])) {
-  $rand = $username;
-  $ekstensi_diperbolehkan = array('png', 'jpg', 'JPG', 'PNG', 'jpeg', 'JPEG');
-  $file_foto = $_FILES['file_foto']['name'];
-  $x = explode('.', $file_foto);
-  $ekstensi = strtolower(end($x));
-  $ukuran = $_FILES['file_foto']['size'];
-  $file_tmp = $_FILES['file_foto']['tmp_name'];
-  if (in_array($ekstensi, $ekstensi_diperbolehkan) === true) {
-    if ($ukuran < 50044070) {
-      if ($foto_mhs == "") {
-        # code...
-      } else {
-        unlink("foto_mhs/$foto_mhs");
-      }
-      $xx_foto = $rand . '_' . $file_foto;
-      move_uploaded_file($file_tmp, 'foto_mhs/' . $rand . '_' . $file_foto);
-      $update_foto = mysqli_query($koneksi, "UPDATE mahasiswa SET foto_mhs='$xx_foto' WHERE nim_npm='$username'");
-      echo "<script>window.alert('Foto Profile anda berhasil di ubah')
+    $rand = $username;
+    $ekstensi_diperbolehkan = ['png', 'jpg', 'JPG', 'PNG', 'jpeg', 'JPEG'];
+    $file_foto = $_FILES['file_foto']['name'];
+    $x = explode('.', $file_foto);
+    $ekstensi = strtolower(end($x));
+    $ukuran = $_FILES['file_foto']['size'];
+    $file_tmp = $_FILES['file_foto']['tmp_name'];
+    if (in_array($ekstensi, $ekstensi_diperbolehkan) === true) {
+        if ($ukuran < 50044070) {
+            if ($foto_mhs == '') {
+                // code...
+            } else {
+                unlink("foto_mhs/$foto_mhs");
+            }
+            $xx_foto = $rand.'_'.$file_foto;
+            move_uploaded_file($file_tmp, 'foto_mhs/'.$rand.'_'.$file_foto);
+            $update_foto = mysqli_query($koneksi, "UPDATE mahasiswa SET foto_mhs='$xx_foto' WHERE nim_npm='$username'");
+            echo "<script>window.alert('Foto Profile anda berhasil di ubah')
       window.location='dashboard'</script>";
+        }
     }
-  }
 }
 
 if (isset($_POST['ubahfotodosen'])) {
-  $rand = $username;
-  $ekstensi_diperbolehkan = array('png', 'jpg', 'JPG', 'PNG', 'jpeg', 'JPEG');
-  $file_foto = $_FILES['file_foto']['name'];
-  $x = explode('.', $file_foto);
-  $ekstensi = strtolower(end($x));
-  $ukuran = $_FILES['file_foto']['size'];
-  $file_tmp = $_FILES['file_foto']['tmp_name'];
-  if (in_array($ekstensi, $ekstensi_diperbolehkan) === true) {
-    if ($ukuran < 50044070) {
-      if ($foto_dosen == "") {
-        # code...
-      } else {
-        unlink("foto_dosen/$foto_dosen");
-      }
-      $xx_foto = $rand . '_' . $file_foto;
-      move_uploaded_file($file_tmp, 'foto_dosen/' . $rand . '_' . $file_foto);
-      $update_foto = mysqli_query($koneksi, "UPDATE dosen SET foto_dosen='$xx_foto' WHERE nip='$username'");
-      echo "<script>window.alert('Foto Profile anda berhasil di ubah')
+    $rand = $username;
+    $ekstensi_diperbolehkan = ['png', 'jpg', 'JPG', 'PNG', 'jpeg', 'JPEG'];
+    $file_foto = $_FILES['file_foto']['name'];
+    $x = explode('.', $file_foto);
+    $ekstensi = strtolower(end($x));
+    $ukuran = $_FILES['file_foto']['size'];
+    $file_tmp = $_FILES['file_foto']['tmp_name'];
+    if (in_array($ekstensi, $ekstensi_diperbolehkan) === true) {
+        if ($ukuran < 50044070) {
+            if ($foto_dosen == '') {
+                // code...
+            } else {
+                unlink("foto_dosen/$foto_dosen");
+            }
+            $xx_foto = $rand.'_'.$file_foto;
+            move_uploaded_file($file_tmp, 'foto_dosen/'.$rand.'_'.$file_foto);
+            $update_foto = mysqli_query($koneksi, "UPDATE dosen SET foto_dosen='$xx_foto' WHERE nip='$username'");
+            echo "<script>window.alert('Foto Profile anda berhasil di ubah')
       window.location='dashboard'</script>";
+        }
     }
-  }
 }
 
 if (isset($_POST['ubahpass'])) {
-  $password = $_POST['password'];
-  $password2 = $_POST['password2'];
-  if ($password !== $password2) {
-    echo "<script>window.alert('Konfirmasi Password tidak sesuai !!!')
-    window.location='dashboard'</script>";
-  } else {
+    $password = $_POST['password'];
     $password2 = $_POST['password2'];
-    $update = mysqli_query($koneksi, "UPDATE user SET password='$password2' WHERE username='$username'");
-    echo "<script>window.alert('Password anda berhasil diubah !!!')
+    if ($password !== $password2) {
+        echo "<script>window.alert('Konfirmasi Password tidak sesuai !!!')
+    window.location='dashboard'</script>";
+    } else {
+        $password2 = siakad_hash_password($koneksi, $_POST['password2']);
+        $stmt_password = mysqli_prepare($koneksi, 'UPDATE user SET password = ? WHERE username = ? AND level = ?');
+        mysqli_stmt_bind_param($stmt_password, 'sss', $password2, $username, $level);
+        $update = mysqli_stmt_execute($stmt_password);
+        mysqli_stmt_close($stmt_password);
+        $_SESSION['password'] = $password2;
+        echo "<script>window.alert('Password anda berhasil diubah !!!')
    window.location='dashboard'</script>";
-  }
+    }
 }
 ?>
 <html lang="en">
@@ -192,15 +195,15 @@ if (isset($_POST['ubahpass'])) {
 <body class="antialiased">
   <div class="wrapper">
     <?php
-    require_once "../template/header.php";
-    ?>
+    require_once '../template/header.php';
+?>
     <div class="navbar-expand-md">
       <div class="collapse navbar-collapse" id="navbar-menu">
         <div class="navbar navbar-light">
           <div class="container-xl">
             <?php
-            require_once "../template/menu.php";
-            ?>
+        require_once '../template/menu.php';
+?>
 
           </div>
         </div>
@@ -214,8 +217,8 @@ if (isset($_POST['ubahpass'])) {
 
 
             <?php
-            if ($level == 'admin') {
-            ?>
+if ($level == 'admin') {
+    ?>
 
               <!-- Prodi -->
               <div class="col-sm-6 col-lg-3">
@@ -230,9 +233,9 @@ if (isset($_POST['ubahpass'])) {
                     </div>
                     <div class="h1 mb-3">
                       <?php
-                      $jurusan = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM prodi"));
-                      echo "$jurusan";
-                      ?>
+              $jurusan = mysqli_num_rows(mysqli_query($koneksi, 'SELECT * FROM prodi'));
+    echo "$jurusan";
+    ?>
                     </div>
                     <div class="d-flex mb-2">
                       <div>
@@ -260,9 +263,9 @@ if (isset($_POST['ubahpass'])) {
                     </div>
                     <div class="h1 mb-3">
                       <?php
-                      $dosen = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM dosen"));
-                      echo "$dosen";
-                      ?>
+    $dosen = mysqli_num_rows(mysqli_query($koneksi, 'SELECT * FROM dosen'));
+    echo "$dosen";
+    ?>
                     </div>
                     <div class="d-flex mb-2">
                       <div>
@@ -290,9 +293,9 @@ if (isset($_POST['ubahpass'])) {
                     </div>
                     <div class="h1 mb-3">
                       <?php
-                      $mahasiswa = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM mahasiswa"));
-                      echo "$mahasiswa";
-                      ?>
+    $mahasiswa = mysqli_num_rows(mysqli_query($koneksi, 'SELECT * FROM mahasiswa'));
+    echo "$mahasiswa";
+    ?>
                     </div>
                     <div class="d-flex mb-2">
                       <div>
@@ -320,9 +323,9 @@ if (isset($_POST['ubahpass'])) {
                     </div>
                     <div class="h1 mb-3">
                       <?php
-                      $mata_kuliah = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM mata_kuliah"));
-                      echo "$mata_kuliah";
-                      ?>
+    $mata_kuliah = mysqli_num_rows(mysqli_query($koneksi, 'SELECT * FROM mata_kuliah'));
+    echo "$mata_kuliah";
+    ?>
                     </div>
                     <div class="d-flex mb-2">
                       <div>
@@ -350,11 +353,11 @@ if (isset($_POST['ubahpass'])) {
                   <div class="table-responsive">
                     <table class="table card-table table-vcenter" style="font-size: 10pt;">
                       <?php
-                      $user = mysqli_query($koneksi, "SELECT * FROM user WHERE browser!='' ORDER BY tgl DESC, waktu DESC LIMIT 30");
-                      while ($tampil = mysqli_fetch_array($user)) {
-                        $tgl = $tampil['tgl'];
-                        $waktu = $tampil['waktu'];
-                      ?>
+    $user = mysqli_query($koneksi, "SELECT * FROM user WHERE browser!='' ORDER BY tgl DESC, waktu DESC LIMIT 30");
+    while ($tampil = mysqli_fetch_array($user)) {
+        $tgl = $tampil['tgl'];
+        $waktu = $tampil['waktu'];
+        ?>
                         <tr>
                         <td>
                             <span class="avatar avatar-sm" style="background-image: url(foto_mhs/avatar-blank.png)"></span>
@@ -375,7 +378,7 @@ if (isset($_POST['ubahpass'])) {
                               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                               <circle cx="12" cy="12" r="9" />
                               <polyline points="12 7 12 12 15 15" />
-                            </svg> : <?php echo time_since(strtotime($tgl . $waktu)); ?>
+                            </svg> : <?php echo time_since(strtotime($tgl.$waktu)); ?>
                           </td>
                         </tr>
                       <?php } ?>
@@ -386,7 +389,7 @@ if (isset($_POST['ubahpass'])) {
 
 
             <?php } elseif ($level == 'mhs') {
-            ?>
+                ?>
 
               <div class="row">
 
@@ -403,39 +406,39 @@ if (isset($_POST['ubahpass'])) {
                               <div class="card">
                                 <div class="card-body p-4 text-center">
                                   <?php
-                                  if ($tampil_mhs['foto_mhs'] == '') {
-                                  ?>
+                                      if ($tampil_mhs['foto_mhs'] == '') {
+                                          ?>
                                     <span class="avatar avatar-xl mb-3 avatar-rounded" style="background-image: url(foto_mhs/avatar-blank.png)"></span>
                                   <?php } else { ?>
                                     <img style="border-radius: 20%; width: 140px; height: 144px; overflow: hidden;" src="foto_mhs/<?= $tampil_mhs['foto_mhs']; ?>">
                                   <?php } ?>
                                   <div class="mt-3">
                                   <h3 class="m-0 mb-1"><a href="#"><?= $tampil_mhs['nama_mhs']; ?></a></h3>
-                                    <span class="badge bg-success-lt" style="font-size: 16px;">IPK : <?php 
-                                    $cek_data=mysqli_num_rows(mysqli_query($koneksi,"SELECT * FROM khs_mhs WHERE nim_npm='$username' AND kode_prodi='$kode_prodi' AND grade!='-'"));
-                                    if ($cek_data > 0) {
-                                      $ipk=mysqli_query($koneksi,"SELECT * FROM khs_mhs INNER JOIN jadwal_mengajar ON khs_mhs.id_jadwal=jadwal_mengajar.id_jadwal
+                                    <span class="badge bg-success-lt" style="font-size: 16px;">IPK : <?php
+                                            $cek_data = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM khs_mhs WHERE nim_npm='$username' AND kode_prodi='$kode_prodi' AND grade!='-'"));
+                if ($cek_data > 0) {
+                    $ipk = mysqli_query($koneksi, "SELECT * FROM khs_mhs INNER JOIN jadwal_mengajar ON khs_mhs.id_jadwal=jadwal_mengajar.id_jadwal
                                         LEFT JOIN mata_kuliah ON jadwal_mengajar.kode_mk=mata_kuliah.kode_matkul WHERE nim_npm='$username' AND khs_mhs.kode_prodi='$kode_prodi' AND khs_mhs.grade!='-'");
-                                      while ($row_ipk=mysqli_fetch_array($ipk)) {
-                                        ?>
-                                        <?php 
-                                        $sks=$row_ipk['sks'];
-                                        $bobot=$row_ipk['bobot'];
-                                        if ($bobot=="-") {
-                                          $bobot=0;
-                                        }
-                                        ?>
-                                        <?php 
-                                        $mutu [] =$sks*$bobot;
-                                        $tsks [] =$sks;
-                                        ?>
+                    while ($row_ipk = mysqli_fetch_array($ipk)) {
+                        ?>
+                                        <?php
+                        $sks = $row_ipk['sks'];
+                        $bobot = $row_ipk['bobot'];
+                        if ($bobot == '-') {
+                            $bobot = 0;
+                        }
+                        ?>
+                                        <?php
+                        $mutu[] = $sks * $bobot;
+                        $tsks[] = $sks;
+                        ?>
                                       <?php } ?>
-                                      <?php 
-                                      $hasil_sks=array_sum($tsks);
-                                      $hasil_mutu=array_sum($mutu);
-                                      $ip=$hasil_mutu/$hasil_sks;
-                                      echo number_format($ip,2,',','.');
-                                      ?>
+                                      <?php
+                                      $hasil_sks = array_sum($tsks);
+                    $hasil_mutu = array_sum($mutu);
+                    $ip = $hasil_mutu / $hasil_sks;
+                    echo number_format($ip, 2, ',', '.');
+                    ?>
                                     <?php } ?>
                                   </th>
                                   </div>
@@ -478,7 +481,7 @@ if (isset($_POST['ubahpass'])) {
                             <td>:
                               <?php
                               $pa = mysqli_fetch_array(mysqli_query($koneksi, "SELECT * FROM mhs_has_pa INNER JOIN dosen ON mhs_has_pa.nip=dosen.nip WHERE nim_npm='$username'"));
-                              ?>
+                ?>
                               <?= $pa['nama_dosen']; ?>
                             </td>
                           </tr>
@@ -549,17 +552,17 @@ if (isset($_POST['ubahpass'])) {
                                           <label>Jenis Kelamin</label>
                                           <select name="id_jk" class="form-control" id="id_jk">
                                             <?php
-                                            $query_jk = "SELECT * FROM tbl_jk";
-                                            $sql_jk = mysqli_query($koneksi, $query_jk);
-                                            while ($data_jk = mysqli_fetch_array($sql_jk)) {
-                                            ?>
-                                              <option value="<?= $data_jk['id_jk'] ?>" <?= ($data_jk['jenis_kelamin'] == $tampil_mhs['jenis_kelamin']) ? "selected" : "" ?>>
+                              $query_jk = 'SELECT * FROM tbl_jk';
+                $sql_jk = mysqli_query($koneksi, $query_jk);
+                while ($data_jk = mysqli_fetch_array($sql_jk)) {
+                    ?>
+                                              <option value="<?= $data_jk['id_jk'] ?>" <?= ($data_jk['jenis_kelamin'] == $tampil_mhs['jenis_kelamin']) ? 'selected' : '' ?>>
                                                 <?= $data_jk['jenis_kelamin'] ?>
                                               </option>
 
                                             <?php
-                                            }
-                                            ?>
+                }
+                ?>
                                           </select>
                                         </div>
 
@@ -581,19 +584,19 @@ if (isset($_POST['ubahpass'])) {
                                           <label>Agama</label>
                                           <select name="id_agama" class="form-control" id="id_agama">
                                             <?php
-                                            $query_agama = "SELECT * FROM tbl_agama";
-                                            $sql_agama = mysqli_query($koneksi, $query_agama);
-                                            while ($data_agama = mysqli_fetch_array($sql_agama)) {
-                                            ?>
-                                              <option value="<?= $data_agama['id_agama'] ?>" <?= ($data_agama['agama'] == $tampil_mhs['agama']) ? "selected" : "" ?>>
+                $query_agama = 'SELECT * FROM tbl_agama';
+                $sql_agama = mysqli_query($koneksi, $query_agama);
+                while ($data_agama = mysqli_fetch_array($sql_agama)) {
+                    ?>
+                                              <option value="<?= $data_agama['id_agama'] ?>" <?= ($data_agama['agama'] == $tampil_mhs['agama']) ? 'selected' : '' ?>>
 
                                                 <?= $data_agama['agama'] ?>
 
                                               </option>
 
                                             <?php
-                                            }
-                                            ?>
+                }
+                ?>
                                           </select>
                                         </div>
 
@@ -806,7 +809,7 @@ if (isset($_POST['ubahpass'])) {
               <!--  -->
 
 
-            <?php } elseif ($level == "Jurusan/Prodi") {  ?>
+            <?php } elseif ($level == 'Jurusan/Prodi') {  ?>
 
 
 
@@ -821,8 +824,8 @@ if (isset($_POST['ubahpass'])) {
                     <div class="h1 mb-3">
                       <?php
                       $dosen = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM prodi_has_dosen WHERE kode_prodi='$kode_prodi'"));
-                      echo "$dosen";
-                      ?>
+                echo "$dosen";
+                ?>
                     </div>
                     <div class="d-flex mb-2">
                       <div>
@@ -850,9 +853,9 @@ if (isset($_POST['ubahpass'])) {
                     </div>
                     <div class="h1 mb-3">
                       <?php
-                      $mahasiswa = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM prodi_has_mhs WHERE kode_prodi='$kode_prodi'"));
-                      echo "$mahasiswa";
-                      ?>
+                $mahasiswa = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM prodi_has_mhs WHERE kode_prodi='$kode_prodi'"));
+                echo "$mahasiswa";
+                ?>
                     </div>
                     <div class="d-flex mb-2">
                       <div>
@@ -880,9 +883,9 @@ if (isset($_POST['ubahpass'])) {
                     </div>
                     <div class="h1 mb-3">
                       <?php
-                      $matkul = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM prodi_has_matkul WHERE kode_prodi='$kode_prodi'"));
-                      echo "$matkul";
-                      ?>
+                $matkul = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM prodi_has_matkul WHERE kode_prodi='$kode_prodi'"));
+                echo "$matkul";
+                ?>
                     </div>
                     <div class="d-flex mb-2">
                       <div>
@@ -905,8 +908,8 @@ if (isset($_POST['ubahpass'])) {
 
 
 
-            <?php } elseif ($level == "dosen") { ?>
-              
+            <?php } elseif ($level == 'dosen') { ?>
+
               <div class="row">
                 <div class="col-lg-4">
                   <div class="card">
@@ -918,8 +921,8 @@ if (isset($_POST['ubahpass'])) {
                               <div class="card">
                                 <div class="card-body p-4 text-center">
                                   <?php
-                                  if ($tampil_dosen['foto_dosen'] == '') {
-                                  ?>
+                            if ($tampil_dosen['foto_dosen'] == '') {
+                                ?>
                                     <span class="avatar avatar-xl mb-3 avatar-rounded" style="background-image: url(foto_dosen/avatar-blank.png)"></span>
                                   <?php } else { ?>
                                     <img style="border-radius: 20%; width: 140px; height: 144px; overflow: hidden;" src="foto_dosen/<?= $tampil_dosen['foto_dosen']; ?>">
@@ -1029,17 +1032,17 @@ if (isset($_POST['ubahpass'])) {
                                           <label>Jenis Kelamin</label>
                                           <select name="id_jk" class="form-control" id="id_jk">
                                             <?php
-                                            $query_jk = "SELECT * FROM tbl_jk";
-                                            $sql_jk = mysqli_query($koneksi, $query_jk);
-                                            while ($data_jk = mysqli_fetch_array($sql_jk)) {
-                                            ?>
-                                              <option value="<?= $data_jk['id_jk'] ?>" <?= ($data_jk['jenis_kelamin'] == $tampil_dosen['jenis_kelamin']) ? "selected" : "" ?>>
+                                          $query_jk = 'SELECT * FROM tbl_jk';
+                $sql_jk = mysqli_query($koneksi, $query_jk);
+                while ($data_jk = mysqli_fetch_array($sql_jk)) {
+                    ?>
+                                              <option value="<?= $data_jk['id_jk'] ?>" <?= ($data_jk['jenis_kelamin'] == $tampil_dosen['jenis_kelamin']) ? 'selected' : '' ?>>
                                                 <?= $data_jk['jenis_kelamin'] ?>
                                               </option>
 
                                             <?php
-                                            }
-                                            ?>
+                }
+                ?>
                                           </select>
                                         </div>
 
@@ -1047,19 +1050,19 @@ if (isset($_POST['ubahpass'])) {
                                           <label>Agama</label>
                                           <select name="id_agama" class="form-control" id="id_agama">
                                             <?php
-                                            $query_agama = "SELECT * FROM tbl_agama";
-                                            $sql_agama = mysqli_query($koneksi, $query_agama);
-                                            while ($data_agama = mysqli_fetch_array($sql_agama)) {
-                                            ?>
-                                              <option value="<?= $data_agama['id_agama'] ?>" <?= ($data_agama['agama'] == $tampil_dosen['agama']) ? "selected" : "" ?>>
+                $query_agama = 'SELECT * FROM tbl_agama';
+                $sql_agama = mysqli_query($koneksi, $query_agama);
+                while ($data_agama = mysqli_fetch_array($sql_agama)) {
+                    ?>
+                                              <option value="<?= $data_agama['id_agama'] ?>" <?= ($data_agama['agama'] == $tampil_dosen['agama']) ? 'selected' : '' ?>>
 
                                                 <?= $data_agama['agama'] ?>
 
                                               </option>
 
                                             <?php
-                                            }
-                                            ?>
+                }
+                ?>
                                           </select>
                                         </div>
 
@@ -1264,8 +1267,8 @@ if (isset($_POST['ubahpass'])) {
       </div>
     </div>
     <?php
-    require_once "../template/footer.php";
-    ?>
+    require_once '../template/footer.php';
+?>
   </div>
   </div>
   <!-- Libs JS -->

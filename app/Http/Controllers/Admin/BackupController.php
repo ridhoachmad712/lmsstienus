@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class BackupController extends Controller
@@ -24,7 +25,7 @@ class BackupController extends Controller
         return $this->dir().DIRECTORY_SEPARATOR.basename($name);
     }
 
-    public function index(): \Illuminate\View\View
+    public function index(): View
     {
         File::ensureDirectoryExists($this->dir());
 
@@ -91,7 +92,7 @@ class BackupController extends Controller
             return back()->with('error', 'Restore gagal: '.$e->getMessage().' (Snapshot pra-restore telah dibuat otomatis.)');
         }
 
-        Activity::log('update', "Memulihkan database dari backup: ".basename($name));
+        Activity::log('update', 'Memulihkan database dari backup: '.basename($name));
 
         return back()->with('status', $message.' Anda mungkin perlu masuk kembali.');
     }
@@ -103,7 +104,7 @@ class BackupController extends Controller
         abort_unless(is_file($path), 404);
 
         File::delete($path);
-        Activity::log('delete', "Menghapus berkas backup: ".basename($name));
+        Activity::log('delete', 'Menghapus berkas backup: '.basename($name));
 
         return back()->with('status', 'Berkas backup dihapus.');
     }
@@ -118,10 +119,9 @@ class BackupController extends Controller
         $connection = config('database.default');
 
         // Pengaman: snapshot kondisi saat ini sebelum ditimpa (bisa dipakai untuk revert).
-        try {
-            Artisan::call('lms:backup-db');
-        } catch (\Throwable $e) {
-            // Abaikan kegagalan snapshot; restore tetap dilanjutkan.
+        $snapshotExit = Artisan::call('lms:backup-db');
+        if ($snapshotExit !== 0) {
+            throw new \RuntimeException('Snapshot pra-restore gagal; restore dibatalkan demi keamanan.');
         }
 
         if ($ext === 'sqlite') {

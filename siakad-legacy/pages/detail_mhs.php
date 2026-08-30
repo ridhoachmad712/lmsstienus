@@ -7,82 +7,62 @@
 * Copyright 2018-2021 codecalm.net Paweł Kuna
 * Licensed under MIT (https://github.com/tabler/tabler/blob/master/LICENSE)
 -->
-<?php 
+<?php
 session_start();
-include"../config/koneksi.php";
-$nim_npm=$_GET['nim_npm'];
+include '../config/koneksi.php';
+$nim_npm = trim((string) ($_GET['nim_npm'] ?? ''));
 // data mhs
-$mhs=mysqli_query($koneksi,"SELECT * FROM mahasiswa
+$stmt_mhs = mysqli_prepare($koneksi, 'SELECT * FROM mahasiswa
   INNER JOIN tbl_jk ON mahasiswa.id_jk=tbl_jk.id_jk
-  INNER JOIN tbl_agama ON mahasiswa.id_agama=tbl_agama.id_agama WHERE nim_npm='$nim_npm'");
-$row_mhs=mysqli_fetch_array($mhs);
-$foto_mhs=$row_mhs['foto_mhs'];
-// 
+  INNER JOIN tbl_agama ON mahasiswa.id_agama=tbl_agama.id_agama WHERE nim_npm=?');
+mysqli_stmt_bind_param($stmt_mhs, 's', $nim_npm);
+mysqli_stmt_execute($stmt_mhs);
+$mhs = mysqli_stmt_get_result($stmt_mhs);
+$row_mhs = mysqli_fetch_array($mhs);
+if (! $row_mhs) {
+    siakad_security_fail('Data mahasiswa tidak ditemukan.', 404);
+}
+$foto_mhs = $row_mhs['foto_mhs'];
+//
 // data orgtua
-$orgtua=mysqli_fetch_array(mysqli_query($koneksi,"SELECT * FROM tbl_org_tua WHERE nim_npm='$nim_npm'"));
-// 
-$username=$_SESSION['username'];
-$password=$_SESSION['password'];
-$level=$_SESSION['level'];
-if (!isset($_SESSION["login"]) ) {
-  header("location: login");
-}else{
-  $cek_user=mysqli_num_rows(mysqli_query($koneksi,"SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
-  if ($cek_user !== 1) {
-    header("location: login");
-  }
+$stmt_org = mysqli_prepare($koneksi, 'SELECT * FROM tbl_org_tua WHERE nim_npm=?');
+mysqli_stmt_bind_param($stmt_org, 's', $nim_npm);
+mysqli_stmt_execute($stmt_org);
+$orgtua = mysqli_fetch_array(mysqli_stmt_get_result($stmt_org));
+//
+$username = $_SESSION['username'];
+$password = $_SESSION['password'];
+$level = $_SESSION['level'];
+if (! isset($_SESSION['login'])) {
+    header('location: login');
+} else {
+    $cek_user = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND password='$password' AND level='$level'"));
+    if ($cek_user !== 1) {
+        header('location: login');
+    }
 }
-// --------------------------------------------------
-// pengaturan aplikasi 
-$pengaturan=mysqli_query($koneksi,"SELECT * FROM pengaturan WHERE id_pengaturan='1'");
-$r_pengaturan=mysqli_fetch_array($pengaturan);
-// tambah data fakultas
-// Edit data fakultas
-if (isset($_POST['update'])) {
-  $kode_matkul=mysqli_real_escape_string($koneksi, $_POST['kode_matkul']);
-  $nama_matkul=mysqli_real_escape_string($koneksi, $_POST['nama_matkul']);
-  $sks=mysqli_real_escape_string($koneksi, $_POST['sks']);
-  $update=mysqli_query($koneksi,"UPDATE mata_kuliah SET nama_matkul='$nama_matkul', sks='$sks' WHERE kode_matkul='$kode_matkul'");
-  if ($update == 1) {
-    echo "<script>window.alert('Berhasil diupdate menjadi $nama_matkul !!!')
-    window.location='mata_kuliah'</script>";
-  }
-}
-// Hapus data
-if (isset($_GET['aksi'])=='hapus') {
-  $id=mysqli_real_escape_string($koneksi, $_GET['id']);
-  $hapus=mysqli_query($koneksi,"DELETE FROM thn_akademik WHERE id_thn_akademik='$id'");
-  $hapus2=mysqli_query($koneksi,"DELETE FROM jadwal_penawaran WHERE id_thn_akademik='$id'");
-  if ($hapus==1) {
-    echo "<script>window.alert('Berhasil dihapus !!!')
-    window.location='thn_akademik'</script>";
-  }
-}
-if (isset($_POST['set_jadwal'])) {
-  $id_thn_akademik=mysqli_real_escape_string($koneksi, $_POST['id_thn_akademik']);
-  $dari_tgl=mysqli_real_escape_string($koneksi, $_POST['dari_tgl']);
-  $sampai_tgl=mysqli_real_escape_string($koneksi, $_POST['sampai_tgl']);
-  $update=mysqli_query($koneksi,"UPDATE jadwal_penawaran SET dari_tgl='$dari_tgl', sampai_tgl='$sampai_tgl' WHERE id_thn_akademik='$id_thn_akademik'");
-  echo "<script>window.alert('Jadwal Penawaran Berhasil di atur !!!')
-  window.location='thn_akademik'</script>";
-}
-function tgl_indo($tanggal){
-  $bulan = array (
-    1 => 'Januari',
-    'Februari',
-    'Maret',
-    'April',
-    'Mei',
-    'Juni',
-    'Juli',
-    'Agustus',
-    'September',
-    'Oktober',
-    'November',
-    'Desember'
-  );
-  $pecahkan = explode('-', $tanggal);
-  return $pecahkan[2] . ' ' . $bulan[ (int)$pecahkan[1] ] . ' ' . $pecahkan[0];
+// pengaturan aplikasi
+$pengaturan = mysqli_query($koneksi, "SELECT * FROM pengaturan WHERE id_pengaturan='1'");
+$r_pengaturan = mysqli_fetch_array($pengaturan);
+function tgl_indo($tanggal)
+{
+    $bulan = [
+        1 => 'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember',
+    ];
+    $pecahkan = explode('-', $tanggal);
+
+    return $pecahkan[2].' '.$bulan[(int) $pecahkan[1]].' '.$pecahkan[0];
 }
 ?>
 <html lang="en">
@@ -100,16 +80,16 @@ function tgl_indo($tanggal){
 </head>
 <body class="antialiased">
   <div class="wrapper">
-    <?php 
-    require_once"../template/header.php";
-    ?>
+    <?php
+    require_once '../template/header.php';
+?>
     <div class="navbar-expand-md">
       <div class="collapse navbar-collapse" id="navbar-menu">
         <div class="navbar navbar-light">
           <div class="container-xl">
-            <?php 
-            require_once"../template/menu.php";
-            ?>
+            <?php
+        require_once '../template/menu.php';
+?>
           </div>
         </div>
       </div>
@@ -161,11 +141,11 @@ function tgl_indo($tanggal){
                             <td>Nim / Npm</td>
                             <td>: <?= $row_mhs['nim_npm']; ?></td>
                             <td rowspan="4">
-                              <?php 
-                              if ($foto_mhs=='') {
-                                ?>
+                              <?php
+                  if ($foto_mhs == '') {
+                      ?>
                                 <img style="width: 85pt;" src="foto_mhs/avatar-blank.png"></td>
-                              <?php }else{ ?>
+                              <?php } else { ?>
                                 <img style="width: 85pt;" src="foto_mhs/<?= $row_mhs['foto_mhs']; ?>"></td>
                               <?php } ?>
                             </td>
@@ -275,8 +255,8 @@ function tgl_indo($tanggal){
     </div>
   </div>
 </div>
-<?php 
-require_once"../template/footer.php";
+<?php
+require_once '../template/footer.php';
 ?>
 </div>
 </div>

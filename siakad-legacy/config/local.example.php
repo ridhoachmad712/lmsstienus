@@ -1,6 +1,6 @@
 <?php
 
-return array(
+return [
     'db_host' => '127.0.0.1',
     'db_port' => 3306,
     'db_name' => '',
@@ -8,5 +8,7 @@ return array(
     'db_password' => '',
     'timezone' => 'Asia/Makassar',
     'sso_secret' => '',
-    'lms_url' => 'https://lms.stienus.ac.id/portal',
-);
+    'sso_issuer' => 'https://akademik.stienus.ac.id',
+    'public_url' => 'https://akademik.stienus.ac.id/siakad',
+    'lms_url' => 'https://akademik.stienus.ac.id/portal',
+];
