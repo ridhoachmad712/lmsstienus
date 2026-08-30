@@ -1,6 +1,9 @@
 <IfModule mod_rewrite.c>
 RewriteEngine on
 
+# Jangan izinkan konfigurasi, log, dan file internal diakses melalui HTTP.
+RewriteRule ^(?:config|storage)(?:/|$) - [F,L,NC]
+
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteRule ^(.*)$ $1.php

@@ -28,9 +28,16 @@ php artisan optimize
 Arahkan document root `akademik.stienus.ac.id` ke
 `/home/u272545584/domains/stienus.ac.id/public_html/akademik/public`.
 
-Jika hosting menolak symlink, buat alias `/siakad` melalui panel hosting dengan
-target folder `.../akademik/siakad-legacy`. Jangan menyalin folder secara manual,
-karena salinan tidak akan ikut diperbarui oleh `git pull`.
+Jika PHP hosting menonaktifkan fungsi `symlink()`, gunakan mode salinan terkelola:
+
+```bash
+php artisan lms:prepare-deployment --copy
+```
+
+Mode ini menyalin `siakad-legacy` ke `public/siakad` tanpa menghapus file yang
+sudah ada di tujuan. Perintah yang sama wajib dijalankan kembali setelah setiap
+`git pull` agar perubahan SIAKAD ikut diterapkan. Folder `config` dan `storage`
+SIAKAD diblokir dari akses HTTP oleh `.htaccess`.
 
 ## Konfigurasi
 
@@ -73,7 +80,7 @@ cd /home/u272545584/domains/stienus.ac.id/public_html/akademik
 git pull origin main
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force
-php artisan lms:prepare-deployment
+php artisan lms:prepare-deployment --copy # hilangkan --copy jika symlink PHP tersedia
 php artisan lms:secure-files --delete-source
 php artisan optimize:clear
 php artisan optimize

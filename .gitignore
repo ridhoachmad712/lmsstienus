@@ -33,6 +33,7 @@ Thumbs.db
 /database/*.sqlite-journal
 
 # Artefak migrasi data (lokal saja, jangan di-commit)
+/*.sql
 /database/data-export.sql
 /database/pegboard-mysql.sql
 /storage-public.zip
