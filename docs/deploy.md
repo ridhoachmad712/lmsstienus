@@ -4,11 +4,13 @@ Satu repository berisi dua aplikasi dan menggunakan dua database:
 
 - `https://akademik.stienus.ac.id/lms` → LMS Laravel;
 - `https://akademik.stienus.ac.id/siakad` → SIAKAD PHP lama;
-- `https://akademik.stienus.ac.id/login` → login LMS dan portal pemilih;
+- `https://akademik.stienus.ac.id/` → pemilih sistem sebelum login;
+- `https://akademik.stienus.ac.id/login` → login LMS;
 - `https://akademik.stienus.ac.id/siakad/pages/login` → login SIAKAD lama.
 
-Login dan database kedua aplikasi terpisah. Portal hanya menghubungkan alamat
-aplikasi; sinkronisasi nilai menggunakan koneksi database khusus satu arah.
+Login dan database kedua aplikasi terpisah. Pengguna memilih sistem lebih dulu,
+lalu login satu kali pada aplikasi pilihannya. Sinkronisasi nilai menggunakan
+koneksi database khusus satu arah.
 
 Document root subdomain harus menunjuk ke folder `public` Laravel, bukan root
 repository. Folder `siakad-legacy` tetap berada di root repository dan
@@ -120,6 +122,7 @@ composer audit
 php artisan lms:backup-db
 ```
 
-Uji login LMS dan login SIAKAD secara terpisah melalui portal. Verifikasi HTTPS,
+Uji pemilih sistem sebagai tamu, lalu login LMS dan login SIAKAD secara terpisah.
+Verifikasi HTTPS,
 penggantian kata sandi awal, upload/unduh materi, submit tugas, kecocokan peserta
 dengan KRS, dan sinkronisasi satu kelas percobaan sebelum produksi penuh.

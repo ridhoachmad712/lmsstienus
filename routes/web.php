@@ -53,7 +53,12 @@ use App\Http\Controllers\TranscriptController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect()->route('dashboard'));
+Route::get('/', fn () => redirect()->route('portal.index'));
+
+// Pemilih sistem tampil sebelum autentikasi agar pengguna hanya login pada
+// aplikasi yang dipilih. SIAKAD dan LMS tetap memiliki sesi masing-masing.
+Route::get('/portal', [PortalController::class, 'index'])->name('portal.index');
+Route::get('/portal/siakad', [PortalController::class, 'siakad'])->name('portal.siakad');
 
 // --- Guest ---
 Route::middleware('guest')->group(function () {
@@ -71,11 +76,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
-    // Portal tunggal: pilih ruang kerja SIAKAD atau LMS tanpa login ulang.
-    Route::get('/portal', [PortalController::class, 'index'])->name('portal.index');
-    // Jembatan portal tidak boleh berada di bawah /siakad karena pada deployment
-    // produksi path tersebut adalah folder fisik aplikasi SIAKAD lama.
-    Route::get('/portal/siakad', [PortalController::class, 'siakad'])->name('portal.siakad');
+    // LMS dipilih setelah pengguna berhasil login ke database LMS.
     Route::get('/lms', [PortalController::class, 'lms'])->name('portal.lms');
 
     // Akhiri mode samaran (dapat diakses oleh sesi yang sedang disamar)

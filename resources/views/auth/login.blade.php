@@ -57,7 +57,8 @@
     <form class="card card-md" method="POST" action="{{ route('login') }}" autocomplete="off">
         @csrf
         <div class="card-body">
-            <h2 class="h2 text-center mb-4">Masuk ke akun Anda</h2>
+            <h2 class="h2 text-center mb-1">Masuk ke LMS</h2>
+            <p class="text-secondary text-center mb-4">Gunakan akun pembelajaran Anda.</p>
 
             @if ($errors->any())
                 <div class="alert alert-danger" role="alert">
@@ -90,6 +91,9 @@
                 <button type="submit" class="btn btn-primary w-100">
                     <i class="ti ti-login me-1"></i>Masuk
                 </button>
+                <a href="{{ route('portal.index') }}" class="btn btn-link text-secondary w-100 mt-2">
+                    <i class="ti ti-arrow-left me-1"></i>Kembali pilih sistem
+                </a>
             </div>
         </div>
     </form>

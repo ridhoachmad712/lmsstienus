@@ -39,7 +39,7 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->route('portal.index');
+        return redirect()->intended(route('portal.lms'));
     }
 
     /** Akses 1-klik mode demo: login otomatis sebagai dosen/mahasiswa tanpa kata sandi. */
@@ -74,7 +74,7 @@ class LoginController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('portal.index');
+        return redirect()->route('portal.lms');
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -84,6 +84,6 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('portal.index');
     }
 }

@@ -54,7 +54,22 @@ class RoleAccessTest extends TestCase
         $this->get(route('admin.settings.edit'))->assertRedirect(route('login'));
     }
 
-    public function test_login_masuk_ke_pemilih_sistem(): void
+    public function test_pemilih_sistem_bisa_diakses_sebelum_login(): void
+    {
+        config(['services.legacy_siakad.url' => 'https://siakad.example.test/']);
+
+        $this->get('/')->assertRedirect(route('portal.index'));
+        $this->get(route('portal.index'))
+            ->assertOk()
+            ->assertSee('Pilih Sistem')
+            ->assertSee('Masuk dengan akun SIAKAD')
+            ->assertSee('Masuk dengan akun LMS')
+            ->assertSee('href="'.route('login').'"', false);
+        $this->get(route('portal.siakad'))
+            ->assertRedirect('https://siakad.example.test/');
+    }
+
+    public function test_login_masuk_langsung_ke_lms(): void
     {
         $user = User::factory()->create([
             'role' => User::ROLE_MAHASISWA,
@@ -62,7 +77,7 @@ class RoleAccessTest extends TestCase
         ]);
 
         $this->post('/login', ['email' => $user->email, 'password' => 'password'])
-            ->assertRedirect(route('portal.index'));
+            ->assertRedirect(route('portal.lms'));
     }
 
     public function test_portal_menampilkan_pilihan_sistem_untuk_semua_user(): void
@@ -70,7 +85,7 @@ class RoleAccessTest extends TestCase
         foreach ([User::ROLE_ADMIN, User::ROLE_KAPRODI, User::ROLE_DOSEN, User::ROLE_MAHASISWA] as $role) {
             $this->actingAs($this->user($role))->get(route('portal.index'))
                 ->assertOk()->assertSee('SIAKAD')->assertSee('LMS')
-                ->assertSee('Login SIAKAD terpisah');
+                ->assertSee('Masuk dengan akun SIAKAD');
         }
     }
 
@@ -91,7 +106,7 @@ class RoleAccessTest extends TestCase
             ->assertSessionHas('active_system', 'lms');
     }
 
-    public function test_portal_tetap_membuka_login_siakad_saat_konfigurasi_sso_lama_tersisa(): void
+    public function test_konfigurasi_sso_lama_tidak_melewati_login_siakad(): void
     {
         $student = $this->user(User::ROLE_MAHASISWA);
         config([

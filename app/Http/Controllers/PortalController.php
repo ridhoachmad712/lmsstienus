@@ -15,7 +15,7 @@ use Illuminate\View\View;
 
 class PortalController extends Controller
 {
-    /** Pintu masuk setelah login: pengguna memilih ruang kerja. */
+    /** Pintu masuk publik: pengguna memilih sistem sebelum login. */
     public function index(Request $request): View
     {
         return view('portal.index', [

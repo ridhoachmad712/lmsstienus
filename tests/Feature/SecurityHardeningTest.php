@@ -40,8 +40,8 @@ class SecurityHardeningTest extends TestCase
         ]);
 
         $this->post('/login', ['login' => '20260099', 'password' => 'sandi-awal'])
-            ->assertRedirect(route('portal.index'));
-        $this->get(route('portal.index'))->assertRedirect(route('profile.edit'));
+            ->assertRedirect(route('portal.lms'));
+        $this->get(route('portal.lms'))->assertRedirect(route('profile.edit'));
 
         $this->put(route('profile.password'), [
             'current_password' => 'sandi-awal',

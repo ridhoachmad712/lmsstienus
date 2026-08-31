@@ -76,7 +76,9 @@ tersebut masuk ke Git. Pola `config/local.php` sudah tercantum dalam `.gitignore
 Login LMS memeriksa tabel `users` pada database LMS. Login SIAKAD memeriksa
 tabel `user` pada database SIAKAD lama. Akun, username, peran, password, dan sesi
 keduanya berdiri sendiri sehingga tidak diperlukan pemetaan akun lintas sistem.
-Portal hanya membuka alamat SIAKAD; pengguna kemudian masuk memakai akun SIAKAD.
+Portal ditampilkan sebelum login. Pilihan LMS membuka login LMS, sedangkan
+pilihan SIAKAD membuka login SIAKAD. Pengguna hanya login satu kali pada sistem
+yang dipilih.
 
 ## Sinkronisasi nilai akhir LMS ke SIAKAD
 
@@ -116,12 +118,13 @@ integrasi. Password hanya disimpan pada `.env` hosting dan tidak masuk Git.
 
 ## Pemeriksaan setelah deploy
 
-1. Login ke LMS, lalu pilih SIAKAD dari portal.
-2. Pastikan halaman login SIAKAD tampil dan menerima akun SIAKAD lama.
-3. Uji mahasiswa dan dosen yang memiliki NIM/NIP lintas program studi.
-4. Pilih LMS, buat kelas sebagai dosen, dan salin kode gabung.
-5. Masuk sebagai mahasiswa dari prodi lain dan gabung memakai kode tersebut.
-6. Pastikan menu KRS/KHS/transkrip hanya dikelola pada SIAKAD lama.
-7. Selesaikan satu kelas uji, petakan jadwal SIAKAD, lalu sinkronkan nilai.
-8. Pastikan mahasiswa ber-KRS berubah pada `khs_mhs`, sementara mahasiswa tanpa
+1. Buka halaman utama tanpa login dan pastikan pilihan LMS/SIAKAD tampil.
+2. Pilih SIAKAD dan pastikan login SIAKAD menerima akun lama.
+3. Kembali ke pemilih, pilih LMS, dan pastikan login berhasil menuju LMS.
+4. Uji mahasiswa dan dosen yang memiliki NIM/NIP lintas program studi.
+5. Pilih LMS, buat kelas sebagai dosen, dan salin kode gabung.
+6. Masuk sebagai mahasiswa dari prodi lain dan gabung memakai kode tersebut.
+7. Pastikan menu KRS/KHS/transkrip hanya dikelola pada SIAKAD lama.
+8. Selesaikan satu kelas uji, petakan jadwal SIAKAD, lalu sinkronkan nilai.
+9. Pastikan mahasiswa ber-KRS berubah pada `khs_mhs`, sementara mahasiswa tanpa
    KRS mendapat status gagal dan tidak dibuatkan data akademik baru.

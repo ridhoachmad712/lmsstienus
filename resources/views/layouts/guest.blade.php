@@ -28,7 +28,7 @@
         <div class="container container-tight py-4">
             @php($loginLogoHeight = max(48, (int) round($logoHeight * 1.5)))
             <div class="text-center mb-4">
-                <a href="{{ route('login') }}" class="navbar-brand navbar-brand-autodark d-inline-flex flex-column align-items-center">
+                <a href="{{ route('portal.index') }}" class="navbar-brand navbar-brand-autodark d-inline-flex flex-column align-items-center">
                     <img src="{{ $logoUrl }}" height="{{ $loginLogoHeight }}" alt="{{ $headerTitle }}" style="max-height:{{ $loginLogoHeight }}px;width:auto;">
                     @unless ($hideHeaderTitle)
                         <span class="fw-bold fs-1 text-primary mt-2">{{ $headerTitle }}</span>

@@ -4,6 +4,7 @@ include '../config/koneksi.php';
 // pengaturan aplikasi
 $pengaturan = mysqli_query($koneksi, "SELECT * FROM pengaturan WHERE id_pengaturan='1'");
 $r_pengaturan = mysqli_fetch_array($pengaturan);
+$portal_url = siakad_config('LMS_URL', 'lms_url', '');
 // codingan masuk
 if (isset($_POST['masuk'])) {
     siakad_login_rate_limit();
@@ -154,6 +155,9 @@ if (isset($_GET['status']) == 'sukses') {
 														</div>
 													</div>
 													<div class="card-footer text-center">
+														<?php if ($portal_url) { ?>
+															<a href="<?= htmlspecialchars($portal_url, ENT_QUOTES, 'UTF-8'); ?>" style="color:#fff;">&larr; Kembali pilih sistem</a>
+														<?php } ?>
 													</div>
 												</form>
 											</div>
