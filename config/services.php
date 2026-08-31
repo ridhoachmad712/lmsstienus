@@ -54,12 +54,10 @@ return [
         'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com'),
     ],
 
-    // SIAKAD PHP lama tetap berdiri sendiri. Secret yang sama dipasang pada kedua aplikasi.
+    // SIAKAD memiliki login/database sendiri; koneksi nilai hanya untuk sinkronisasi satu arah.
     'legacy_siakad' => [
         'enabled' => env('LEGACY_SIAKAD_ENABLED', false),
         'url' => env('LEGACY_SIAKAD_URL'),
-        'sso_url' => env('LEGACY_SIAKAD_SSO_URL'),
-        'sso_secret' => env('LEGACY_SIAKAD_SSO_SECRET'),
         'grade_sync_enabled' => env('SIAKAD_GRADE_SYNC_ENABLED', false),
     ],
 

@@ -69,7 +69,8 @@ class RoleAccessTest extends TestCase
     {
         foreach ([User::ROLE_ADMIN, User::ROLE_KAPRODI, User::ROLE_DOSEN, User::ROLE_MAHASISWA] as $role) {
             $this->actingAs($this->user($role))->get(route('portal.index'))
-                ->assertOk()->assertSee('SIAKAD')->assertSee('LMS');
+                ->assertOk()->assertSee('SIAKAD')->assertSee('LMS')
+                ->assertSee('Login SIAKAD terpisah');
         }
     }
 
@@ -78,10 +79,9 @@ class RoleAccessTest extends TestCase
         $student = $this->user(User::ROLE_MAHASISWA);
         config([
             'services.legacy_siakad.url' => 'https://siakad.example.test/',
-            'services.legacy_siakad.sso_url' => null,
-            'services.legacy_siakad.sso_secret' => null,
         ]);
 
+        $this->assertSame('/portal/siakad', route('portal.siakad', absolute: false));
         $this->actingAs($student)->get(route('portal.siakad'))
             ->assertRedirect('https://siakad.example.test/')
             ->assertSessionHas('active_system', 'siakad');
@@ -91,39 +91,17 @@ class RoleAccessTest extends TestCase
             ->assertSessionHas('active_system', 'lms');
     }
 
-    public function test_portal_membuat_tiket_sso_siakad_yang_sah(): void
+    public function test_portal_tetap_membuka_login_siakad_saat_konfigurasi_sso_lama_tersisa(): void
     {
-        $student = User::factory()->create([
-            'role' => User::ROLE_MAHASISWA,
-            'nim_nip' => '20260001',
-        ]);
-        $secret = 'secret-pengujian-yang-panjang';
+        $student = $this->user(User::ROLE_MAHASISWA);
         config([
             'services.legacy_siakad.url' => 'https://siakad.example.test/',
             'services.legacy_siakad.sso_url' => 'https://siakad.example.test/pages/sso.php',
-            'services.legacy_siakad.sso_secret' => $secret,
+            'services.legacy_siakad.sso_secret' => 'konfigurasi-lama-yang-tidak-boleh-dipakai',
         ]);
 
-        $response = $this->actingAs($student)->get(route('portal.siakad'));
-        $this->assertSame('/portal/siakad', route('portal.siakad', absolute: false));
-        $response->assertOk()->assertViewIs('portal.siakad-handoff')
-            ->assertSessionHas('active_system', 'siakad');
-
-        $query = [
-            'token' => $response->viewData('token'),
-            'signature' => $response->viewData('signature'),
-        ];
-        $decode = fn (string $value) => base64_decode(strtr($value, '-_', '+/'));
-        $payload = json_decode($decode($query['token']), true);
-        $signature = $decode($query['signature']);
-
-        $this->assertSame('20260001', $payload['sub']);
-        $this->assertSame('mhs', $payload['role']);
-        $this->assertSame(config('app.url'), $payload['iss']);
-        $this->assertSame('https://siakad.example.test', $payload['aud']);
-        $this->assertLessThanOrEqual(60, $payload['exp'] - $payload['iat']);
-        $this->assertTrue(hash_equals(hash_hmac('sha256', $query['token'], $secret, true), $signature));
-        $response->assertDontSee('?token=')->assertSee('method="post"', false);
+        $this->actingAs($student)->get(route('portal.siakad'))
+            ->assertRedirect('https://siakad.example.test/');
     }
 
     public function test_siakad_lama_menggantikan_endpoint_akademik_internal(): void

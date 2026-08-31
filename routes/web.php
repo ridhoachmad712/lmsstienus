@@ -73,7 +73,7 @@ Route::middleware('auth')->group(function () {
 
     // Portal tunggal: pilih ruang kerja SIAKAD atau LMS tanpa login ulang.
     Route::get('/portal', [PortalController::class, 'index'])->name('portal.index');
-    // Pintu SSO tidak boleh berada di bawah /siakad karena pada deployment
+    // Jembatan portal tidak boleh berada di bawah /siakad karena pada deployment
     // produksi path tersebut adalah folder fisik aplikasi SIAKAD lama.
     Route::get('/portal/siakad', [PortalController::class, 'siakad'])->name('portal.siakad');
     Route::get('/lms', [PortalController::class, 'lms'])->name('portal.lms');

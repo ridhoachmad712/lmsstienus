@@ -17,6 +17,7 @@
                 <div class="flex-fill">
                     <h2 class="mb-1">SIAKAD</h2>
                     <div class="text-secondary">KRS, jadwal, nilai, KHS, transkrip, dan administrasi akademik</div>
+                    <span class="badge bg-blue-lt mt-2">Login SIAKAD terpisah</span>
                     @unless($siakadReady)<span class="badge bg-yellow-lt mt-2">Menunggu konfigurasi alamat</span>@endunless
                 </div>
                 <i class="ti ti-chevron-right fs-2"></i>

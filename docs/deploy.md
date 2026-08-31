@@ -4,9 +4,11 @@ Satu repository berisi dua aplikasi dan menggunakan dua database:
 
 - `https://akademik.stienus.ac.id/lms` → LMS Laravel;
 - `https://akademik.stienus.ac.id/siakad` → SIAKAD PHP lama;
-- `https://akademik.stienus.ac.id/login` → satu halaman login dan portal pemilih.
-- `https://akademik.stienus.ac.id/portal/siakad` → pintu SSO internal dari
-  portal ke SIAKAD (bukan alamat yang perlu dibuka pengguna secara manual).
+- `https://akademik.stienus.ac.id/login` → login LMS dan portal pemilih;
+- `https://akademik.stienus.ac.id/siakad/pages/login` → login SIAKAD lama.
+
+Login dan database kedua aplikasi terpisah. Portal hanya menghubungkan alamat
+aplikasi; sinkronisasi nilai menggunakan koneksi database khusus satu arah.
 
 Document root subdomain harus menunjuk ke folder `public` Laravel, bukan root
 repository. Folder `siakad-legacy` tetap berada di root repository dan
@@ -52,8 +54,6 @@ SESSION_SECURE_COOKIE=true
 SESSION_SAME_SITE=lax
 LEGACY_SIAKAD_ENABLED=true
 LEGACY_SIAKAD_URL=https://akademik.stienus.ac.id/siakad
-LEGACY_SIAKAD_SSO_URL=https://akademik.stienus.ac.id/siakad/pages/sso.php
-LEGACY_SIAKAD_SSO_SECRET=secret-acak-minimal-32-karakter
 SIAKAD_GRADE_SYNC_ENABLED=true
 BACKUP_RETENTION_DAYS=30
 BACKUP_COPY_PATH=/lokasi/backup/di-luar-public-html
@@ -61,9 +61,8 @@ BACKUP_ENCRYPTION_KEY=secret-backup-acak-dan-panjang
 ```
 
 Salin `siakad-legacy/config/local.example.php` menjadi
-`siakad-legacy/config/local.php`, isi koneksi database lama, secret yang sama,
-`sso_issuer=https://akademik.stienus.ac.id`, dan
-`public_url=https://akademik.stienus.ac.id/siakad`. File lokal ini diabaikan Git.
+`siakad-legacy/config/local.php`, lalu isi koneksi database lama dan alamat
+publiknya. File lokal ini diabaikan Git.
 
 Jalankan sekali pada database SIAKAD lama sebelum login produksi agar hash kata
 sandi modern tidak terpotong:
@@ -121,6 +120,6 @@ composer audit
 php artisan lms:backup-db
 ```
 
-Uji login → pilih LMS, lalu logout/login → pilih SIAKAD. Verifikasi HTTPS,
+Uji login LMS dan login SIAKAD secara terpisah melalui portal. Verifikasi HTTPS,
 penggantian kata sandi awal, upload/unduh materi, submit tugas, kecocokan peserta
 dengan KRS, dan sinkronisasi satu kelas percobaan sebelum produksi penuh.

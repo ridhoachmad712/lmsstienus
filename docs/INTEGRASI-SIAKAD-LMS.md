@@ -4,18 +4,15 @@
 
 SIAKAD lama tetap menjadi sumber data resmi untuk KRS, jadwal akademik, nilai,
 KHS, transkrip, serta data akademik lain. Laravel digunakan sebagai LMS dan
-portal login. Tidak ada migrasi atau penggabungan database pada tahap ini.
+portal penghubung. Login dan database tidak digabungkan.
 
 ## Konfigurasi LMS Laravel
 
-Tambahkan konfigurasi berikut ke `.env` produksi LMS. Gunakan secret acak yang
-panjang dan jangan pernah commit nilainya ke Git.
+Tambahkan konfigurasi berikut ke `.env` produksi LMS:
 
 ```dotenv
 LEGACY_SIAKAD_ENABLED=true
 LEGACY_SIAKAD_URL=https://akademik.stienus.ac.id/siakad
-LEGACY_SIAKAD_SSO_URL=https://akademik.stienus.ac.id/siakad/pages/sso.php
-LEGACY_SIAKAD_SSO_SECRET=ganti-dengan-secret-acak-minimal-32-karakter
 
 # Koneksi kedua khusus sinkronisasi nilai LMS -> SIAKAD
 SIAKAD_GRADE_SYNC_ENABLED=true
@@ -54,8 +51,6 @@ data-data yang tidak dilacak Git tersebut tidak akan ditimpa.
 Pasang environment variable pada hosting SIAKAD:
 
 ```text
-SIAKAD_SSO_SECRET = nilai yang sama dengan LEGACY_SIAKAD_SSO_SECRET
-SIAKAD_SSO_ISSUER = https://akademik.stienus.ac.id
 SIAKAD_PUBLIC_URL = https://akademik.stienus.ac.id/siakad
 LMS_URL = https://akademik.stienus.ac.id/portal
 SIAKAD_DB_HOST = alamat server database
@@ -76,27 +71,12 @@ Jika panel hosting tidak menyediakan environment variable, salin
 `siakad-legacy/config/local.php`, isi seluruh nilai, dan jangan paksa file lokal
 tersebut masuk ke Git. Pola `config/local.php` sudah tercantum dalam `.gitignore`.
 
-## Syarat pemetaan akun
+## Login pengguna
 
-Nilai `nim_nip` di akun Laravel harus sama dengan kolom `username` pada tabel
-`user` SIAKAD lama. Pemetaan peran yang digunakan:
-
-| Laravel | SIAKAD lama |
-|---|---|
-| `admin` | `admin` |
-| `kaprodi` | `Jurusan/Prodi` |
-| `dosen` | `dosen` |
-| `mahasiswa` | `mhs` |
-
-Bila `nim_nip` kosong, LMS memakai email sebagai identitas. Karena itu akun
-admin/kaprodi juga perlu diisi `nim_nip` dengan username SIAKAD agar SSO berhasil.
-
-## Cara kerja keamanan
-
-LMS membuat tiket HMAC-SHA256 yang hanya berlaku 60 detik dan mengirimkannya
-melalui POST, bukan URL. SIAKAD memverifikasi signature, issuer, audience, waktu,
-identitas, peran, serta nonce sekali pakai, kemudian membentuk sesi lama tanpa
-mengirim password SIAKAD. HTTPS wajib digunakan.
+Login LMS memeriksa tabel `users` pada database LMS. Login SIAKAD memeriksa
+tabel `user` pada database SIAKAD lama. Akun, username, peran, password, dan sesi
+keduanya berdiri sendiri sehingga tidak diperlukan pemetaan akun lintas sistem.
+Portal hanya membuka alamat SIAKAD; pengguna kemudian masuk memakai akun SIAKAD.
 
 ## Sinkronisasi nilai akhir LMS ke SIAKAD
 
@@ -136,8 +116,8 @@ integrasi. Password hanya disimpan pada `.env` hosting dan tidak masuk Git.
 
 ## Pemeriksaan setelah deploy
 
-1. Login melalui LMS, lalu pilih SIAKAD.
-2. Pastikan pengguna langsung masuk ke dashboard SIAKAD sesuai perannya.
+1. Login ke LMS, lalu pilih SIAKAD dari portal.
+2. Pastikan halaman login SIAKAD tampil dan menerima akun SIAKAD lama.
 3. Uji mahasiswa dan dosen yang memiliki NIM/NIP lintas program studi.
 4. Pilih LMS, buat kelas sebagai dosen, dan salin kode gabung.
 5. Masuk sebagai mahasiswa dari prodi lain dan gabung memakai kode tersebut.
