@@ -22,12 +22,13 @@
             --tblr-primary-darken: color-mix(in srgb, {{ $themeColor }}, #000 12%);
         }
     </style>
+    @stack('styles')
 </head>
-<body class="d-flex flex-column">
+<body class="d-flex flex-column @yield('body-class')">
     <div class="page page-center">
-        <div class="container container-tight py-4">
+        <div class="container @yield('container-class', 'container-tight') py-4">
             @php($loginLogoHeight = max(48, (int) round($logoHeight * 1.5)))
-            <div class="text-center mb-4">
+            <div class="text-center mb-4 guest-brand">
                 <a href="{{ route('portal.index') }}" class="navbar-brand navbar-brand-autodark d-inline-flex flex-column align-items-center">
                     <img src="{{ $logoUrl }}" height="{{ $loginLogoHeight }}" alt="{{ $headerTitle }}" style="max-height:{{ $loginLogoHeight }}px;width:auto;">
                     @unless ($hideHeaderTitle)

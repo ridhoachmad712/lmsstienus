@@ -38,7 +38,7 @@ class RoleAccessTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('Layanan Akademik')
+            ->assertSee('Satu halaman untuk layanan')
             ->assertSee('href="'.url('/siakad').'"', false)
             ->assertSee('href="'.route('portal.lms').'"', false);
     }

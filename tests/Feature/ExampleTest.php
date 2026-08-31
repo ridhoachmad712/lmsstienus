@@ -10,6 +10,6 @@ class ExampleTest extends TestCase
     /** Root adalah halaman depan publik untuk dua aplikasi mandiri. */
     public function test_root_is_public_application_directory(): void
     {
-        $this->get('/')->assertOk()->assertSee('Layanan Akademik');
+        $this->get('/')->assertOk()->assertSee('Satu halaman untuk layanan');
     }
 }
