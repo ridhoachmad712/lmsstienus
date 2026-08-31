@@ -67,13 +67,6 @@ body {
   border-radius: 8px;
 }
 
-.siakad-lms-link {
-  display: flex;
-  align-items: center;
-  gap: .45rem;
-  font-weight: 600;
-}
-
 @media (max-width: 767.98px) {
   .page-body {
     padding-top: 1rem;

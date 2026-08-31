@@ -203,7 +203,7 @@ class User extends Authenticatable
 
     /**
      * Hitung ulang & simpan cache akademik (IPK, SKS kumulatif, IPS terakhir).
-     * Dipanggil lazy saat dibutuhkan & saat sebuah kelas diselesaikan/dibuka.
+     * Dipanggil lazy saat dibutuhkan oleh data historis.
      */
     public function refreshAcademicCache(): void
     {

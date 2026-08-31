@@ -1,9 +1,9 @@
 <div class="row">
     @if (! empty($mataKuliahs) && $mataKuliahs->isNotEmpty())
         <div class="col-12 mb-3">
-            <label class="form-label">Referensi Mata Kuliah SIAKAD</label>
+            <label class="form-label">Referensi Mata Kuliah</label>
             <select name="mata_kuliah_id" class="form-select @error('mata_kuliah_id') is-invalid @enderror">
-                <option value="">— tanpa referensi SIAKAD —</option>
+                <option value="">— tanpa referensi katalog —</option>
                 @foreach ($mataKuliahs as $mk)
                     <option value="{{ $mk->id }}" @selected(old('mata_kuliah_id', $course->mata_kuliah_id ?? '') == $mk->id)>{{ $mk->code }} — {{ $mk->name }} ({{ $mk->sks }} SKS)@if($mk->prodi) — {{ $mk->prodi->code }}@endif</option>
                 @endforeach

@@ -36,89 +36,9 @@
 @if (($summary['pending_students'] ?? 0) > 0)
     <div class="alert alert-danger d-flex align-items-center" role="alert">
         <i class="ti ti-hourglass me-2 fs-3"></i>
-        <div><strong>{{ $summary['pending_students'] }} mahasiswa</strong> memiliki pengumpulan yang belum dinilai. Komponen terkait ditampilkan kosong dan finalisasi kelas/SIAKAD dikunci sampai koreksi selesai.</div>
+        <div><strong>{{ $summary['pending_students'] }} mahasiswa</strong> memiliki pengumpulan yang belum dinilai. Komponen terkait ditampilkan kosong sampai koreksi selesai.</div>
     </div>
 @endif
-
-{{-- Integrasi nilai resmi SIAKAD --}}
-@php($syncCounts = $gradeSyncs->countBy('status'))
-<div class="card mb-3">
-    <div class="card-header">
-        <div>
-            <h3 class="card-title"><i class="ti ti-arrows-exchange me-2"></i>Sinkronisasi Nilai SIAKAD</h3>
-            <div class="text-secondary small">Nilai hanya dikirim kepada mahasiswa yang memiliki KRS resmi pada jadwal yang dipilih.</div>
-        </div>
-        @if ($course->grades_finalized_at)
-            <div class="ms-auto text-end small">
-                <div class="text-green fw-bold"><i class="ti ti-lock-check me-1"></i>Difinalisasi</div>
-                <div class="text-secondary">{{ $course->grades_finalized_at->format('d M Y H:i') }} WITA</div>
-            </div>
-        @endif
-    </div>
-    <div class="card-body">
-        @if (! $syncOverview['enabled'])
-            <div class="alert alert-info mb-0">
-                <i class="ti ti-settings me-1"></i>Sinkronisasi nilai belum diaktifkan administrator. Aktifkan <code>SIAKAD_GRADE_SYNC_ENABLED</code> setelah koneksi database resmi siap.
-            </div>
-        @elseif (! $syncOverview['configured'])
-            <div class="alert alert-warning mb-0">
-                <i class="ti ti-database-off me-1"></i>Koneksi database SIAKAD pada LMS belum lengkap.
-            </div>
-        @elseif ($syncOverview['connectionError'])
-            <div class="alert alert-danger mb-0"><i class="ti ti-plug-connected-x me-1"></i>{{ $syncOverview['connectionError'] }}</div>
-        @else
-            <div class="row g-3 align-items-end">
-                <div class="col-lg-7">
-                    <form method="POST" action="{{ route('grades.siakad.map', $course) }}" class="row g-2 align-items-end">
-                        @csrf
-                        <div class="col">
-                            <label class="form-label">Jadwal resmi SIAKAD</label>
-                            @if ($syncOverview['candidates']->isNotEmpty())
-                                <select name="siakad_schedule_id" class="form-select">
-                                    <option value="">— pilih jadwal —</option>
-                                    @if ($course->siakad_schedule_id && ! $syncOverview['candidates']->contains('id_jadwal', $course->siakad_schedule_id))
-                                        <option value="{{ $course->siakad_schedule_id }}" selected>Jadwal #{{ $course->siakad_schedule_id }} (pemetaan tersimpan)</option>
-                                    @endif
-                                    @foreach ($syncOverview['candidates'] as $candidate)
-                                        <option value="{{ $candidate->id_jadwal }}" @selected((int) $course->siakad_schedule_id === (int) $candidate->id_jadwal)>
-                                            #{{ $candidate->id_jadwal }} · {{ $candidate->kode_mk }} · {{ $candidate->kode_prodi }} · {{ $candidate->ket }} {{ $candidate->thn_akademik }} · NIP {{ $candidate->nip }}{{ $candidate->lecturer_match ? ' (dosen cocok)' : '' }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            @else
-                                <input type="number" min="1" name="siakad_schedule_id" value="{{ $course->siakad_schedule_id }}" class="form-control" placeholder="ID jadwal SIAKAD">
-                                <small class="form-hint">Kandidat otomatis tidak ditemukan. Periksa kode MK/periode atau isi ID jadwal resmi.</small>
-                            @endif
-                        </div>
-                        <div class="col-auto"><button class="btn"><i class="ti ti-link me-1"></i>Simpan Pemetaan</button></div>
-                    </form>
-                </div>
-                <div class="col-lg-5 text-lg-end">
-                    @if (! $course->isCompleted())
-                        <div class="text-secondary"><i class="ti ti-info-circle me-1"></i>Selesaikan kelas setelah 16 pertemuan dan seluruh nilai lengkap untuk membuka pengiriman.</div>
-                    @else
-                        <form method="POST" action="{{ route('grades.siakad.sync', $course) }}" data-confirm="Finalisasi snapshot nilai dan kirim ke database resmi SIAKAD?">
-                            @csrf
-                            <button class="btn btn-primary">
-                                <i class="ti ti-cloud-upload me-1"></i>{{ $course->grades_finalized_at ? 'Sinkronkan Ulang / Retry' : 'Finalisasi & Kirim ke SIAKAD' }}
-                            </button>
-                        </form>
-                    @endif
-                </div>
-            </div>
-
-            @if ($gradeSyncs->isNotEmpty())
-                <div class="mt-3 pt-3 border-top d-flex gap-2 flex-wrap align-items-center">
-                    <span class="text-secondary small me-1">Status {{ $gradeSyncs->count() }} mahasiswa:</span>
-                    <span class="badge bg-green-lt">{{ $syncCounts[\App\Models\SiakadGradeSync::STATUS_SYNCED] ?? 0 }} tersinkron</span>
-                    <span class="badge bg-red-lt">{{ $syncCounts[\App\Models\SiakadGradeSync::STATUS_FAILED] ?? 0 }} gagal</span>
-                    <span class="badge bg-orange-lt">{{ $syncCounts[\App\Models\SiakadGradeSync::STATUS_STALE] ?? 0 }} perlu ulang</span>
-                    <span class="text-secondary small ms-auto">Retry aman: nilai yang sudah sama tidak ditulis ulang.</span>
-                </div>
-            @endif
-        @endif
-    </div>
-</div>
 
 {{-- Rekap (lebar penuh) --}}
 <div class="card">
@@ -161,7 +81,7 @@
                                     </div>
                                 </th>
                             @endforeach
-                            <th class="text-center">Akhir</th><th class="text-center">Huruf</th><th class="text-center">SIAKAD</th>
+                            <th class="text-center">Akhir</th><th class="text-center">Huruf</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -194,22 +114,6 @@
                                 @endforeach
                                 <td class="text-center fw-bold">{{ $row['final'] }}</td>
                                 <td class="text-center"><span class="badge bg-{{ \App\Support\Grades::color($row['letter']) }}-lt">{{ $row['letter'] }}</span></td>
-                                @php($gradeSync = $gradeSyncs->get($row['student']->id))
-                                <td class="text-center" style="min-width:130px">
-                                    @if ($gradeSync)
-                                        <span class="badge bg-{{ $gradeSync->statusColor() }}-lt">{{ $gradeSync->statusLabel() }}</span>
-                                        @if ($gradeSync->letter_grade)
-                                            <div class="small mt-1">{{ \App\Support\Grades::num($gradeSync->numeric_score) }} · {{ $gradeSync->letter_grade }}</div>
-                                        @endif
-                                        @if ($gradeSync->error_message)
-                                            <div class="small text-red mt-1" title="{{ $gradeSync->error_message }}">{{ \Illuminate\Support\Str::limit($gradeSync->error_message, 55) }}</div>
-                                        @elseif ($gradeSync->synced_at)
-                                            <div class="small text-secondary mt-1">{{ $gradeSync->synced_at->format('d/m H:i') }}</div>
-                                        @endif
-                                    @else
-                                        <span class="text-secondary small">Belum dikirim</span>
-                                    @endif
-                                </td>
                             </tr>
                         @endforeach
                     </tbody>

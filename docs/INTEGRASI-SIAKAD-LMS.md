@@ -1,130 +1,69 @@
-# Integrasi SIAKAD Lama dan LMS
+# Arsitektur LMS dan SIAKAD Terpisah
 
-## Batas tanggung jawab
+Repository ini memuat dua aplikasi yang berdiri sendiri:
 
-SIAKAD lama tetap menjadi sumber data resmi untuk KRS, jadwal akademik, nilai,
-KHS, transkrip, serta data akademik lain. Laravel digunakan sebagai LMS dan
-portal penghubung. Login dan database tidak digabungkan.
+- `https://akademik.stienus.ac.id/` adalah halaman depan publik;
+- `https://akademik.stienus.ac.id/lms` adalah LMS Laravel;
+- `https://akademik.stienus.ac.id/siakad` adalah SIAKAD PHP lama.
 
-## Konfigurasi LMS Laravel
+Keduanya berada dalam satu repository agar dapat dipasang dan diperbarui dengan
+satu proses Git. Kesamaan repository tidak membuat kedua aplikasi saling
+bergantung saat dijalankan.
 
-Tambahkan konfigurasi berikut ke `.env` produksi LMS:
+## Batas sistem
 
-```dotenv
-LEGACY_SIAKAD_ENABLED=true
-LEGACY_SIAKAD_URL=https://akademik.stienus.ac.id/siakad
+LMS hanya menangani pembelajaran: kelas, peserta kelas, pertemuan, materi,
+tugas, kuis, forum, presensi, dan nilai pembelajaran. Dosen membuat serta
+mengelola kelas LMS. Mahasiswa dapat bergabung menggunakan kode kelas.
 
-# Koneksi kedua khusus sinkronisasi nilai LMS -> SIAKAD
-SIAKAD_GRADE_SYNC_ENABLED=true
-SIAKAD_DB_CONNECTION=mysql
-SIAKAD_DB_HOST=127.0.0.1
-SIAKAD_DB_PORT=3306
-SIAKAD_DB_DATABASE=nama_database_siakad
-SIAKAD_DB_USERNAME=user_integrasi_siakad
-SIAKAD_DB_PASSWORD=password-user-integrasi
+SIAKAD tetap menangani administrasi akademik, termasuk akun SIAKAD, KRS, KHS,
+transkrip, dan proses administrasi lain yang sudah tersedia pada aplikasi lama.
+
+Tidak ada SSO, pemetaan akun, sesi bersama, koneksi database silang, atau
+sinkronisasi nilai antara kedua aplikasi. Pengguna login secara terpisah pada
+sistem yang dipilih. Perubahan data di satu aplikasi tidak mengubah aplikasi
+lain secara otomatis.
+
+## Database dan konfigurasi
+
+Database LMS ditentukan oleh variabel `DB_*` dalam `.env` Laravel. Laravel tidak
+memiliki koneksi kedua menuju database SIAKAD.
+
+Database SIAKAD ditentukan oleh `SIAKAD_DB_*` pada environment hosting atau
+`siakad-legacy/config/local.php`. File lokal tersebut diabaikan Git dan tidak
+boleh berisi kredensial yang dikomit.
+
+Contoh konfigurasi lokal SIAKAD:
+
+```php
+<?php
+
+return [
+    'db_host' => 'localhost',
+    'db_port' => 3306,
+    'db_name' => 'nama_database_siakad',
+    'db_user' => 'pengguna_database_siakad',
+    'db_password' => 'kata_sandi_database_siakad',
+    'timezone' => 'Asia/Makassar',
+    'public_url' => 'https://akademik.stienus.ac.id/siakad',
+    'home_url' => 'https://akademik.stienus.ac.id/',
+];
 ```
 
-Setelah mengubah `.env`:
+## Alur pengguna
 
-```bash
-php artisan optimize:clear
-php artisan migrate --force
-php artisan config:cache
-```
+1. Pengguna membuka halaman depan.
+2. Pilihan LMS membuka `/lms`; tamu diarahkan ke `/lms/login`.
+3. Pilihan SIAKAD membuka `/siakad`; SIAKAD menampilkan login miliknya sendiri.
+4. Logout hanya mengakhiri sesi aplikasi yang sedang digunakan.
 
-`DB_*` tetap menunjuk ke database LMS. `SIAKAD_DB_*` menunjuk ke database lama
-yang berbeda. Jangan menjalankan migrasi Laravel dengan database SIAKAD sebagai
-koneksi default.
+Halaman depan hanya menjadi direktori dan tidak membuat sesi login.
 
-## Konfigurasi SIAKAD PHP lama
+## Pemeriksaan pemisahan
 
-Source runtime SIAKAD lama tersedia pada folder `siakad-legacy` di repository
-yang sama. Deploy seluruh repository sekali, lalu jalankan `php artisan
-lms:prepare-deployment`. Perintah itu membuat `public/siakad` sebagai symlink ke
-`siakad-legacy`, sehingga kedua aplikasi ikut dalam satu `git pull` tanpa
-menduplikasi source.
-
-Git sengaja tidak membawa database dump, kredensial, foto pengguna, log, arsip,
-serta spreadsheet impor/ekspor. Saat melakukan `git pull` pada instalasi lama,
-data-data yang tidak dilacak Git tersebut tidak akan ditimpa.
-
-Pasang environment variable pada hosting SIAKAD:
-
-```text
-SIAKAD_PUBLIC_URL = https://akademik.stienus.ac.id/siakad
-LMS_URL = https://akademik.stienus.ac.id/portal
-SIAKAD_DB_HOST = alamat server database
-SIAKAD_DB_PORT = 3306
-SIAKAD_DB_NAME = nama database SIAKAD lama
-SIAKAD_DB_USER = pengguna database SIAKAD
-SIAKAD_DB_PASSWORD = kata sandi database SIAKAD
-SIAKAD_TIMEZONE = Asia/Makassar
-```
-
-Cara pemasangan environment variable mengikuti panel hosting/PHP-FPM yang
-digunakan. Jangan menaruh secret langsung di file PHP atau repositori publik.
-Contoh lengkap tersedia pada `siakad-legacy/.env.example`; file tersebut hanya
-dokumentasi dan tidak dibaca otomatis oleh PHP lama.
-
-Jika panel hosting tidak menyediakan environment variable, salin
-`siakad-legacy/config/local.example.php` menjadi
-`siakad-legacy/config/local.php`, isi seluruh nilai, dan jangan paksa file lokal
-tersebut masuk ke Git. Pola `config/local.php` sudah tercantum dalam `.gitignore`.
-
-## Login pengguna
-
-Login LMS memeriksa tabel `users` pada database LMS. Login SIAKAD memeriksa
-tabel `user` pada database SIAKAD lama. Akun, username, peran, password, dan sesi
-keduanya berdiri sendiri sehingga tidak diperlukan pemetaan akun lintas sistem.
-Portal ditampilkan sebelum login. Pilihan LMS membuka login LMS, sedangkan
-pilihan SIAKAD membuka login SIAKAD. Pengguna hanya login satu kali pada sistem
-yang dipilih.
-
-## Sinkronisasi nilai akhir LMS ke SIAKAD
-
-Sinkronisasi berjalan satu arah. Nilai tugas, kuis, kehadiran, dan komponen lain
-tetap diolah dalam LMS. Setelah 16 pertemuan terpenuhi, bobot komponen tepat
-100%, dan semua nilai lengkap, dosen menandai kelas selesai lalu membuka halaman
-**Penilaian**.
-
-Pada bagian **Sinkronisasi Nilai SIAKAD** dosen:
-
-1. memilih jadwal resmi SIAKAD (`id_jadwal`) yang kode mata kuliah, periode, dan
-   NIP dosennya cocok;
-2. menekan **Finalisasi & Kirim ke SIAKAD**; dan
-3. memeriksa status setiap mahasiswa atau memakai **Sinkronkan Ulang / Retry**
-   untuk baris yang gagal.
-
-Untuk setiap NIM, LMS memeriksa `krs_mhs` terlebih dahulu. Bila KRS resmi ada,
-LMS mengambil skala resmi dari `tbl_grade`, lalu memperbarui kolom
-`nilai_akhir`, `bobot`, dan `grade` pada baris `khs_mhs` yang sudah ada. LMS tidak
-membuat KRS/KHS baru. Dengan demikian mahasiswa lintas prodi tetap dapat
-diproses berdasarkan `kode_prodi` pada KRS-nya sendiri, sedangkan mahasiswa yang
-hanya bergabung di LMS tanpa KRS resmi ditandai gagal.
-
-Setiap percobaan disimpan di tabel LMS `siakad_grade_syncs`, termasuk snapshot
-nilai, status, jumlah percobaan, pesan kegagalan, pelaku finalisasi, dan waktu
-sinkron. Payload yang sama bersifat idempoten dan tidak ditulis ulang. Jika kelas
-dibuka kembali atau pemetaan jadwal berubah, seluruh status ditandai perlu
-sinkron ulang.
-
-Gunakan akun MySQL integrasi dengan hak minimum:
-
-- `SELECT`: `jadwal_mengajar`, `thn_akademik`, `krs_mhs`, `khs_mhs`, `tbl_grade`;
-- `UPDATE`: hanya `nilai_akhir`, `bobot`, dan `grade` pada `khs_mhs`.
-
-Jangan memberikan izin `DROP`, `ALTER`, `DELETE`, atau `INSERT` kepada akun
-integrasi. Password hanya disimpan pada `.env` hosting dan tidak masuk Git.
-
-## Pemeriksaan setelah deploy
-
-1. Buka halaman utama tanpa login dan pastikan pilihan LMS/SIAKAD tampil.
-2. Pilih SIAKAD dan pastikan login SIAKAD menerima akun lama.
-3. Kembali ke pemilih, pilih LMS, dan pastikan login berhasil menuju LMS.
-4. Uji mahasiswa dan dosen yang memiliki NIM/NIP lintas program studi.
-5. Pilih LMS, buat kelas sebagai dosen, dan salin kode gabung.
-6. Masuk sebagai mahasiswa dari prodi lain dan gabung memakai kode tersebut.
-7. Pastikan menu KRS/KHS/transkrip hanya dikelola pada SIAKAD lama.
-8. Selesaikan satu kelas uji, petakan jadwal SIAKAD, lalu sinkronkan nilai.
-9. Pastikan mahasiswa ber-KRS berubah pada `khs_mhs`, sementara mahasiswa tanpa
-   KRS mendapat status gagal dan tidak dibuatkan data akademik baru.
+1. Pastikan root dapat dibuka tanpa login dan menampilkan dua pilihan.
+2. Pastikan `/lms` mengarah ke login LMS bagi tamu.
+3. Pastikan `/siakad` menampilkan login SIAKAD.
+4. Login ke LMS tidak membuat pengguna login ke SIAKAD, dan sebaliknya.
+5. Pastikan konfigurasi Laravel hanya berisi database LMS.
+6. Pastikan backup dari menu LMS hanya mencadangkan database LMS.

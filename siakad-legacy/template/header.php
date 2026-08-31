@@ -1,7 +1,7 @@
 <?php
-$lms_url = function_exists('siakad_config')
-  ? siakad_config('LMS_URL', 'lms_url')
-  : getenv('LMS_URL');
+$home_url = function_exists('siakad_config')
+  ? siakad_config('HOME_URL', 'home_url')
+  : getenv('HOME_URL');
 if ($level == 'mhs') {
     $stmt_header = mysqli_prepare($koneksi, 'SELECT * FROM mahasiswa
     INNER JOIN tbl_jk ON mahasiswa.id_jk=tbl_jk.id_jk
@@ -68,9 +68,9 @@ if ($level == 'dosen') {
       </div>
     </a>
     <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-      <?php if ($lms_url) { ?>
-        <a href="<?= htmlspecialchars($lms_url, ENT_QUOTES, 'UTF-8'); ?>" class="dropdown-item siakad-lms-link">
-          <span aria-hidden="true">↗</span> Buka LMS
+      <?php if ($home_url) { ?>
+        <a href="<?= htmlspecialchars($home_url, ENT_QUOTES, 'UTF-8'); ?>" class="dropdown-item">
+          <span aria-hidden="true">↗</span> Halaman Depan
         </a>
         <div class="dropdown-divider"></div>
       <?php } ?>

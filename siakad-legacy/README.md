@@ -2,8 +2,9 @@
 
 Folder ini berisi source runtime SIAKAD PHP lama yang tetap menjadi sistem resmi
 untuk KRS, jadwal akademik, nilai, KHS, dan transkrip. Source disatukan ke dalam
-repository LMS agar versi integrasi SSO dan UI dapat dirilis bersama, tetapi
-SIAKAD tetap memakai database dan document root tersendiri.
+repository yang sama dengan LMS agar keduanya dapat dirilis dengan satu proses
+Git. SIAKAD tetap memakai login, sesi, konfigurasi, dan database tersendiri;
+tidak ada SSO atau koneksi runtime ke LMS.
 
 ## Yang sengaja tidak masuk Git
 
@@ -30,6 +31,7 @@ Gunakan salah satu cara berikut:
 File `.env.example` sendiri hanya dokumentasi dan tidak dibaca otomatis oleh
 aplikasi PHP lama.
 
-Jadikan folder ini sebagai document root SIAKAD (atau salin isinya ke document
-root SIAKAD yang telah ada). Jangan arahkan document root SIAKAD ke folder
-`public` milik Laravel.
+Pada susunan repository gabungan, perintah `php artisan
+lms:prepare-deployment --copy` menyalin folder ini ke `public/siakad`. Document
+root domain tetap mengarah ke `public` Laravel, sedangkan web server melayani
+folder SIAKAD secara langsung pada URL `/siakad`.

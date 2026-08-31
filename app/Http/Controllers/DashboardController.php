@@ -19,14 +19,6 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        if (! $request->session()->has('active_system')) {
-            return redirect()->route('portal.index');
-        }
-
-        if ($request->session()->get('active_system') === 'siakad') {
-            return redirect()->route('portal.siakad');
-        }
-
         if ($user->isStaff()) {
             return redirect()->route('portal.lms');
         }

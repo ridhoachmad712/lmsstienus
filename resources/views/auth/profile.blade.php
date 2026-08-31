@@ -6,7 +6,7 @@
 
 @section('content')
 @if ($user->must_change_password)
-    <div class="alert alert-warning"><strong>Kata sandi awal harus diganti.</strong> Gunakan formulir Kata Sandi di bawah sebelum membuka SIAKAD atau LMS.</div>
+    <div class="alert alert-warning"><strong>Kata sandi awal harus diganti.</strong> Gunakan formulir Kata Sandi di bawah sebelum membuka LMS.</div>
 @endif
 <ul class="nav nav-pills nav-fill mb-3 d-md-none" role="tablist">
     <li class="nav-item"><button class="nav-link active w-100" data-bs-toggle="tab" data-bs-target="#profile-data" type="button">Data Diri</button></li>

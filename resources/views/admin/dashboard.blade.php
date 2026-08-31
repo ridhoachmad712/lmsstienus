@@ -25,52 +25,6 @@
     @endforeach
 </div>
 
-{{-- ===================== STATUS KRS ===================== --}}
-<div class="card mb-3">
-    <div class="card-body">
-        <div class="row align-items-center g-3">
-            <div class="col-auto">
-                <span class="avatar avatar-lg rounded bg-{{ $krs['open'] ? 'green' : 'secondary' }}-lt"><i class="ti ti-clipboard-list icon-lg"></i></span>
-            </div>
-            <div class="col-md">
-                <div class="d-flex align-items-center flex-wrap gap-2">
-                    <span class="fw-bold">Pengisian KRS</span>
-                    <span class="badge bg-{{ $krs['open'] ? 'green' : 'red' }}-lt">
-                        <i class="ti ti-{{ $krs['open'] ? 'lock-open' : 'lock' }} me-1"></i>{{ $krs['open'] ? 'DIBUKA' : 'DITUTUP' }}
-                    </span>
-                    <span class="text-secondary small">Periode {{ $krs['period'] }} · maks {{ $krs['max_sks'] }} SKS</span>
-                </div>
-                <div class="mt-1">
-                    @if ($krs['pending'] > 0)
-                        <span class="text-orange"><i class="ti ti-clock-hour-4 me-1"></i><strong>{{ $krs['pending'] }}</strong> mahasiswa menunggu persetujuan dosen wali</span>
-                    @else
-                        <span class="text-secondary small">Tidak ada pengajuan KRS yang menunggu.</span>
-                    @endif
-                </div>
-            </div>
-            <div class="col-md-auto">
-                <div class="btn-list justify-content-end">
-                    @if ($isAdmin)
-                        <form method="POST" action="{{ route('admin.semesters.krs') }}">
-                            @csrf @method('PUT')
-                            <input type="hidden" name="krs_max_sks" value="{{ $krs['max_sks'] }}">
-                            @if ($krs['open'])
-                                <button class="btn btn-outline-danger" onclick="return confirm('Tutup pengisian KRS?')"><i class="ti ti-lock me-1"></i>Tutup KRS</button>
-                            @else
-                                <input type="hidden" name="krs_open" value="1">
-                                <button class="btn btn-success" onclick="return confirm('Buka pengisian KRS untuk periode {{ $krs['period'] }}?')"><i class="ti ti-lock-open me-1"></i>Buka KRS</button>
-                            @endif
-                        </form>
-                        <a href="{{ route('admin.semesters.index') }}" class="btn btn-icon" title="Atur di Kelola Semester" data-bs-toggle="tooltip"><i class="ti ti-settings"></i></a>
-                    @else
-                        <span class="text-secondary small">Buka/tutup KRS diatur oleh admin.</span>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 @unless ($isAdmin)
     <div class="alert alert-info">Anda login sebagai <strong>Kaprodi{{ $prodi ? ' '.$prodi->name : '' }}</strong>. Pengelolaan terbatas pada lingkup program studi Anda.</div>
 @endunless

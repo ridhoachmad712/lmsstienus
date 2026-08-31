@@ -2,31 +2,27 @@
 
 namespace App\Models;
 
+use Database\Factories\CourseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['user_id', 'prodi_id', 'mata_kuliah_id', 'siakad_schedule_id', 'name', 'code', 'class_name', 'join_code', 'semester', 'year', 'quota', 'description', 'status', 'default_meeting_type', 'grades_finalized_at', 'grades_finalized_by'])]
+#[Fillable(['user_id', 'prodi_id', 'mata_kuliah_id', 'name', 'code', 'class_name', 'join_code', 'semester', 'year', 'quota', 'description', 'status', 'default_meeting_type'])]
 class Course extends Model
 {
-    /** @use HasFactory<\Database\Factories\CourseFactory> */
+    /** @use HasFactory<CourseFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
-    protected function casts(): array
-    {
-        return [
-            'grades_finalized_at' => 'datetime',
-        ];
-    }
-
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_COMPLETED = 'completed';
 
     /** @deprecated pakai STATUS_COMPLETED */
@@ -76,11 +72,11 @@ class Course extends Model
         return $this->hasMany(Enrollment::class);
     }
 
-    /** Jumlah kursi terpakai (disetujui + diajukan) — untuk cek kuota. */
+    /** Jumlah kursi terpakai oleh peserta LMS aktif. */
     public function seatsTaken(): int
     {
         return $this->enrollments()
-            ->whereIn('status', [Enrollment::STATUS_APPROVED, Enrollment::STATUS_SUBMITTED])
+            ->where('status', Enrollment::STATUS_APPROVED)
             ->count();
     }
 
@@ -108,21 +104,6 @@ class Course extends Model
     public function gradeComponents(): HasMany
     {
         return $this->hasMany(GradeComponent::class);
-    }
-
-    public function gradeSyncs(): HasMany
-    {
-        return $this->hasMany(SiakadGradeSync::class);
-    }
-
-    public function gradesFinalizer(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'grades_finalized_by');
-    }
-
-    public function evaluations(): HasMany
-    {
-        return $this->hasMany(CourseEvaluation::class);
     }
 
     public function assignments(): HasMany

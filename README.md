@@ -4,18 +4,18 @@ Learning Management System untuk STIE Nusantara Makassar. Aplikasi ini berfokus
 pada kegiatan pembelajaran; administrasi akademik resmi tetap dijalankan oleh
 SIAKAD lama.
 
-## Arsitektur SIAKAD + LMS
+## Arsitektur dua aplikasi mandiri
 
-- Login dan portal pemilih sistem berada di aplikasi Laravel ini.
+- Halaman depan publik menautkan LMS dan SIAKAD tanpa melakukan login.
 - SIAKAD lama menangani KRS, jadwal akademik, nilai resmi, KHS, dan transkrip.
 - LMS menangani kelas, peserta, materi, tugas, kuis, diskusi, presensi, dan proses belajar.
 - Dosen membuat dan mengelola kelas LMS sendiri.
 - Mahasiswa bergabung memakai kode kelas; program studi mahasiswa tidak membatasi kelas yang dapat diikuti.
-- Setelah kelas selesai, dosen dapat memfinalisasi nilai LMS dan mengirimkannya ke KHS resmi SIAKAD; hanya mahasiswa dengan KRS resmi yang diproses.
-- Saat integrasi SIAKAD lama diaktifkan, endpoint akademik internal Laravel otomatis dinonaktifkan.
+- LMS dan SIAKAD memiliki login, sesi, serta database masing-masing.
+- Tidak ada SSO, sinkronisasi nilai, pemetaan akun, atau koneksi database silang.
 
 Petunjuk konfigurasi hosting tersedia di [docs/deploy.md](docs/deploy.md),
-sedangkan rincian integrasi ada di [docs/INTEGRASI-SIAKAD-LMS.md](docs/INTEGRASI-SIAKAD-LMS.md).
+sedangkan batas kedua sistem ada di [docs/INTEGRASI-SIAKAD-LMS.md](docs/INTEGRASI-SIAKAD-LMS.md).
 
 Source runtime SIAKAD lama kini ikut dalam repository ini di folder
 [`siakad-legacy`](siakad-legacy). Data produksi, foto pengguna, dump database,

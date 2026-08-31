@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 
 class BackupDatabase extends Command
 {
-    protected $signature = 'lms:backup-db {--without-siakad : Jangan backup database SIAKAD terintegrasi}';
+    protected $signature = 'lms:backup-db';
 
     protected $description = 'Backup database (SQLite/MySQL) ke storage/app/backups';
 
@@ -38,12 +38,6 @@ class BackupDatabase extends Command
             $this->error('Koneksi database tidak didukung untuk backup: '.$connection);
 
             return self::FAILURE;
-        }
-
-        if (! $this->option('without-siakad') && $this->siakadConfigured()) {
-            $siakadDest = $dir.DIRECTORY_SEPARATOR."siakad_{$stamp}.sql";
-            $this->dumpMysql($siakadDest, 'siakad');
-            $this->info('Backup MySQL SIAKAD dibuat: '.$siakadDest);
         }
 
         $this->copyOffsite($dir);
@@ -91,16 +85,6 @@ class BackupDatabase extends Command
         fwrite($handle, "\nSET FOREIGN_KEY_CHECKS=1;\n");
         fclose($handle);
         @chmod($dest, 0600);
-    }
-
-    private function siakadConfigured(): bool
-    {
-        $config = (array) config('database.connections.siakad', []);
-
-        return (bool) config('backup.siakad_enabled')
-            && ($config['driver'] ?? null) === 'mysql'
-            && filled($config['database'] ?? null)
-            && filled($config['username'] ?? null);
     }
 
     private function prune(string $dir): void

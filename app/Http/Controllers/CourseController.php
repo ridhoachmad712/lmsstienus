@@ -7,11 +7,9 @@ use App\Models\Attendance;
 use App\Models\Course;
 use App\Models\MataKuliah;
 use App\Models\Semester;
-use App\Models\SiakadGradeSync;
 use App\Models\Syllabus;
 use App\Models\User;
 use App\Services\GradeCalculator;
-use App\Services\SiakadGradeSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -215,7 +213,7 @@ class CourseController extends Controller
     }
 
     /** Daftar mahasiswa kelas (tab tersendiri, khusus dosen pemilik). */
-    public function students(Request $request, Course $course, SiakadGradeSyncService $siakadSync): View
+    public function students(Request $request, Course $course): View
     {
         $this->authorizeOwner($request, $course);
 
@@ -226,9 +224,7 @@ class CourseController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'nim_nip']);
 
-        $siakadRoster = $siakadSync->rosterOverview($course);
-
-        return view('courses.students', compact('course', 'students', 'availableStudents', 'siakadRoster'));
+        return view('courses.students', compact('course', 'students', 'availableStudents'));
     }
 
     /** Cek kesiapan kelas untuk ditandai selesai (16 pertemuan + semua dinilai). */
@@ -347,17 +343,7 @@ class CourseController extends Controller
 
         // Membuka kembali kelas selesai → selalu boleh
         if ($course->isCompleted()) {
-            $course->update([
-                'status' => Course::STATUS_ACTIVE,
-                'grades_finalized_at' => null,
-                'grades_finalized_by' => null,
-            ]);
-            $course->gradeSyncs()->update([
-                'status' => SiakadGradeSync::STATUS_STALE,
-                'error_message' => 'Kelas dibuka kembali; nilai perlu difinalisasi dan disinkronkan ulang.',
-                'synced_at' => null,
-            ]);
-            $this->refreshStudentsAcademicCache($course); // nilai kelas ini tak lagi dihitung
+            $course->update(['status' => Course::STATUS_ACTIVE]);
 
             return back()->with('status', 'Kelas dibuka kembali — sekarang bisa diubah.');
         }
@@ -381,15 +367,8 @@ class CourseController extends Controller
         }
 
         $course->update(['status' => Course::STATUS_COMPLETED]);
-        $this->refreshStudentsAcademicCache($course); // nilai final kini masuk hitungan IPK
 
         return back()->with('status', 'Kelas ditandai selesai. Sekarang hanya bisa dilihat (read-only).');
-    }
-
-    /** Segarkan cache akademik (IPK/SKS/IPS) mahasiswa kelas ini. */
-    private function refreshStudentsAcademicCache(Course $course): void
-    {
-        $course->students()->get()->each->refreshAcademicCache();
     }
 
     // --- Helpers ---

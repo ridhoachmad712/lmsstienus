@@ -1,20 +1,23 @@
 # Deploy Akademik STIE Nusantara
 
-Satu repository berisi dua aplikasi dan menggunakan dua database:
+Pemetaan aplikasi:
 
+- `https://akademik.stienus.ac.id/` → halaman depan publik;
 - `https://akademik.stienus.ac.id/lms` → LMS Laravel;
-- `https://akademik.stienus.ac.id/siakad` → SIAKAD PHP lama;
-- `https://akademik.stienus.ac.id/` → pemilih sistem sebelum login;
-- `https://akademik.stienus.ac.id/login` → login LMS;
-- `https://akademik.stienus.ac.id/siakad/pages/login` → login SIAKAD lama.
+- `https://akademik.stienus.ac.id/siakad` → SIAKAD PHP lama.
 
-Login dan database kedua aplikasi terpisah. Pengguna memilih sistem lebih dulu,
-lalu login satu kali pada aplikasi pilihannya. Sinkronisasi nilai menggunakan
-koneksi database khusus satu arah.
+Satu repository membawa kedua source code, tetapi masing-masing aplikasi
+memiliki login, sesi, konfigurasi, dan database sendiri. Tidak ada SSO atau
+sinkronisasi database.
 
-Document root subdomain harus menunjuk ke folder `public` Laravel, bukan root
-repository. Folder `siakad-legacy` tetap berada di root repository dan
-ditautkan secara aman ke `public/siakad` pada tahap deploy.
+Document root subdomain harus menunjuk ke folder `public` Laravel:
+
+```text
+/home/u272545584/domains/stienus.ac.id/public_html/akademik/public
+```
+
+Folder source SIAKAD berada di `siakad-legacy` dan dipublikasikan ke
+`public/siakad` saat deployment.
 
 ## Deploy pertama
 
@@ -26,55 +29,67 @@ composer install --no-dev --optimize-autoloader
 cp .env.example .env
 php artisan key:generate
 php artisan migrate --force
-php artisan lms:prepare-deployment
+php artisan lms:prepare-deployment --copy
 php artisan storage:link
 php artisan optimize
 ```
 
-Arahkan document root `akademik.stienus.ac.id` ke
-`/home/u272545584/domains/stienus.ac.id/public_html/akademik/public`.
+Opsi `--copy` aman digunakan pada hosting yang menonaktifkan fungsi PHP
+`symlink()`. Jalankan perintah yang sama sesudah setiap `git pull` agar perubahan
+source SIAKAD disalin ke folder publik.
 
-Jika PHP hosting menonaktifkan fungsi `symlink()`, gunakan mode salinan terkelola:
+## Konfigurasi LMS
 
-```bash
-php artisan lms:prepare-deployment --copy
-```
-
-Mode ini menyalin `siakad-legacy` ke `public/siakad` tanpa menghapus file yang
-sudah ada di tujuan. Perintah yang sama wajib dijalankan kembali setelah setiap
-`git pull` agar perubahan SIAKAD ikut diterapkan. Folder `config` dan `storage`
-SIAKAD diblokir dari akses HTTP oleh `.htaccess`.
-
-## Konfigurasi
-
-`DB_*` adalah database LMS. `SIAKAD_DB_*` adalah database SIAKAD lama. Isi juga:
+Isi `.env` Laravel hanya dengan koneksi database LMS:
 
 ```dotenv
+APP_NAME="Akademik STIE Nusantara"
+APP_ENV=production
+APP_DEBUG=false
 APP_URL=https://akademik.stienus.ac.id
+
+DB_CONNECTION=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=nama_database_lms
+DB_USERNAME=pengguna_database_lms
+DB_PASSWORD=kata_sandi_database_lms
+
 SESSION_ENCRYPT=true
 SESSION_SECURE_COOKIE=true
 SESSION_SAME_SITE=lax
-LEGACY_SIAKAD_ENABLED=true
-LEGACY_SIAKAD_URL=https://akademik.stienus.ac.id/siakad
-SIAKAD_GRADE_SYNC_ENABLED=true
+
 BACKUP_RETENTION_DAYS=30
 BACKUP_COPY_PATH=/lokasi/backup/di-luar-public-html
 BACKUP_ENCRYPTION_KEY=secret-backup-acak-dan-panjang
 ```
 
-Salin `siakad-legacy/config/local.example.php` menjadi
-`siakad-legacy/config/local.php`, lalu isi koneksi database lama dan alamat
-publiknya. File lokal ini diabaikan Git.
+Jangan menambahkan koneksi database SIAKAD ke `.env` Laravel.
 
-Jalankan sekali pada database SIAKAD lama sebelum login produksi agar hash kata
-sandi modern tidak terpotong:
+## Konfigurasi SIAKAD
+
+Salin contoh konfigurasi, kemudian isi database SIAKAD lama:
+
+```bash
+cp siakad-legacy/config/local.example.php siakad-legacy/config/local.php
+```
+
+Nilai penting di `siakad-legacy/config/local.php`:
+
+```php
+'public_url' => 'https://akademik.stienus.ac.id/siakad',
+'home_url' => 'https://akademik.stienus.ac.id/',
+```
+
+Koneksi `db` di file ini harus menunjuk ke database SIAKAD, bukan database LMS.
+File `local.php` diabaikan Git sehingga tidak ditimpa saat pembaruan.
+
+Jika kolom password SIAKAD lama masih terlalu pendek, jalankan sekali pada
+database SIAKAD:
 
 ```sql
 ALTER TABLE `user` MODIFY `password` VARCHAR(255) NOT NULL;
 ```
-
-Login lama berformat plaintext/MD5 tetap diterima sementara dan otomatis diubah
-menjadi hash modern setelah login berhasil.
 
 ## Update rutin
 
@@ -83,46 +98,34 @@ cd /home/u272545584/domains/stienus.ac.id/public_html/akademik
 git pull origin main
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force
-php artisan lms:prepare-deployment --copy # hilangkan --copy jika symlink PHP tersedia
+php artisan lms:prepare-deployment --copy
 php artisan lms:secure-files --delete-source
 php artisan optimize:clear
 php artisan optimize
 ```
 
-Jalankan `lms:secure-files --delete-source` sekali setelah versi pengamanan file
-dipasang. Perintah bersifat idempoten dan memverifikasi ukuran sebelum menghapus
-salinan publik.
+Perintah `lms:secure-files --delete-source` memindahkan berkas unggahan lama
+yang masih publik ke penyimpanan privat dan aman dijalankan ulang.
 
-## Cron dan queue
-
-Tambahkan cron berikut dari panel hosting (sesuaikan path PHP):
+## Cron dan queue LMS
 
 ```cron
 * * * * * cd /home/u272545584/domains/stienus.ac.id/public_html/akademik && php artisan schedule:run >> /dev/null 2>&1
 * * * * * cd /home/u272545584/domains/stienus.ac.id/public_html/akademik && php artisan queue:work --stop-when-empty --tries=3 --timeout=120 >> /dev/null 2>&1
 ```
 
-Scheduler mengirim pengingat dan membuat backup. Gunakan lokasi backup kedua di
-luar `public_html`. Aktifkan `SIAKAD_BACKUP_ENABLED=true` hanya bila akun koneksi
-SIAKAD punya izin membaca seluruh tabel. Akun sinkronisasi nilai dengan izin
-minimum sebaiknya tidak dipakai untuk backup penuh.
+Scheduler dan menu backup hanya bekerja untuk LMS. Backup SIAKAD harus diatur
+secara terpisah melalui hosting atau mekanisme milik SIAKAD.
 
-Jika `BACKUP_ENCRYPTION_KEY` diisi, salinan pada `BACKUP_COPY_PATH` disimpan
-sebagai `.enc`. Untuk pemulihan bencana, salin berkas itu ke server lalu jalankan
-`php artisan lms:decrypt-backup sumber.enc tujuan.sql` sebelum mengunggahnya di
-menu backup. Simpan key di pengelola kata sandi terpisah dari server.
-
-## Pemeriksaan
+## Pemeriksaan setelah deploy
 
 ```bash
 php artisan about
 php artisan migrate:status
+php artisan route:list --path=lms
 php artisan test
 composer audit
-php artisan lms:backup-db
 ```
 
-Uji pemilih sistem sebagai tamu, lalu login LMS dan login SIAKAD secara terpisah.
-Verifikasi HTTPS,
-penggantian kata sandi awal, upload/unduh materi, submit tugas, kecocokan peserta
-dengan KRS, dan sinkronisasi satu kelas percobaan sebelum produksi penuh.
+Buka ketiga URL utama dan uji login LMS serta SIAKAD secara terpisah. Pastikan
+logout dari salah satu aplikasi tidak memengaruhi sesi aplikasi lain.

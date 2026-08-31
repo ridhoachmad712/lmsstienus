@@ -65,7 +65,6 @@
     <div class="card-header py-2">
         <h3 class="card-title">{{ $cursor->translatedFormat('F Y') }}</h3>
         <div class="card-actions small text-secondary d-flex gap-3">
-            <span><i class="ti ti-square-rounded-filled text-green"></i> Agenda</span>
             <span><i class="ti ti-square-rounded-filled text-blue"></i> Pertemuan</span>
             <span><i class="ti ti-square-rounded-filled text-red"></i> Deadline</span>
         </div>
@@ -83,10 +82,9 @@
                     @php($key = $day->format('Y-m-d'))
                     @php($inMonth = $day->month === $cursor->month)
                     @php($ev = $events[$key] ?? [])
-                    @php($evAcademic = $ev['academic'] ?? [])
                     @php($evMeetings = $ev['meetings'] ?? [])
                     @php($evDeadlines = $ev['deadlines'] ?? [])
-                    @php($total = count($evAcademic) + count($evMeetings) + count($evDeadlines))
+                    @php($total = count($evMeetings) + count($evDeadlines))
                     @php($shown = 0)
                     <div class="col">
                         <div class="border rounded p-1 h-100 cal-cell
@@ -101,14 +99,6 @@
                                     <span class="small {{ $day->isSunday() ? 'text-red fw-bold' : 'text-secondary' }}">{{ $day->day }}</span>
                                 @endif
                             </div>
-                            @foreach ($evAcademic as $e)
-                                @if ($shown < $cap)
-                                    <a href="{{ route('academic.calendar') }}" class="d-block text-truncate badge bg-green-lt w-100 text-start mb-1 cal-ev" title="{{ $e->typeLabel() }}: {{ $e->title }}">
-                                        <i class="ti {{ $e->typeIcon() }}"></i> {{ $e->title }}
-                                    </a>
-                                    @php($shown++)
-                                @endif
-                            @endforeach
                             @foreach ($evMeetings as $m)
                                 @if ($shown < $cap)
                                     <a href="{{ route('courses.show', $m->course) }}" class="d-block text-truncate badge bg-blue-lt w-100 text-start mb-1 cal-ev" title="P{{ $m->number }} — {{ $m->course->name }}: {{ $m->topic }}">
@@ -136,23 +126,6 @@
         </div>
     </div>
 </div>
-
-@if ($academic->isNotEmpty())
-    <div class="card mb-3">
-        <div class="card-header py-2"><h3 class="card-title"><i class="ti ti-calendar-event text-green me-1"></i>Agenda Akademik bulan ini</h3>
-            <a href="{{ route('academic.calendar') }}" class="btn btn-sm ms-auto">Kalender akademik</a>
-        </div>
-        <div class="list-group list-group-flush">
-            @foreach ($academic as $e)
-                <div class="list-group-item d-flex align-items-center">
-                    <span class="avatar bg-{{ $e->typeColor() }}-lt me-2"><i class="ti {{ $e->typeIcon() }}"></i></span>
-                    <div class="me-auto"><div class="fw-bold">{{ $e->title }}</div><div class="small text-secondary">{{ $e->typeLabel() }}</div></div>
-                    <span class="text-secondary small text-nowrap">{{ $e->dateRange() }}</span>
-                </div>
-            @endforeach
-        </div>
-    </div>
-@endif
 
 <div class="row row-cards d-none d-md-flex">
     <div class="col-md-6">

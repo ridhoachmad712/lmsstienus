@@ -39,7 +39,7 @@ class SecurityHardeningTest extends TestCase
             'must_change_password' => true,
         ]);
 
-        $this->post('/login', ['login' => '20260099', 'password' => 'sandi-awal'])
+        $this->post(route('login'), ['login' => '20260099', 'password' => 'sandi-awal'])
             ->assertRedirect(route('portal.lms'));
         $this->get(route('portal.lms'))->assertRedirect(route('profile.edit'));
 

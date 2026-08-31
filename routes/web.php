@@ -1,12 +1,9 @@
 <?php
 
-use App\Http\Controllers\AcademicCalendarController;
-use App\Http\Controllers\Admin\AcademicController;
 use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\EdomController;
 use App\Http\Controllers\Admin\KurikulumController;
 use App\Http\Controllers\Admin\MataKuliahController;
 use App\Http\Controllers\Admin\ProdiController;
@@ -26,21 +23,17 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\CalendarController;
-use App\Http\Controllers\CampusAnnouncementController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EnrollmentController;
-use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ForumController;
 use App\Http\Controllers\GradeComponentController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\ImpersonationController;
-use App\Http\Controllers\KrsController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\PerwalianController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ReportController;
@@ -49,19 +42,15 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\SyllabusController;
-use App\Http\Controllers\TranscriptController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect()->route('portal.index'));
-
-// Pemilih sistem tampil sebelum autentikasi agar pengguna hanya login pada
-// aplikasi yang dipilih. SIAKAD dan LMS tetap memiliki sesi masing-masing.
-Route::get('/portal', [PortalController::class, 'index'])->name('portal.index');
-Route::get('/portal/siakad', [PortalController::class, 'siakad'])->name('portal.siakad');
+// Halaman depan hanya direktori publik. LMS dan SIAKAD berdiri sendiri.
+Route::get('/', [PortalController::class, 'index'])->name('portal.index');
+Route::redirect('/portal', '/');
 
 // --- Guest ---
-Route::middleware('guest')->group(function () {
+Route::middleware('guest')->prefix('lms')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:6,1');
 
@@ -74,63 +63,32 @@ Route::middleware('guest')->group(function () {
 
 // --- Authenticated ---
 Route::middleware('auth')->group(function () {
-    Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+    Route::post('/lms/logout', [LoginController::class, 'destroy'])->name('logout');
 
     // LMS dipilih setelah pengguna berhasil login ke database LMS.
     Route::get('/lms', [PortalController::class, 'lms'])->name('portal.lms');
 
     // Akhiri mode samaran (dapat diakses oleh sesi yang sedang disamar)
-    Route::post('/stop-impersonating', [ImpersonationController::class, 'stop'])->name('impersonate.stop');
+    Route::post('/lms/stop-impersonating', [ImpersonationController::class, 'stop'])->name('impersonate.stop');
 
     // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/lms/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/lms/dashboard/dosen', [DashboardController::class, 'dosen'])
         ->middleware('role:dosen')->name('dashboard.dosen');
     Route::get('/lms/dashboard/mahasiswa', [DashboardController::class, 'mahasiswa'])
         ->middleware('role:mahasiswa')->name('dashboard.mahasiswa');
 
     // Panduan penggunaan (per role, dibaca dari auth() di view)
-    Route::view('/panduan', 'panduan')->name('panduan');
+    Route::view('/lms/panduan', 'panduan')->name('panduan');
 
     // Kalender jadwal & pencarian global
     Route::get('/lms/calendar', [CalendarController::class, 'index'])->name('calendar');
-    Route::get('/search', [SearchController::class, 'index'])->name('search');
-
-    // Kalender akademik (lihat: semua; kelola: admin)
-    Route::get('/siakad/kalender-akademik', [AcademicCalendarController::class, 'index'])->name('academic.calendar');
-
-    // Papan pengumuman kampus/prodi (lihat: semua; kelola: admin & kaprodi)
-    Route::get('/siakad/pengumuman', [CampusAnnouncementController::class, 'index'])->name('pengumuman.index');
-    Route::middleware('role:admin,kaprodi')->group(function () {
-        Route::post('/siakad/pengumuman', [CampusAnnouncementController::class, 'store'])->name('pengumuman.store');
-        Route::delete('/siakad/pengumuman/{announcement}', [CampusAnnouncementController::class, 'destroy'])->name('pengumuman.destroy');
-    });
+    Route::get('/lms/search', [SearchController::class, 'index'])->name('search');
 
     // Profil & kata sandi
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
-
-    // Transkrip mahasiswa (milik sendiri)
-    Route::middleware('role:mahasiswa')->group(function () {
-        Route::get('/siakad/transkrip', [TranscriptController::class, 'mine'])->name('transkrip.mine');
-        Route::get('/siakad/transkrip/pdf', [TranscriptController::class, 'minePdf'])->name('transkrip.mine.pdf');
-        Route::get('/siakad/khs/pdf', [TranscriptController::class, 'khsMinePdf'])->name('khs.mine.pdf');
-
-        // KRS — Kartu Rencana Studi
-        Route::get('/siakad/krs', [KrsController::class, 'index'])->name('krs.index');
-        Route::get('/siakad/krs/pdf', [KrsController::class, 'pdf'])->name('krs.mine.pdf');
-
-        // EDOM — evaluasi dosen oleh mahasiswa
-        Route::get('/siakad/evaluasi', [EvaluationController::class, 'index'])->name('edom.index');
-        Route::post('/siakad/evaluasi/{course}', [EvaluationController::class, 'store'])->name('edom.store');
-        Route::post('/siakad/krs/courses/{course}', [KrsController::class, 'add'])->name('krs.add');
-        Route::delete('/siakad/krs/{enrollment}', [KrsController::class, 'remove'])->name('krs.remove');
-        Route::post('/siakad/krs/submit', [KrsController::class, 'submit'])->name('krs.submit');
-    });
-
-    // Jadwal mingguan pribadi (kuliah/mengajar)
-    Route::get('/siakad/jadwal', [ScheduleController::class, 'index'])->middleware('role:dosen,mahasiswa')->name('schedule.index');
+    Route::get('/lms/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/lms/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/lms/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
     // Jadwal per kelas (lihat kedua role; kelola di grup dosen)
     Route::get('/lms/courses/{course}/schedule', [ScheduleController::class, 'course'])->name('schedule.course');
 
@@ -161,10 +119,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/lms/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
 
     // ===== Notifikasi =====
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::get('/notifications/count', [NotificationController::class, 'count'])->name('notifications.count');
-    Route::get('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
-    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
+    Route::get('/lms/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/lms/notifications/count', [NotificationController::class, 'count'])->name('notifications.count');
+    Route::get('/lms/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+    Route::post('/lms/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
 
     // ===== Tugas & Kuis (kedua role; otorisasi di controller) =====
     Route::get('/lms/courses/{course}/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
@@ -214,13 +172,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/lms/courses/{course}/syllabus', [SyllabusController::class, 'show'])->name('syllabus.show');
     Route::get('/lms/courses/{course}/syllabus/pdf', [SyllabusController::class, 'pdf'])->name('syllabus.pdf');
 
-    // --- Administrasi akademik internal lama (akan dialihkan ke SIAKAD lama saat integrasi aktif) ---
-    Route::middleware('role:admin')->group(function () {
-        // Kelola kalender akademik
-        Route::post('/siakad/kalender-akademik', [AcademicCalendarController::class, 'store'])->name('academic.calendar.store');
-        Route::delete('/siakad/kalender-akademik/{event}', [AcademicCalendarController::class, 'destroy'])->name('academic.calendar.destroy');
-    });
-
     // --- Khusus dosen (mengelola isi kelas yang diampu) ---
     Route::middleware('role:dosen')->group(function () {
         Route::patch('/lms/courses/{course}/complete', [CourseController::class, 'toggleComplete'])->name('courses.complete');
@@ -246,15 +197,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/lms/meetings/{meeting}/materials', [MaterialController::class, 'store'])->name('materials.store');
         Route::put('/lms/materials/{material}', [MaterialController::class, 'update'])->name('materials.update');
         Route::delete('/lms/materials/{material}', [MaterialController::class, 'destroy'])->name('materials.destroy');
-
-        // Perwalian (dosen wali)
-        Route::get('/siakad/perwalian', [PerwalianController::class, 'index'])->name('perwalian.index');
-        Route::get('/siakad/perwalian/{student}/transkrip', [PerwalianController::class, 'transkrip'])->name('perwalian.transkrip');
-        Route::get('/siakad/perwalian/{student}/transkrip/pdf', [PerwalianController::class, 'transkripPdf'])->name('perwalian.transkrip.pdf');
-        Route::get('/siakad/perwalian/{student}/khs/pdf', [PerwalianController::class, 'khsPdf'])->name('perwalian.khs.pdf');
-        Route::get('/siakad/perwalian/{student}/krs', [PerwalianController::class, 'krs'])->name('perwalian.krs');
-        Route::post('/siakad/perwalian/{student}/krs/approve', [PerwalianController::class, 'approveKrs'])->name('perwalian.krs.approve');
-        Route::post('/siakad/perwalian/{student}/krs/reject', [PerwalianController::class, 'rejectKrs'])->name('perwalian.krs.reject');
 
         // Tugas & Kuis — CRUD
         Route::get('/lms/courses/{course}/assignments/create', [AssignmentController::class, 'create'])->name('assignments.create');
@@ -282,8 +224,6 @@ Route::middleware('auth')->group(function () {
 
         // Komponen nilai + input nilai manual
         Route::post('/lms/courses/{course}/grades/manual', [GradeController::class, 'saveManual'])->name('grades.saveManual');
-        Route::post('/lms/courses/{course}/grades/siakad-schedule', [GradeController::class, 'mapSiakadSchedule'])->name('grades.siakad.map');
-        Route::post('/lms/courses/{course}/grades/sync-siakad', [GradeController::class, 'syncToSiakad'])->name('grades.siakad.sync');
         Route::post('/lms/courses/{course}/grade-components', [GradeComponentController::class, 'store'])->name('grade-components.store');
         Route::put('/lms/grade-components/{component}', [GradeComponentController::class, 'update'])->name('grade-components.update');
         Route::delete('/lms/grade-components/{component}', [GradeComponentController::class, 'destroy'])->name('grade-components.destroy');
@@ -330,7 +270,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:admin,kaprodi')->name('admin.courses.index');
 
     // --- Beranda & mahasiswa (admin & kaprodi; kaprodi ter-scope prodi di controller) ---
-    Route::middleware('role:admin,kaprodi')->prefix('siakad/admin')->name('admin.')->group(function () {
+    Route::middleware('role:admin,kaprodi')->prefix('lms/admin')->name('admin.')->group(function () {
         Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
@@ -343,16 +283,6 @@ Route::middleware('auth')->group(function () {
         Route::put('/students/{student}', [AdminStudentController::class, 'update'])->name('students.update');
         Route::post('/students/{student}/reset-password', [AdminStudentController::class, 'resetPassword'])->name('students.resetPassword');
         Route::delete('/students/{student}', [AdminStudentController::class, 'destroy'])->name('students.destroy');
-        Route::get('/students/{student}/transkrip', [TranscriptController::class, 'show'])->name('students.transkrip');
-        Route::get('/students/{student}/transkrip/pdf', [TranscriptController::class, 'showPdf'])->name('students.transkrip.pdf');
-        Route::get('/students/{student}/khs/pdf', [TranscriptController::class, 'khsPdf'])->name('students.khs.pdf');
-
-        // Rekap akademik (IPK/IPS/SKS + deteksi bermasalah; kaprodi ter-scope prodi)
-        Route::get('/akademik', [AcademicController::class, 'index'])->name('academic.index');
-
-        // Rekap EDOM (evaluasi dosen; kaprodi ter-scope prodi)
-        Route::get('/edom', [EdomController::class, 'index'])->name('edom.index');
-
         // Unduh template CSV Data Master (semua entitas)
         Route::get('/master/template/{entity}', [TemplateController::class, 'download'])->name('master.template');
 
@@ -378,7 +308,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // --- Pengelolaan kampus (admin saja) ---
-    Route::middleware('role:admin')->prefix('siakad/admin')->name('admin.')->group(function () {
+    Route::middleware('role:admin')->prefix('lms/admin')->name('admin.')->group(function () {
         // Kelola akun dosen & kaprodi
         Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
         Route::get('/staff/create', [StaffController::class, 'create'])->name('staff.create');
@@ -400,8 +330,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/semesters', [SemesterController::class, 'index'])->name('semesters.index');
         Route::post('/semesters', [SemesterController::class, 'store'])->name('semesters.store');
         Route::put('/semesters/active', [SemesterController::class, 'updateActive'])->name('semesters.updateActive');
-        Route::put('/semesters/krs', [SemesterController::class, 'updateKrs'])->name('semesters.krs');
-        Route::put('/semesters/edom', [SemesterController::class, 'updateEdom'])->name('semesters.edom');
         Route::delete('/semesters/{semester}', [SemesterController::class, 'destroy'])->name('semesters.destroy');
 
         Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
@@ -441,22 +369,21 @@ Route::middleware('auth')->group(function () {
 
 });
 
-// Kompatibilitas bookmark/notifikasi lama setelah route dipisah ke /siakad dan /lms.
+// Kompatibilitas bookmark LMS lama; tidak pernah mengalihkan ke SIAKAD.
 Route::fallback(function (Request $request) {
     abort_unless($request->isMethod('GET'), 404);
 
     $path = $request->path();
     $target = match (true) {
-        $path === 'portal/lms' => 'lms',
+        $path === 'login' => 'lms/login',
+        $path === 'dashboard' || $path === 'portal/lms' => 'lms',
         str_starts_with($path, 'dashboard/dosen') => 'lms/'.$path,
         str_starts_with($path, 'dashboard/mahasiswa') => 'lms/'.$path,
         str_starts_with($path, 'admin/courses') => 'lms/'.$path,
-        str_starts_with($path, 'admin/') || $path === 'admin' => 'siakad/'.$path,
+        str_starts_with($path, 'admin/') || $path === 'admin' => 'lms/'.$path,
         $path === 'courses-create' => 'lms/courses/create',
         $path === 'courses-trash' => 'lms/courses/trash',
         preg_match('#^courses/([^/]+)/edit$#', $path, $matches) === 1 => 'lms/courses/'.$matches[1].'/edit',
-        collect(['krs', 'transkrip', 'khs', 'evaluasi', 'jadwal', 'kalender-akademik', 'pengumuman', 'perwalian'])
-            ->contains(fn ($prefix) => $path === $prefix || str_starts_with($path, $prefix.'/')) => 'siakad/'.$path,
         collect(['courses', 'materials', 'assignments', 'assignment-groups', 'submissions',
             'forum', 'forum-replies', 'attend', 'meetings', 'rubric-criteria', 'quiz-questions', 'grade-components',
             'announcements', 'calendar', 'api/course'])

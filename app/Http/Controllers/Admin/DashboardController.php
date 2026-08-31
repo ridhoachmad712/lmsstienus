@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\KrsController;
 use App\Models\Course;
-use App\Models\Enrollment;
 use App\Models\Semester;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -35,22 +33,6 @@ class DashboardController extends Controller
         $activeKeys = Semester::activeKeys();
         $prodi = $user->prodi;
 
-        // Status KRS periode aktif utama + jumlah mahasiswa yang KRS-nya menunggu persetujuan wali.
-        [$year, $semester] = explode('-', Semester::primaryKey(), 2);
-        $krsPending = User::where('role', User::ROLE_MAHASISWA)
-            ->when($prodiId, fn ($q) => $q->where('prodi_id', $prodiId))
-            ->whereHas('enrollments', fn ($q) => $q
-                ->where('status', Enrollment::STATUS_SUBMITTED)
-                ->whereHas('course', fn ($c) => $c->where('year', $year)->where('semester', $semester)))
-            ->count();
-
-        $krs = [
-            'open' => KrsController::krsOpen(),
-            'max_sks' => KrsController::maxSks(),
-            'pending' => $krsPending,
-            'period' => Semester::keyLabel($year.'-'.$semester),
-        ];
-
         $isAdmin = $user->isAdmin();
 
         // Dosen yang merangkap kaprodi: sediakan ringkasan sisi mengajar (satu akun).
@@ -75,7 +57,7 @@ class DashboardController extends Controller
             ['Semester aktif', count($activeKeys), collect($activeKeys)->map(fn ($k) => Semester::keyLabel($k))->implode(', '), 'ti-calendar-stats', 'purple', $isAdmin ? 'admin.semesters.index' : null],
         ];
 
-        // Kelompok menu: Data Master / Akademik / LMS / Sistem
+        // Data pendukung berikut hanya digunakan di LMS dan tidak terhubung ke SIAKAD.
         $master = [];
         if ($isAdmin) {
             $master[] = ['admin.prodi.index', 'ti-building', 'Program Studi', 'Daftar prodi'];
@@ -92,17 +74,13 @@ class DashboardController extends Controller
             $master[] = ['admin.gradeScale.edit', 'ti-award', 'Skala Nilai', 'Ambang konversi huruf'];
         }
 
-        $akademik = [['admin.academic.index', 'ti-chart-bar', 'Rekap Akademik', 'IPK/IPS & deteksi bermasalah']];
-        if ($isAdmin) {
-            $akademik[] = ['admin.semesters.index', 'ti-calendar-stats', 'Kelola Semester', 'Semester aktif & KRS'];
-        }
-        $akademik[] = ['academic.calendar', 'ti-calendar-event', 'Kalender Akademik', 'Agenda KRS/UTS/UAS/libur'];
-
         $menuGroups = [
-            ['Data Master', 'ti-database', 'green', $master],
-            ['Akademik', 'ti-books', 'blue', $akademik],
+            ['Data LMS', 'ti-database', 'green', $master],
             ['LMS', 'ti-device-laptop', 'azure', [['admin.courses.index', 'ti-school', 'Pengawasan Kelas', 'Pantau kelas & progresnya']]],
         ];
+        if ($isAdmin) {
+            $menuGroups[0][3][] = ['admin.semesters.index', 'ti-calendar-stats', 'Periode Kelas', 'Periode aktif untuk kelas LMS'];
+        }
         if ($isAdmin) {
             $menuGroups[] = ['Sistem', 'ti-settings', 'purple', [
                 ['admin.settings.edit', 'ti-palette', 'Tampilan', 'Branding & tema aplikasi'],
@@ -112,6 +90,6 @@ class DashboardController extends Controller
             ]];
         }
 
-        return view('admin.dashboard', compact('stats', 'activeKeys', 'prodi', 'krs', 'isAdmin', 'statCards', 'menuGroups', 'teaching'));
+        return view('admin.dashboard', compact('stats', 'activeKeys', 'prodi', 'isAdmin', 'statCards', 'menuGroups', 'teaching'));
     }
 }

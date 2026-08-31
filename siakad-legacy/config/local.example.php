@@ -8,5 +8,5 @@ return [
     'db_password' => '',
     'timezone' => 'Asia/Makassar',
     'public_url' => 'https://akademik.stienus.ac.id/siakad',
-    'lms_url' => 'https://akademik.stienus.ac.id/portal',
+    'home_url' => 'https://akademik.stienus.ac.id/',
 ];

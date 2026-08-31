@@ -69,66 +69,8 @@ class SemesterController extends Controller
         })->sortByDesc('sort')->values();
 
         $academicYear = Setting::get('academic_year', (string) date('Y'));
-        $semester = Setting::get('semester', 'Ganjil');
-        $krsOpen = \App\Http\Controllers\KrsController::krsOpen();      // status terkomputasi (jadwal/manual)
-        $krsManual = Setting::bool('krs_open');                        // nilai sakelar manual mentah
-        $krsMaxSks = \App\Http\Controllers\KrsController::maxSks();
-        $krsPeriodLabel = Semester::keyLabel(Semester::primaryKey());
-        $krsStart = Setting::get('krs_start');
-        $krsEnd = Setting::get('krs_end');
-        $edomOpen = \App\Http\Controllers\EvaluationController::edomOpen();
-        $edomManual = Setting::bool('edom_open');
-        $edomRequired = \App\Http\Controllers\EvaluationController::edomRequired();
-        $edomStart = Setting::get('edom_start');
-        $edomEnd = Setting::get('edom_end');
 
-        return view('admin.semesters.index', compact(
-            'periods', 'activeKeys', 'academicYear', 'semester',
-            'krsOpen', 'krsManual', 'krsMaxSks', 'krsPeriodLabel', 'krsStart', 'krsEnd',
-            'edomOpen', 'edomManual', 'edomRequired', 'edomStart', 'edomEnd',
-        ));
-    }
-
-    /** Buka/tutup periode EDOM + opsi wajib (kunci nilai) + jadwal tanggal opsional. */
-    public function updateEdom(Request $request): RedirectResponse
-    {
-        $data = $request->validate([
-            'edom_open' => ['nullable', 'boolean'],
-            'edom_required' => ['nullable', 'boolean'],
-            'edom_start' => ['nullable', 'date'],
-            'edom_end' => ['nullable', 'date', 'after_or_equal:edom_start'],
-        ]);
-
-        Setting::put('edom_open', $request->boolean('edom_open') ? '1' : '0');
-        Setting::put('edom_required', $request->boolean('edom_required') ? '1' : '0');
-        Setting::put('edom_start', $data['edom_start'] ?? null);
-        Setting::put('edom_end', $data['edom_end'] ?? null);
-
-        $open = \App\Http\Controllers\EvaluationController::edomOpen();
-        Activity::log('update', 'Mengubah EDOM: '.($open ? 'BUKA' : 'TUTUP'));
-
-        return back()->with('status', 'Pengaturan EDOM disimpan — status saat ini: '.($open ? 'DIBUKA' : 'DITUTUP').'.');
-    }
-
-    /** Buka/tutup periode pengisian KRS + batas SKS + jadwal tanggal opsional. */
-    public function updateKrs(Request $request): RedirectResponse
-    {
-        $data = $request->validate([
-            'krs_open' => ['nullable', 'boolean'],
-            'krs_max_sks' => ['required', 'integer', 'min:1', 'max:30'],
-            'krs_start' => ['nullable', 'date'],
-            'krs_end' => ['nullable', 'date', 'after_or_equal:krs_start'],
-        ]);
-
-        Setting::put('krs_open', $request->boolean('krs_open') ? '1' : '0');
-        Setting::put('krs_max_sks', (string) $data['krs_max_sks']);
-        Setting::put('krs_start', $data['krs_start'] ?? null);
-        Setting::put('krs_end', $data['krs_end'] ?? null);
-
-        $open = \App\Http\Controllers\KrsController::krsOpen();
-        Activity::log('update', 'Mengubah pengaturan KRS: '.($open ? 'BUKA' : 'TUTUP').", maks {$data['krs_max_sks']} SKS");
-
-        return back()->with('status', 'Pengaturan KRS disimpan — pengisian saat ini: '.($open ? 'DIBUKA' : 'DITUTUP').'.');
+        return view('admin.semesters.index', compact('periods', 'activeKeys', 'academicYear'));
     }
 
     /** Tambah semester baru ke daftar (opsional langsung diaktifkan). */
